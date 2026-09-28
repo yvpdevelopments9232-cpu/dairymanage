@@ -811,6 +811,7 @@ class MainDairyPayment {
   final String? referenceNo;
   final String? remarks;
   final String? dairyName;
+  final int? dairyNo;
 
   MainDairyPayment({
     required this.id,
@@ -821,17 +822,19 @@ class MainDairyPayment {
     this.referenceNo,
     this.remarks,
     this.dairyName,
+    this.dairyNo,
   });
 
   factory MainDairyPayment.fromJson(Map<String, dynamic> json) => MainDairyPayment(
-    id: json['id'],
-    mainDairyId: json['main_dairy_id'],
-    paymentDate: json['payment_date'],
+    id: json['id']?.toString() ?? '',
+    mainDairyId: json['main_dairy_id']?.toString() ?? '',
+    paymentDate: json['payment_date']?.toString() ?? '',
     amount: (json['amount'] ?? 0).toDouble(),
     paymentMode: json['payment_mode'] ?? 'Bank Transfer',
     referenceNo: json['reference_no'],
     remarks: json['remarks'],
-    dairyName: json['main_dairies']?['name'],
+    dairyName: json['main_dairies']?['name'] ?? json['dairy_name'] ?? json['_md_name'],
+    dairyNo: (json['main_dairies']?['dairy_no'] as num?)?.toInt() ?? (json['dairy_no'] as num?)?.toInt() ?? (json['_md_no'] as num?)?.toInt(),
   );
 }
 

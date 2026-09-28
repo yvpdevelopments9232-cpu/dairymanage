@@ -1,10 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../models/flutter_models.dart';
 import '../../providers/main_dairy_provider.dart';
+import '../../providers/main_dairy_payment_provider.dart';
 
-class MainDairyListScreen extends ConsumerWidget {
+class MainDairyListScreen extends ConsumerStatefulWidget {
   const MainDairyListScreen({super.key});
+
+  @override
+  ConsumerState<MainDairyListScreen> createState() => _MainDairyListScreenState();
+}
+
+class _MainDairyListScreenState extends ConsumerState<MainDairyListScreen> {
+  final _searchCtrl = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
 
   void _showDairyDialog(BuildContext context, {MainDairy? existingDairy}) {
     showDialog(
@@ -13,7 +29,7 @@ class MainDairyListScreen extends ConsumerWidget {
     );
   }
 
-  void _showPaymentDialog(BuildContext context, WidgetRef ref, MainDairy dairy) {
+  void _showPaymentDialog(BuildContext context, MainDairy dairy) {
     final amountCtrl = TextEditingController();
     final refCtrl = TextEditingController();
     final remarksCtrl = TextEditingController();
@@ -22,44 +38,105 @@ class MainDairyListScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setState) => AlertDialog(
-          title: Text('Record Payment Received: ${dairy.name}'),
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(Icons.payments, color: Colors.green),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Record Payment: #${dairy.dairyNo != null ? dairy.dairyNo.toString().padLeft(3, '0') : ""} ${dairy.name}',
+                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.indigo.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Current Balance:', style: TextStyle(fontSize: 13, color: Colors.black87)),
+                    Text(
+                      '₹ ${dairy.currentBalance.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: dairy.currentBalance > 0 ? Colors.red.shade700 : Colors.green.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
               TextField(
                 controller: amountCtrl,
-                decoration: const InputDecoration(labelText: 'Amount Received (₹) *'),
-                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Amount Received (₹) *',
+                  prefixIcon: Icon(Icons.currency_rupee),
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               DropdownButtonFormField<String>(
                 value: paymentMode,
-                decoration: const InputDecoration(labelText: 'Payment Mode'),
+                decoration: const InputDecoration(
+                  labelText: 'Payment Mode',
+                  border: OutlineInputBorder(),
+                ),
                 items: ['Bank Transfer', 'NEFT/RTGS', 'Cheque', 'Cash', 'UPI']
                     .map((m) => DropdownMenuItem(value: m, child: Text(m)))
                     .toList(),
-                onChanged: (v) => setState(() => paymentMode = v!),
+                onChanged: (v) => setDialogState(() => paymentMode = v!),
               ),
-              const SizedBox(height: 8),
-              TextField(controller: refCtrl, decoration: const InputDecoration(labelText: 'Reference / Cheque No')),
-              const SizedBox(height: 8),
-              TextField(controller: remarksCtrl, decoration: const InputDecoration(labelText: 'Remarks')),
+              const SizedBox(height: 10),
+              TextField(
+                controller: refCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Reference / Cheque No',
+                  hintText: 'e.g. UTR / Txn ID',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: remarksCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Remarks',
+                  hintText: 'Optional notes',
+                  border: OutlineInputBorder(),
+                ),
+              ),
             ],
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCEL')),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.indigo.shade700,
+                foregroundColor: Colors.white,
+              ),
               onPressed: () async {
                 final amt = double.tryParse(amountCtrl.text.trim());
                 if (amt == null || amt <= 0) return;
                 Navigator.pop(ctx);
-                await ref.read(mainDairyProvider.notifier).recordPayment(
+                final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+                await ref.read(mainDairyPaymentProvider.notifier).addPayment(
                   mainDairyId: dairy.id,
                   amount: amt,
                   paymentMode: paymentMode,
-                  referenceNo: refCtrl.text.trim(),
-                  remarks: remarksCtrl.text.trim(),
+                  paymentDate: todayStr,
+                  referenceNo: refCtrl.text.trim().isEmpty ? null : refCtrl.text.trim(),
+                  remarks: remarksCtrl.text.trim().isEmpty ? null : remarksCtrl.text.trim(),
                 );
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -75,7 +152,7 @@ class MainDairyListScreen extends ConsumerWidget {
     );
   }
 
-  void _confirmDelete(BuildContext context, WidgetRef ref, MainDairy dairy) {
+  void _confirmDelete(BuildContext context, MainDairy dairy) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -105,11 +182,26 @@ class MainDairyListScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final dairiesAsync = ref.watch(mainDairyProvider);
-    final primaryColor = Theme.of(context).colorScheme.primary;
+    final primaryColor = Colors.indigo.shade700;
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Main Dairies / Members',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 1,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.indigo),
+            tooltip: 'Refresh',
+            onPressed: () => ref.invalidate(mainDairyProvider),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showDairyDialog(context),
         icon: const Icon(Icons.add),
@@ -121,96 +213,184 @@ class MainDairyListScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
         data: (dairies) {
-          if (dairies.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.domain_outlined, size: 80, color: Colors.grey.shade400),
-                  const SizedBox(height: 16),
-                  const Text('No Main Dairies added yet.', style: TextStyle(fontSize: 18, color: Colors.grey)),
-                  const SizedBox(height: 8),
-                  TextButton.icon(
-                    onPressed: () => _showDairyDialog(context),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add your first Main Dairy'),
-                  )
-                ],
-              ),
-            );
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: dairies.length,
-            itemBuilder: (context, index) {
-              final dairy = dairies[index];
-              final displayId = dairy.dairyNo != null ? dairy.dairyNo.toString().padLeft(3, '0') : '---';
+          final filtered = dairies.where((d) {
+            if (_searchQuery.isEmpty) return true;
+            final name = d.name.toLowerCase();
+            final noStr = d.dairyNo != null ? d.dairyNo.toString().padLeft(3, '0') : '';
+            final village = (d.village ?? '').toLowerCase();
+            final mobile = (d.mobile ?? '').toLowerCase();
+            return name.contains(_searchQuery) ||
+                noStr.contains(_searchQuery) ||
+                village.contains(_searchQuery) ||
+                mobile.contains(_searchQuery);
+          }).toList();
 
-              return Card(
-                elevation: 2,
-                margin: const EdgeInsets.only(bottom: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  leading: CircleAvatar(
-                    radius: 25,
-                    backgroundColor: primaryColor.withOpacity(0.1),
-                    child: Icon(Icons.business, color: primaryColor),
-                  ),
-                  title: Text('#$displayId  ${dairy.name}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 4.0),
-                    child: Text('${dairy.village != null && dairy.village!.isNotEmpty ? dairy.village : (dairy.address ?? "No Village")} | 📞 ${dairy.mobile ?? "N/A"}'),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          const Text('Receivable Bal', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                          const SizedBox(height: 4),
-                          Text(
-                            '₹ ${dairy.currentBalance.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                              color: dairy.currentBalance > 0 ? Colors.red.shade700 : Colors.green.shade700,
+          final totalReceivable = dairies.fold<double>(0.0, (sum, d) => sum + d.currentBalance);
+
+          return Column(
+            children: [
+              // Top Search & Summary Header
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                color: Colors.indigo.shade50.withOpacity(0.5),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _searchCtrl,
+                            decoration: InputDecoration(
+                              hintText: 'Search by D. ID (e.g. 001), Name (e.g. Sonai), Village...',
+                              prefixIcon: const Icon(Icons.search, size: 20),
+                              suffixIcon: _searchCtrl.text.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(Icons.clear, size: 18),
+                                      onPressed: () {
+                                        _searchCtrl.clear();
+                                        setState(() => _searchQuery = '');
+                                      },
+                                    )
+                                  : null,
+                              filled: true,
+                              fillColor: Colors.white,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(color: Colors.indigo.shade200),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                             ),
+                            onChanged: (v) => setState(() => _searchQuery = v.trim().toLowerCase()),
                           ),
-                        ],
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(Icons.payments, color: Colors.green),
-                        tooltip: 'Receive Payment',
-                        onPressed: () => _showPaymentDialog(context, ref, dairy),
-                      ),
-                      PopupMenuButton<String>(
-                        onSelected: (value) {
-                          if (value == 'edit') {
-                            _showDairyDialog(context, existingDairy: dairy);
-                          } else if (value == 'delete') {
-                            _confirmDelete(context, ref, dairy);
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          const PopupMenuItem(
-                            value: 'edit',
-                            child: Row(children: [Icon(Icons.edit, size: 20), SizedBox(width: 8), Text('Edit')]),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Total: ${dairies.length} Main Dairy Centers',
+                          style: TextStyle(fontWeight: FontWeight.w600, color: Colors.indigo.shade900, fontSize: 13),
+                        ),
+                        Text(
+                          'Total Receivable: ₹ ${totalReceivable.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: totalReceivable > 0 ? Colors.red.shade700 : Colors.green.shade700,
+                            fontSize: 13,
                           ),
-                          const PopupMenuItem(
-                            value: 'delete',
-                            child: Row(children: [Icon(Icons.delete, color: Colors.red, size: 20), SizedBox(width: 8), Text('Delete', style: TextStyle(color: Colors.red))]),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              );
-            },
+              ),
+
+              // Dairies List
+              Expanded(
+                child: filtered.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.domain_outlined, size: 80, color: Colors.grey.shade400),
+                            const SizedBox(height: 16),
+                            Text(
+                              _searchQuery.isEmpty ? 'No Main Dairies added yet.' : 'No Main Dairies match "$_searchQuery"',
+                              style: const TextStyle(fontSize: 16, color: Colors.grey),
+                            ),
+                            const SizedBox(height: 12),
+                            if (_searchQuery.isEmpty)
+                              TextButton.icon(
+                                onPressed: () => _showDairyDialog(context),
+                                icon: const Icon(Icons.add),
+                                label: const Text('Add your first Main Dairy'),
+                              ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: filtered.length,
+                        itemBuilder: (context, index) {
+                          final dairy = filtered[index];
+                          final displayId = dairy.dairyNo != null ? dairy.dairyNo.toString().padLeft(3, '0') : '---';
+
+                          return Card(
+                            elevation: 2,
+                            margin: const EdgeInsets.only(bottom: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+                              leading: CircleAvatar(
+                                radius: 24,
+                                backgroundColor: primaryColor.withOpacity(0.1),
+                                child: Icon(Icons.business, color: primaryColor),
+                              ),
+                              title: Text(
+                                '#$displayId  ${dairy.name}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              ),
+                              subtitle: Padding(
+                                padding: const EdgeInsets.only(top: 4.0),
+                                child: Text(
+                                  '${dairy.village != null && dairy.village!.isNotEmpty ? dairy.village : (dairy.address ?? "No Village")} | 📞 ${dairy.mobile ?? "N/A"}${dairy.animalType != null ? " | ${dairy.animalType}" : ""}',
+                                  style: const TextStyle(fontSize: 13, color: Colors.black87),
+                                ),
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      const Text('Receivable Bal', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '₹ ${dairy.currentBalance.toStringAsFixed(2)}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15,
+                                          color: dairy.currentBalance > 0 ? Colors.red.shade700 : Colors.green.shade700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(width: 6),
+                                  IconButton(
+                                    icon: const Icon(Icons.payments, color: Colors.green),
+                                    tooltip: 'Receive Payment',
+                                    onPressed: () => _showPaymentDialog(context, dairy),
+                                  ),
+                                  PopupMenuButton<String>(
+                                    onSelected: (value) {
+                                      if (value == 'edit') {
+                                        _showDairyDialog(context, existingDairy: dairy);
+                                      } else if (value == 'delete') {
+                                        _confirmDelete(context, dairy);
+                                      }
+                                    },
+                                    itemBuilder: (context) => [
+                                      const PopupMenuItem(
+                                        value: 'edit',
+                                        child: Row(children: [Icon(Icons.edit, size: 20), SizedBox(width: 8), Text('Edit')]),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'delete',
+                                        child: Row(children: [Icon(Icons.delete, color: Colors.red, size: 20), SizedBox(width: 8), Text('Delete', style: TextStyle(color: Colors.red))]),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
           );
         },
       ),

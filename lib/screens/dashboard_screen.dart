@@ -43,6 +43,7 @@ import 'main_dairy/main_dairy_list_screen.dart';
 import 'main_dairy/main_dairy_collection_screen.dart';
 import 'main_dairy/main_dairy_rate_screen.dart';
 import 'main_dairy/main_dairy_reports_screen.dart';
+import 'main_dairy/main_dairy_payment_screen.dart';
 import 'main_dairy/bonus/bonus_dashboard_screen.dart';
 import 'main_dairy/bonus/bonus_settings_screen.dart';
 import 'main_dairy/bonus/paid_bonus_screen.dart';
@@ -939,7 +940,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           mainDairyContent = const DesktopWrapper(child: MainDairyCollectionScreen());
           break;
         case 'Farmers / Members':
-          mainDairyContent = const DesktopWrapper(child: FarmerScreen());
+        case 'Main Dairies':
+        case 'Main Dairies / Members':
+          mainDairyContent = const DesktopWrapper(child: MainDairyListScreen());
           break;
         case 'Milk Purchase':
           mainDairyContent = const DesktopWrapper(child: PurchaseScreen());
@@ -949,7 +952,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           break;
         case 'Payments':
         case 'Bank':
-          mainDairyContent = const DesktopWrapper(child: PaymentScreen());
+        case 'Payments & Ledgers':
+          mainDairyContent = const DesktopWrapper(child: MainDairyPaymentScreen());
           break;
         case 'Bonus':
         case 'Bonus Dashboard':
@@ -983,9 +987,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           break;
         case 'Rate Management':
           mainDairyContent = const DesktopWrapper(child: MainDairyRateScreen());
-          break;
-        case 'Main Dairies':
-          mainDairyContent = const DesktopWrapper(child: MainDairyListScreen());
           break;
         default:
           mainDairyContent = DesktopWrapper(
