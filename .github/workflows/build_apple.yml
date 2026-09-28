@@ -1,0 +1,128 @@
+name: Build iOS IPA & macOS Application
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      target_edition:
+        description: 'Select edition to build (or "all" for all 3)'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - hybrid
+          - offline
+          - online
+
+jobs:
+  # =========================================================
+  # JOB 1: BUILD IOS IPA (HYBRID, OFFLINE, ONLINE)
+  # =========================================================
+  build-ios-ipa:
+    name: Build iOS IPA (${{ matrix.edition }})
+    runs-on: macos-14
+    strategy:
+      fail-fast: false
+      matrix:
+        edition: [hybrid, offline, online]
+    if: github.event.inputs.target_edition == 'all' || github.event.inputs.target_edition == matrix.edition || github.event.inputs.target_edition == null
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Precache iOS Artifacts
+        run: flutter precache --ios
+
+      - name: Install Flutter Dependencies
+        run: flutter pub get
+
+      - name: Compile iOS Release (${{ matrix.edition }})
+        run: |
+          if [ "${{ matrix.edition }}" = "hybrid" ]; then
+            flutter build ios --release --no-codesign -t lib/main_hybrid.dart
+          elif [ "${{ matrix.edition }}" = "offline" ]; then
+            flutter build ios --release --no-codesign -t lib/main_offline.dart
+          else
+            flutter build ios --release --no-codesign -t lib/main.dart
+          fi
+
+      - name: Package Runner.app into installable .ipa
+        run: |
+          mkdir -p build/ios/ipa_payload/Payload
+          cp -r build/ios/iphoneos/Runner.app build/ios/ipa_payload/Payload/
+          cd build/ios/ipa_payload
+          zip -r -y "DairyManagement_${{ matrix.edition }}.ipa" Payload
+          mkdir -p ../../../output_ios
+          mv "DairyManagement_${{ matrix.edition }}.ipa" ../../../output_ios/
+          cd ../../../
+          ls -lh output_ios/
+
+      - name: Upload iOS ${{ matrix.edition }} IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DairyManagement_iOS_${{ matrix.edition }}_IPA
+          path: output_ios/DairyManagement_${{ matrix.edition }}.ipa
+          retention-days: 14
+
+  # =========================================================
+  # JOB 2: BUILD MACOS APP (HYBRID, OFFLINE, ONLINE)
+  # =========================================================
+  build-macos:
+    name: Build macOS (${{ matrix.edition }})
+    runs-on: macos-14
+    strategy:
+      fail-fast: false
+      matrix:
+        edition: [hybrid, offline, online]
+    if: github.event.inputs.target_edition == 'all' || github.event.inputs.target_edition == matrix.edition || github.event.inputs.target_edition == null
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Precache macOS Artifacts
+        run: flutter precache --macos
+
+      - name: Install Flutter Dependencies
+        run: flutter pub get
+
+      - name: Compile macOS Release (${{ matrix.edition }})
+        run: |
+          if [ "${{ matrix.edition }}" = "hybrid" ]; then
+            flutter build macos --release -t lib/main_hybrid.dart
+          elif [ "${{ matrix.edition }}" = "offline" ]; then
+            flutter build macos --release -t lib/main_offline.dart
+          else
+            flutter build macos --release -t lib/main.dart
+          fi
+
+      - name: Package macOS App into ZIP
+        run: |
+          mkdir -p output_macos
+          cd build/macos/Build/Products/Release
+          # Package the .app bundle
+          zip -r -y "../../../../../output_macos/DairyManagement_${{ matrix.edition }}_macOS.zip" *.app
+          cd ../../../../../
+          ls -lh output_macos/
+
+      - name: Upload macOS ${{ matrix.edition }} Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DairyManagement_macOS_${{ matrix.edition }}
+          path: output_macos/DairyManagement_${{ matrix.edition }}_macOS.zip
+          retention-days: 14
