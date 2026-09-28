@@ -205,7 +205,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   
-                  // Remember Me Row
+                  // Remember Me & Forgot Password Row
                   if (_isLogin)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -223,6 +223,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                             const Text('Remember me'),
                           ],
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+                            );
+                          },
+                          child: Text(
+                            'Forgot Password?',
+                            style: TextStyle(
+                              color: primaryColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ],
                     ),
