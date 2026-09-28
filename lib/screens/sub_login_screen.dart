@@ -7,6 +7,7 @@ import '../services/app_config.dart';
 import '../services/offline_db_helper.dart';
 import 'dashboard_screen.dart';
 import 'login_screen.dart';
+import 'forgot_password_screen.dart';
 import '../main.dart';
 
 class SubLoginScreen extends ConsumerStatefulWidget {
@@ -213,7 +214,17 @@ class _SubLoginScreenState extends ConsumerState<SubLoginScreen> {
                         ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                         : const Text('LOGIN', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                     ),
-                  )
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+                      );
+                    },
+                    child: const Text('Forgot Password / PIN?'),
+                  ),
                 ],
               ),
             ),

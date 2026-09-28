@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login_screen.dart';
+import '../services/app_config.dart';
+import '../services/offline_db_helper.dart';
+import '../main.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String email;
@@ -49,6 +52,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         UserAttributes(password: newPassword),
       );
       
+      // Sync with local offline credentials in Hybrid / Offline editions
+      if (AppConfig.isHybridMode || AppConfig.isOfflineMode) {
+        await prefs.setString(AppConfig.prefKey('admin_pin'), newPassword);
+        try {
+          final db = await OfflineDbHelper.instance.database;
+          await db.update('offline_users', {'password': newPassword}, where: 'username = ? OR email = ?', whereArgs: [widget.email, widget.email]);
+        } catch (_) {}
+      }
+
       // 3. Log out so they can log in normally (optional, but good practice after reset)
       await supabase.auth.signOut();
 

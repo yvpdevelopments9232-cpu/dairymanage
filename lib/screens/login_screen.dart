@@ -252,7 +252,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: 16),
                   
                   // Forgot Password
-                  if (_isLogin && !AppConfig.isOfflineMode)
+                  if (_isLogin)
                     TextButton(
                       onPressed: () {
                         Navigator.push(
