@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       target_edition:
-        description: 'Select edition to build (or "all" for all 3)'
+        description: 'Select edition to build (all, hybrid, offline, online)'
         required: true
         default: 'all'
         type: choice
@@ -29,37 +29,54 @@ jobs:
       fail-fast: false
       matrix:
         edition: [hybrid, offline, online]
-    if: github.event.inputs.target_edition == 'all' || github.event.inputs.target_edition == matrix.edition || github.event.inputs.target_edition == null
     steps:
+      - name: Check whether to build this edition
+        id: filter
+        run: |
+          TARGET="${{ github.event.inputs.target_edition }}"
+          EDITION="${{ matrix.edition }}"
+          if [ -z "$TARGET" ] || [ "$TARGET" = "all" ] || [ "$TARGET" = "$EDITION" ]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Checkout Repository
+        if: steps.filter.outputs.should_run == 'true'
         uses: actions/checkout@v4
 
       - name: Setup Flutter SDK
+        if: steps.filter.outputs.should_run == 'true'
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
 
       - name: Precache iOS Artifacts
+        if: steps.filter.outputs.should_run == 'true'
         run: flutter precache --ios
 
       - name: Install Flutter Dependencies
+        if: steps.filter.outputs.should_run == 'true'
         run: flutter pub get
 
       - name: Compile iOS Release (${{ matrix.edition }})
+        if: steps.filter.outputs.should_run == 'true'
         run: |
           if [ "${{ matrix.edition }}" = "hybrid" ]; then
-            flutter build ios --release --no-codesign -t lib/main_hybrid.dart
+            ENTRY_POINT="lib/main_hybrid.dart"
           elif [ "${{ matrix.edition }}" = "offline" ]; then
-            flutter build ios --release --no-codesign -t lib/main_offline.dart
+            ENTRY_POINT="lib/main_offline.dart"
           else
-            flutter build ios --release --no-codesign -t lib/main.dart
+            ENTRY_POINT="lib/main.dart"
           fi
+          flutter build ios --release --no-codesign -t "$ENTRY_POINT"
 
       - name: Package Runner.app into installable .ipa
+        if: steps.filter.outputs.should_run == 'true'
         run: |
           mkdir -p build/ios/ipa_payload/Payload
-          cp -r build/ios/iphoneos/Runner.app build/ios/ipa_payload/Payload/
+          cp -R build/ios/iphoneos/Runner.app build/ios/ipa_payload/Payload/
           cd build/ios/ipa_payload
           zip -r -y "DairyManagement_${{ matrix.edition }}.ipa" Payload
           mkdir -p ../../../output_ios
@@ -68,6 +85,7 @@ jobs:
           ls -lh output_ios/
 
       - name: Upload iOS ${{ matrix.edition }} IPA Artifact
+        if: steps.filter.outputs.should_run == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: DairyManagement_iOS_${{ matrix.edition }}_IPA
@@ -84,43 +102,60 @@ jobs:
       fail-fast: false
       matrix:
         edition: [hybrid, offline, online]
-    if: github.event.inputs.target_edition == 'all' || github.event.inputs.target_edition == matrix.edition || github.event.inputs.target_edition == null
     steps:
+      - name: Check whether to build this edition
+        id: filter
+        run: |
+          TARGET="${{ github.event.inputs.target_edition }}"
+          EDITION="${{ matrix.edition }}"
+          if [ -z "$TARGET" ] || [ "$TARGET" = "all" ] || [ "$TARGET" = "$EDITION" ]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Checkout Repository
+        if: steps.filter.outputs.should_run == 'true'
         uses: actions/checkout@v4
 
       - name: Setup Flutter SDK
+        if: steps.filter.outputs.should_run == 'true'
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
 
       - name: Precache macOS Artifacts
+        if: steps.filter.outputs.should_run == 'true'
         run: flutter precache --macos
 
       - name: Install Flutter Dependencies
+        if: steps.filter.outputs.should_run == 'true'
         run: flutter pub get
 
       - name: Compile macOS Release (${{ matrix.edition }})
+        if: steps.filter.outputs.should_run == 'true'
         run: |
           if [ "${{ matrix.edition }}" = "hybrid" ]; then
-            flutter build macos --release -t lib/main_hybrid.dart
+            ENTRY_POINT="lib/main_hybrid.dart"
           elif [ "${{ matrix.edition }}" = "offline" ]; then
-            flutter build macos --release -t lib/main_offline.dart
+            ENTRY_POINT="lib/main_offline.dart"
           else
-            flutter build macos --release -t lib/main.dart
+            ENTRY_POINT="lib/main.dart"
           fi
+          flutter build macos --release -t "$ENTRY_POINT"
 
       - name: Package macOS App into ZIP
+        if: steps.filter.outputs.should_run == 'true'
         run: |
           mkdir -p output_macos
           cd build/macos/Build/Products/Release
-          # Package the .app bundle
           zip -r -y "../../../../../output_macos/DairyManagement_${{ matrix.edition }}_macOS.zip" *.app
           cd ../../../../../
           ls -lh output_macos/
 
       - name: Upload macOS ${{ matrix.edition }} Artifact
+        if: steps.filter.outputs.should_run == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: DairyManagement_macOS_${{ matrix.edition }}
