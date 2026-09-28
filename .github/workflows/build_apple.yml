@@ -45,6 +45,18 @@ jobs:
         if: steps.filter.outputs.should_run == 'true'
         uses: actions/checkout@v4
 
+      - name: Select Xcode Version
+        if: steps.filter.outputs.should_run == 'true'
+        run: |
+          if [ -d "/Applications/Xcode_16.2.app" ]; then
+            sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+          elif [ -d "/Applications/Xcode_16.1.app" ]; then
+            sudo xcode-select -s /Applications/Xcode_16.1.app/Contents/Developer
+          elif [ -d "/Applications/Xcode_16.0.app" ]; then
+            sudo xcode-select -s /Applications/Xcode_16.0.app/Contents/Developer
+          fi
+          xcodebuild -version
+
       - name: Setup Flutter SDK
         if: steps.filter.outputs.should_run == 'true'
         uses: subosito/flutter-action@v2
@@ -117,6 +129,18 @@ jobs:
       - name: Checkout Repository
         if: steps.filter.outputs.should_run == 'true'
         uses: actions/checkout@v4
+
+      - name: Select Xcode Version
+        if: steps.filter.outputs.should_run == 'true'
+        run: |
+          if [ -d "/Applications/Xcode_16.2.app" ]; then
+            sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+          elif [ -d "/Applications/Xcode_16.1.app" ]; then
+            sudo xcode-select -s /Applications/Xcode_16.1.app/Contents/Developer
+          elif [ -d "/Applications/Xcode_16.0.app" ]; then
+            sudo xcode-select -s /Applications/Xcode_16.0.app/Contents/Developer
+          fi
+          xcodebuild -version
 
       - name: Setup Flutter SDK
         if: steps.filter.outputs.should_run == 'true'
