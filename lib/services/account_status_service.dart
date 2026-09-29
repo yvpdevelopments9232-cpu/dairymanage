@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -73,17 +73,17 @@ class AccountStatusNotifier extends Notifier<AccountStatusState> {
           .maybeSingle()
           .timeout(const Duration(seconds: 8));
 
-      String statusStr = 'active';
+      String statusStr = 'pending';
 
       if (res != null && res['status'] != null) {
         statusStr = res['status'].toString().trim().toLowerCase();
       } else {
-        // Record does not exist yet; auto-insert initial active row
+        // Record does not exist yet; auto-insert initial pending row for new signup
         try {
           await client.from('users').upsert({
             'id': userId,
             'email': currentUser.email ?? '',
-            'status': 'active',
+            'status': 'pending',
           }).timeout(const Duration(seconds: 5));
         } catch (_) {}
       }

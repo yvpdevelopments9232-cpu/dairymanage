@@ -145,6 +145,64 @@ class SubscriptionNotifier extends Notifier<SubscriptionState> {
 
       final sub = UserSubscription.fromJson(subRes);
 
+      // Check if admin approved the user in public.users table
+      bool isUserActive = false;
+      try {
+        final userRes = await client.from('users').select('status').eq('id', userId).maybeSingle().timeout(const Duration(seconds: 4));
+        isUserActive = userRes != null && userRes['status']?.toString().toLowerCase() == 'active';
+      } catch (_) {}
+
+      // If user is active in users table and subscription was pending, activate it
+      if (isUserActive && sub.isPending) {
+        try {
+          await client.from('subscriptions').update({
+            'status': 'ACTIVE',
+            'start_date': DateTime.now().toIso8601String(),
+            'end_date': DateTime.now().add(Duration(days: sub.daysRemaining > 0 ? sub.daysRemaining : 365)).toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+          }).eq('id', sub.id);
+        } catch (_) {}
+
+        final activeSub = UserSubscription(
+          id: sub.id,
+          subscriptionId: sub.subscriptionId,
+          userId: sub.userId,
+          planId: sub.planId,
+          planName: sub.planName,
+          amount: sub.amount,
+          startDate: DateTime.now(),
+          endDate: DateTime.now().add(Duration(days: sub.daysRemaining > 0 ? sub.daysRemaining : 365)),
+          status: 'ACTIVE',
+          autoRenewal: sub.autoRenewal,
+        );
+
+        final cacheKey = AppConfig.prefKey('cached_sub_status_$userId');
+        await app_main.prefs.setString(cacheKey, 'ACTIVE');
+
+        state = state.copyWith(
+          status: SubscriptionStatus.active,
+          currentSubscription: activeSub,
+          availablePlans: plans,
+          lastChecked: DateTime.now(),
+          message: null,
+        );
+        return SubscriptionStatus.active;
+      }
+
+      if (sub.isPending) {
+        final cacheKey = AppConfig.prefKey('cached_sub_status_$userId');
+        await app_main.prefs.setString(cacheKey, 'PENDING');
+
+        state = state.copyWith(
+          status: SubscriptionStatus.pending,
+          currentSubscription: sub,
+          availablePlans: plans,
+          lastChecked: DateTime.now(),
+          message: 'Payment verification pending admin approval.',
+        );
+        return SubscriptionStatus.pending;
+      }
+
       // Verify expiration
       if (sub.isActive) {
         final cacheKey = AppConfig.prefKey('cached_sub_status_$userId');
@@ -275,6 +333,90 @@ class SubscriptionNotifier extends Notifier<SubscriptionState> {
       currentSubscription: userSub,
       lastChecked: DateTime.now(),
       message: null,
+    );
+
+    return userSub;
+  }
+
+  /// Submit UPI / QR payment for admin approval
+  Future<UserSubscription> submitPaymentForApproval({
+    required SubscriptionPlan plan,
+    required String paymentMethod,
+    required String transactionId,
+  }) async {
+    final client = Supabase.instance.client;
+    final currentUser = client.auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('User is not authenticated');
+    }
+
+    final userId = currentUser.id;
+    final now = DateTime.now();
+    final endDate = now.add(Duration(days: plan.durationDays));
+
+    final randomSuffix = (Random().nextInt(900) + 100).toString();
+    final dateStr = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+    final subscriptionId = 'DM-$dateStr-$randomSuffix';
+    final invoiceNo = 'INV-$dateStr-$randomSuffix';
+
+    // 1. Record payment in public.subscription_payments table as PENDING
+    try {
+      await client.from('subscription_payments').insert({
+        'transaction_id': transactionId,
+        'user_id': userId,
+        'subscription_id': subscriptionId,
+        'plan_id': plan.id,
+        'plan_name': plan.name,
+        'amount': plan.price,
+        'payment_method': paymentMethod,
+        'payment_status': 'PENDING',
+        'invoice_no': invoiceNo,
+        'payment_date': now.toIso8601String(),
+      });
+    } catch (payErr) {
+      debugPrint('Subscription payments table insert note: $payErr');
+    }
+
+    // 2. Insert into public.subscriptions table as PENDING
+    final subData = {
+      'subscription_id': subscriptionId,
+      'user_id': userId,
+      'plan_id': plan.id,
+      'plan_name': plan.name,
+      'amount': plan.price,
+      'start_date': now.toIso8601String(),
+      'end_date': endDate.toIso8601String(),
+      'status': 'PENDING',
+      'auto_renewal': true,
+      'updated_at': now.toIso8601String(),
+    };
+
+    final inserted = await client
+        .from('subscriptions')
+        .insert(subData)
+        .select()
+        .single();
+
+    final userSub = UserSubscription.fromJson(inserted);
+
+    // 3. Mark public.users status as 'pending'
+    try {
+      await client.from('users').upsert({
+        'id': userId,
+        'email': currentUser.email ?? '',
+        'status': 'pending',
+      });
+    } catch (_) {}
+
+    // 4. Update local cache
+    final cacheKey = AppConfig.prefKey('cached_sub_status_$userId');
+    await app_main.prefs.setString(cacheKey, 'PENDING');
+
+    state = state.copyWith(
+      status: SubscriptionStatus.pending,
+      currentSubscription: userSub,
+      lastChecked: DateTime.now(),
+      message: 'Payment submitted for admin approval',
     );
 
     return userSub;

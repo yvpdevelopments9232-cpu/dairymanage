@@ -171,11 +171,12 @@ class _SubAuthGateState extends ConsumerState<SubAuthGate> {
       );
     }
 
-    // If account is marked pending, block dashboard access
-    if (accountStatus.status == AccountStatus.pending) {
+    // If account is marked pending or subscription is pending, block dashboard access and show Admin Approval screen
+    if (accountStatus.status == AccountStatus.pending || subState.status == SubscriptionStatus.pending) {
       return AccountPendingScreen(
         onReactivated: () {
           ref.read(accountStatusProvider.notifier).checkStatus(forceRefresh: true);
+          ref.read(subscriptionProvider.notifier).checkSubscription(forceRefresh: true);
         },
       );
     }

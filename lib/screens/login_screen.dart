@@ -83,7 +83,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       // Check Subscription Status for Online and Hybrid editions
       if (!AppConfig.isOfflineMode || AppConfig.isHybridMode) {
         final subStatus = await ref.read(subscriptionProvider.notifier).checkSubscription(forceRefresh: true);
-        if (subStatus == SubscriptionStatus.none) {
+        if (subStatus == SubscriptionStatus.pending) {
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => AccountPendingScreen(
+                  onReactivated: () {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (_) => const DashboardScreen()),
+                    );
+                  },
+                ),
+              ),
+            );
+            return;
+          }
+        } else if (subStatus == SubscriptionStatus.none) {
           if (mounted) {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(builder: (_) => const ChoosePlanScreen()),

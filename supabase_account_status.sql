@@ -1,4 +1,4 @@
-﻿-- ==============================================================================
+-- ==============================================================================
 -- Supabase Account Status & Maintenance Control Migration
 -- Run this script in your Supabase Project: Dashboard -> SQL Editor -> New query
 -- ==============================================================================
@@ -7,7 +7,7 @@
 CREATE TABLE IF NOT EXISTS public.users (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT,
-    status TEXT NOT NULL DEFAULT 'active',
+    status TEXT NOT NULL DEFAULT 'pending',
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now(),
     CONSTRAINT users_status_check CHECK (status IN ('active', 'pending'))
@@ -45,7 +45,7 @@ CREATE OR REPLACE FUNCTION public.handle_new_auth_user()
 RETURNS TRIGGER AS $$
 BEGIN
     INSERT INTO public.users (id, email, status)
-    VALUES (NEW.id, NEW.email, 'active')
+    VALUES (NEW.id, NEW.email, 'pending')
     ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email;
     RETURN NEW;
 END;

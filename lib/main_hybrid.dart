@@ -133,10 +133,11 @@ class _DairyManagementHybridAppState extends ConsumerState<DairyManagementHybrid
           ),
         ),
       );
-    } else if (accountStatus.status == AccountStatus.pending) {
+    } else if (accountStatus.status == AccountStatus.pending || subState.status == SubscriptionStatus.pending) {
       homeWidget = AccountPendingScreen(
         onReactivated: () {
           ref.read(accountStatusProvider.notifier).checkStatus(forceRefresh: true);
+          ref.read(subscriptionProvider.notifier).checkSubscription(forceRefresh: true);
         },
       );
     } else if (!_isLoggedIn && session == null && Supabase.instance.client.auth.currentUser == null) {

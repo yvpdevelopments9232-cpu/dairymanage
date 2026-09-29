@@ -2,6 +2,7 @@ import 'dart:convert';
 
 enum SubscriptionStatus {
   active,
+  pending,
   expired,
   none,
   checking,
@@ -156,6 +157,10 @@ class UserSubscription {
   bool get isActive {
     if (status.toUpperCase() != 'ACTIVE') return false;
     return endDate.isAfter(DateTime.now());
+  }
+
+  bool get isPending {
+    return status.toUpperCase() == 'PENDING';
   }
 
   int get daysRemaining {

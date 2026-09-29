@@ -1,8 +1,10 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/subscription_model.dart';
 import '../../services/subscription_service.dart';
+import '../../services/account_status_service.dart';
+import '../account_pending_screen.dart';
+import '../dashboard_screen.dart';
 import 'payment_success_screen.dart';
 
 class PaymentScreen extends ConsumerStatefulWidget {
@@ -16,9 +18,11 @@ class PaymentScreen extends ConsumerStatefulWidget {
 
 class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   String _selectedMethod = 'UPI';
+  String _selectedUpiApp = 'PhonePe';
   bool _isProcessing = false;
 
   final _upiController = TextEditingController(text: 'dairyfarm@okhdfcbank');
+  final _utrController = TextEditingController();
   final _cardNumberController = TextEditingController(text: '4532 8765 9012 3456');
   final _cardExpiryController = TextEditingController(text: '12/28');
   final _cardCvvController = TextEditingController(text: '345');
@@ -27,13 +31,75 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   @override
   void dispose() {
     _upiController.dispose();
+    _utrController.dispose();
     _cardNumberController.dispose();
     _cardExpiryController.dispose();
     _cardCvvController.dispose();
     super.dispose();
   }
 
+  Future<void> _submitSuccessfulPayment() async {
+    setState(() => _isProcessing = true);
+
+    try {
+      final now = DateTime.now();
+      final dateStr = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+      final randomNum = (Random().nextInt(900000) + 100000).toString();
+      final utr = _utrController.text.trim();
+      final txnId = utr.isNotEmpty ? utr : 'UPI$dateStr$randomNum';
+
+      await ref.read(subscriptionProvider.notifier).submitPaymentForApproval(
+        plan: widget.plan,
+        paymentMethod: 'UPI ($_selectedUpiApp)',
+        transactionId: txnId,
+      );
+
+      // Force refresh account status to pending
+      await ref.read(accountStatusProvider.notifier).checkStatus(forceRefresh: true);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment details submitted successfully! Awaiting admin approval.'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 4),
+          ),
+        );
+
+        // Open Admin Approval Screen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AccountPendingScreen(
+              onReactivated: () {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (_) => const DashboardScreen()),
+                );
+              },
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Submission error: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
   Future<void> _processPayment() async {
+    if (_selectedMethod == 'UPI') {
+      await _submitSuccessfulPayment();
+      return;
+    }
+
     setState(() => _isProcessing = true);
 
     try {
@@ -319,16 +385,269 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   }
 
   Widget _buildUpiInput() {
-    return TextField(
-      controller: _upiController,
-      decoration: InputDecoration(
-        labelText: 'Enter UPI ID / VPA',
-        hintText: 'yourname@bank',
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        prefixIcon: const Icon(Icons.alternate_email, size: 20),
-        suffixText: '@verified',
-        suffixStyle: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12),
-        isDense: true,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // App selector chips: PhonePe, Google Pay, Any UPI
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          alignment: WrapAlignment.center,
+          children: [
+            _buildUpiAppChip(
+              name: 'PhonePe',
+              color: const Color(0xFF5F259F),
+              icon: Icons.account_balance_wallet,
+            ),
+            _buildUpiAppChip(
+              name: 'Google Pay',
+              color: const Color(0xFF1A73E8),
+              icon: Icons.payment,
+            ),
+            _buildUpiAppChip(
+              name: 'Paytm / BHIM',
+              color: Colors.teal.shade700,
+              icon: Icons.qr_code,
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // QR Scanner Card matching Image 2
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.deepPurple.shade100, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.deepPurple.withOpacity(0.08),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              // Badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF5F259F).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.qr_code_scanner, size: 18, color: Color(0xFF5F259F)),
+                    const SizedBox(width: 6),
+                    Text(
+                      '$_selectedUpiApp QR SCANNER',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF5F259F),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // The PhonePe / GPay Scanner Image
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300, width: 1),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset(
+                    'assets/images/phonepe_qr.png',
+                    width: 230,
+                    height: 230,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 230,
+                        height: 230,
+                        color: Colors.grey.shade100,
+                        child: const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.qr_code_2, size: 80, color: Colors.deepPurple),
+                              SizedBox(height: 8),
+                              Text('QR Code', style: TextStyle(fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Payee Name & Amount
+              const Text(
+                'Mr VIKRAM MALHARI PAWAR',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Text(
+                  'Amount to Pay: ₹${widget.plan.price.toStringAsFixed(0)}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green.shade800,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Scan & pay using PhonePe, Google Pay, Paytm, or BHIM',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Step Instructions
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.amber.shade50,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.amber.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: Colors.amber.shade900),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Payment Steps:',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.amber.shade900),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '1. Open $_selectedUpiApp or Google Pay on your phone.\n'
+                '2. Scan the QR code above and transfer ₹${widget.plan.price.toStringAsFixed(0)}.\n'
+                '3. Enter the 12-digit UTR / UPI Ref No. below & tap "Successful Payment".\n'
+                '4. You will see Admin Approval screen to contact developer for activation.',
+                style: TextStyle(fontSize: 12, color: Colors.amber.shade900, height: 1.4),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // UTR Input Field
+        TextField(
+          controller: _utrController,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            labelText: 'Enter 12-digit UTR / UPI Ref No. (Optional)',
+            hintText: 'e.g. 427819283746',
+            helperText: 'Found on your PhonePe / GPay payment receipt',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            prefixIcon: const Icon(Icons.tag),
+            isDense: true,
+          ),
+        ),
+
+        const SizedBox(height: 18),
+
+        // Prominent SUCCESSFUL PAYMENT Button
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton.icon(
+            icon: _isProcessing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  )
+                : const Icon(Icons.check_circle, size: 22),
+            label: Text(
+              _isProcessing ? 'Submitting...' : 'I HAVE PAID (SUCCESSFUL PAYMENT)',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF16A34A),
+              foregroundColor: Colors.white,
+              elevation: 4,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: _isProcessing ? null : _submitSuccessfulPayment,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUpiAppChip({
+    required String name,
+    required Color color,
+    required IconData icon,
+  }) {
+    final isSelected = _selectedUpiApp == name;
+    return InkWell(
+      onTap: () => setState(() => _selectedUpiApp = name),
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? color : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? color : Colors.grey.shade400,
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected
+              ? [BoxShadow(color: color.withOpacity(0.3), blurRadius: 6, offset: const Offset(0, 2))]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: isSelected ? Colors.white : color),
+            const SizedBox(width: 6),
+            Text(
+              name,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected ? Colors.white : Colors.black87,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

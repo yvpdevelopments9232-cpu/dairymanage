@@ -4,7 +4,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/account_status_service.dart';
 import '../providers/auth_provider.dart';
 import '../providers/session_provider.dart';
+import '../services/subscription_service.dart';
 import 'login_screen.dart';
+import 'dashboard_screen.dart';
 
 class AccountPendingScreen extends ConsumerStatefulWidget {
   final VoidCallback? onReactivated;
@@ -57,8 +59,15 @@ class _AccountPendingScreenState extends ConsumerState<AccountPendingScreen> {
       });
 
       if (status == AccountStatus.active) {
-        if (widget.onReactivated != null) {
-          widget.onReactivated!();
+        await ref.read(subscriptionProvider.notifier).checkSubscription(forceRefresh: true);
+        if (mounted) {
+          if (widget.onReactivated != null) {
+            widget.onReactivated!();
+          } else {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const DashboardScreen()),
+            );
+          }
         }
       } else if (status == AccountStatus.pending) {
         setState(() {
