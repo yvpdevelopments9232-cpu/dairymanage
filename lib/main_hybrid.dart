@@ -12,6 +12,10 @@ import 'screens/sub_login_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/account_pending_screen.dart';
 import 'services/account_status_service.dart';
+import 'services/subscription_service.dart';
+import 'models/subscription_model.dart';
+import 'screens/subscription/choose_plan_screen.dart';
+import 'screens/subscription/subscription_expired_screen.dart';
 import 'widgets/offline_wrapper.dart';
 
 void main() async {
@@ -92,6 +96,11 @@ class _DairyManagementHybridAppState extends ConsumerState<DairyManagementHybrid
       await ref.read(accountStatusProvider.notifier).checkStatus();
     } catch (_) {}
 
+    // Check subscription if online / hybrid
+    try {
+      await ref.read(subscriptionProvider.notifier).checkSubscription();
+    } catch (_) {}
+
     if (mounted) {
       setState(() => _isChecking = false);
     }
@@ -101,12 +110,27 @@ class _DairyManagementHybridAppState extends ConsumerState<DairyManagementHybrid
   Widget build(BuildContext context) {
     final session = ref.watch(sessionProvider);
     final accountStatus = ref.watch(accountStatusProvider);
+    final subState = ref.watch(subscriptionProvider);
 
     Widget homeWidget;
-    if (_isChecking) {
-      homeWidget = const Scaffold(
+    if (_isChecking || subState.status == SubscriptionStatus.checking) {
+      homeWidget = Scaffold(
         body: Center(
-          child: CircularProgressIndicator(),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 20),
+              Text(
+                'Checking subscription...',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal.shade800,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     } else if (accountStatus.status == AccountStatus.pending) {
@@ -115,6 +139,12 @@ class _DairyManagementHybridAppState extends ConsumerState<DairyManagementHybrid
           ref.read(accountStatusProvider.notifier).checkStatus(forceRefresh: true);
         },
       );
+    } else if (!_isLoggedIn && session == null && Supabase.instance.client.auth.currentUser == null) {
+      homeWidget = const LoginScreen();
+    } else if (subState.status == SubscriptionStatus.none) {
+      homeWidget = const ChoosePlanScreen();
+    } else if (subState.status == SubscriptionStatus.expired) {
+      homeWidget = const SubscriptionExpiredScreen();
     } else if (session != null) {
       homeWidget = const DashboardScreen();
     } else if (_isLoggedIn) {

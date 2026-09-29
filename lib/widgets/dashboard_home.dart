@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +6,10 @@ import '../providers/customer_provider.dart';
 import '../models/flutter_models.dart';
 import '../providers/settings_provider.dart';
 import '../providers/product_provider.dart';
+import '../services/app_config.dart';
+import '../services/subscription_service.dart';
+import '../models/subscription_model.dart';
+import '../screens/subscription/subscription_status_screen.dart';
 
 class DashboardHome extends ConsumerWidget {
   final VoidCallback? onNavigateToProducts;
@@ -51,6 +54,9 @@ class DashboardHome extends ConsumerWidget {
           ),
         ),
         
+        // Subscription Status Banner
+        _buildSubscriptionBanner(context, ref),
+
         Expanded(
           child: Consumer(
             builder: (context, ref, child) {
@@ -418,6 +424,102 @@ class DashboardHome extends ConsumerWidget {
           Text(title, style: const TextStyle(fontSize: 15)),
           const Spacer(),
           Text(trailing, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubscriptionBanner(BuildContext context, WidgetRef ref) {
+    if (AppConfig.isOfflineMode && !AppConfig.isHybridMode) {
+      return const SizedBox.shrink();
+    }
+
+    final subState = ref.watch(subscriptionProvider);
+    final sub = subState.currentSubscription;
+
+    if (subState.status == SubscriptionStatus.checking) {
+      return const SizedBox.shrink();
+    }
+
+    final daysLeft = sub?.daysRemaining ?? 0;
+    final planName = sub?.planName ?? 'Subscription';
+    final isExpired = subState.status == SubscriptionStatus.expired || (sub != null && daysLeft <= 0);
+    final isExpiringSoon = daysLeft > 0 && daysLeft <= 30;
+
+    Color bgColor;
+    Color textColor;
+    Color borderColor;
+    IconData icon;
+    String text;
+    String actionText;
+
+    if (isExpired) {
+      bgColor = Colors.red.shade50;
+      textColor = Colors.red.shade900;
+      borderColor = Colors.red.shade300;
+      icon = Icons.error_outline;
+      text = '$planName - Expired! Please renew to continue access.';
+      actionText = 'Renew Now';
+    } else if (isExpiringSoon) {
+      bgColor = Colors.amber.shade50;
+      textColor = Colors.amber.shade900;
+      borderColor = Colors.amber.shade300;
+      icon = Icons.warning_amber_rounded;
+      text = '$planName - $daysLeft Days Left (Expires ${sub != null ? DateFormat('dd MMM yyyy').format(sub.endDate) : ''})';
+      actionText = 'Extend';
+    } else {
+      bgColor = Colors.green.shade50;
+      textColor = Colors.green.shade900;
+      borderColor = Colors.green.shade200;
+      icon = Icons.verified_user_outlined;
+      text = '$planName - Active • $daysLeft Days Remaining';
+      actionText = 'Details';
+    }
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: textColor, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: textColor,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              backgroundColor: textColor.withOpacity(0.12),
+            ),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SubscriptionStatusScreen()),
+              );
+            },
+            child: Text(
+              actionText,
+              style: TextStyle(
+                color: textColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ),
         ],
       ),
     );

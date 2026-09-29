@@ -33,6 +33,7 @@ import '../providers/dashboard_provider.dart';
 import '../services/sync_service.dart';
 import '../widgets/dashboard_home.dart';
 import '../providers/session_provider.dart';
+import 'subscription/subscription_status_screen.dart';
 
 import '../models/flutter_models.dart';
 import '../providers/product_provider.dart';
@@ -114,6 +115,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     'Employee Management',
     'Employee Rights',
     'Backup & Restore',
+    'Subscription',
     'Settings',
     'Switch Account'
   ];
@@ -739,6 +741,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         final menu = _menuItems[index];
         final isSelected = _selectedIndex == index;
 
+        if (menu == 'Subscription' && AppConfig.isOfflineMode && !AppConfig.isHybridMode) {
+          return const SizedBox.shrink();
+        }
+
         if (menu == 'Bonus') {
           final isBonusActive = isSelected;
           final bonusSubItems = [
@@ -866,7 +872,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               if (session == null || session.isAdmin) {
                 allowed = true;
               } else {
-                if (menu == "Employee Management" || menu == "Employee Rights" || menu == "Settings" || menu == "Backup & Restore") {
+                if (menu == "Employee Management" || menu == "Employee Rights" || menu == "Settings" || menu == "Backup & Restore" || menu == "Subscription") {
                   allowed = false; // Strictly admin only
                 } else {
                   allowed = session.canView(menu);
@@ -1060,6 +1066,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case 'Employee Management': content = const DesktopWrapper(child: EmployeeManagementScreen()); break;
       case 'Employee Rights': content = const DesktopWrapper(child: EmployeeRightsScreen()); break;
       case 'Backup & Restore': content = const DesktopWrapper(child: BackupRestoreScreen()); break;
+      case 'Subscription': content = const DesktopWrapper(child: SubscriptionStatusScreen()); break;
       default: content = const Center(child: Text('Coming Soon!'));
     }
     return Theme(
@@ -1105,6 +1112,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case 'Main Dairies': iconData = Icons.business; break;
       case 'Settings': iconData = Icons.settings; break;
       case 'Backup & Restore': iconData = Icons.settings_backup_restore; break;
+      case 'Subscription': iconData = Icons.card_membership; break;
       case 'Switch Account': iconData = Icons.swap_horiz; break;
       case 'Employee Management': iconData = Icons.admin_panel_settings; break;
       case 'Employee Rights': iconData = Icons.security; break;

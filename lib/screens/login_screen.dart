@@ -8,6 +8,10 @@ import 'dashboard_screen.dart';
 import 'forgot_password_screen.dart';
 import 'account_pending_screen.dart';
 import '../services/account_status_service.dart';
+import '../services/subscription_service.dart';
+import '../models/subscription_model.dart';
+import 'subscription/choose_plan_screen.dart';
+import 'subscription/subscription_expired_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -70,6 +74,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   },
                 ),
               ),
+            );
+            return;
+          }
+        }
+      }
+
+      // Check Subscription Status for Online and Hybrid editions
+      if (!AppConfig.isOfflineMode || AppConfig.isHybridMode) {
+        final subStatus = await ref.read(subscriptionProvider.notifier).checkSubscription(forceRefresh: true);
+        if (subStatus == SubscriptionStatus.none) {
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const ChoosePlanScreen()),
+            );
+            return;
+          }
+        } else if (subStatus == SubscriptionStatus.expired) {
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const SubscriptionExpiredScreen()),
             );
             return;
           }

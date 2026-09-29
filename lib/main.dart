@@ -12,6 +12,10 @@ import 'screens/dashboard_screen.dart';
 import 'screens/sub_login_screen.dart';
 import 'screens/account_pending_screen.dart';
 import 'services/account_status_service.dart';
+import 'services/subscription_service.dart';
+import 'models/subscription_model.dart';
+import 'screens/subscription/choose_plan_screen.dart';
+import 'screens/subscription/subscription_expired_screen.dart';
 
 late SharedPreferences prefs;
 
@@ -128,6 +132,11 @@ class _SubAuthGateState extends ConsumerState<SubAuthGate> {
       await ref.read(accountStatusProvider.notifier).checkStatus();
     } catch (_) {}
 
+    // Check subscription status from Supabase
+    try {
+      await ref.read(subscriptionProvider.notifier).checkSubscription();
+    } catch (_) {}
+
     if (mounted) {
       setState(() => _isChecking = false);
     }
@@ -137,9 +146,29 @@ class _SubAuthGateState extends ConsumerState<SubAuthGate> {
   Widget build(BuildContext context) {
     final session = ref.watch(sessionProvider);
     final accountStatus = ref.watch(accountStatusProvider);
+    final subState = ref.watch(subscriptionProvider);
     
-    if (_isChecking) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_isChecking || subState.status == SubscriptionStatus.checking) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 20),
+              Text(
+                'Checking subscription...',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue.shade900,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     // If account is marked pending, block dashboard access
@@ -149,6 +178,16 @@ class _SubAuthGateState extends ConsumerState<SubAuthGate> {
           ref.read(accountStatusProvider.notifier).checkStatus(forceRefresh: true);
         },
       );
+    }
+
+    // If no active subscription, immediately open Please Subscribe
+    if (subState.status == SubscriptionStatus.none) {
+      return const ChoosePlanScreen();
+    }
+
+    // If subscription expired, immediately open Subscription Expired
+    if (subState.status == SubscriptionStatus.expired) {
+      return const SubscriptionExpiredScreen();
     }
     
     if (session == null) {
