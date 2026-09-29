@@ -59,10 +59,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         await ref.read(sessionProvider.notifier).loginAsAdmin(saveSession: true);
       }
 
-      // Check account status for Online and Hybrid editions
+      // Check Subscription Status for Online and Hybrid editions
       if (!AppConfig.isOfflineMode || AppConfig.isHybridMode) {
-        final status = await ref.read(accountStatusProvider.notifier).checkStatus(forceRefresh: true);
-        if (status == AccountStatus.pending) {
+        final subStatus = await ref.read(subscriptionProvider.notifier).checkSubscription(forceRefresh: true);
+        if (subStatus == SubscriptionStatus.none) {
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const ChoosePlanScreen()),
+            );
+            return;
+          }
+        } else if (subStatus == SubscriptionStatus.expired) {
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const SubscriptionExpiredScreen()),
+            );
+            return;
+          }
+        } else if (subStatus == SubscriptionStatus.pending) {
           if (mounted) {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
@@ -78,12 +92,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             return;
           }
         }
-      }
 
-      // Check Subscription Status for Online and Hybrid editions
-      if (!AppConfig.isOfflineMode || AppConfig.isHybridMode) {
-        final subStatus = await ref.read(subscriptionProvider.notifier).checkSubscription(forceRefresh: true);
-        if (subStatus == SubscriptionStatus.pending) {
+        // Check account status for Online and Hybrid editions
+        final status = await ref.read(accountStatusProvider.notifier).checkStatus(forceRefresh: true);
+        if (status == AccountStatus.pending) {
           if (mounted) {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
@@ -95,20 +107,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   },
                 ),
               ),
-            );
-            return;
-          }
-        } else if (subStatus == SubscriptionStatus.none) {
-          if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const ChoosePlanScreen()),
-            );
-            return;
-          }
-        } else if (subStatus == SubscriptionStatus.expired) {
-          if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const SubscriptionExpiredScreen()),
             );
             return;
           }

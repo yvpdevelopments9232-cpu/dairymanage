@@ -133,6 +133,12 @@ class _DairyManagementHybridAppState extends ConsumerState<DairyManagementHybrid
           ),
         ),
       );
+    } else if (!_isLoggedIn && session == null && Supabase.instance.client.auth.currentUser == null) {
+      homeWidget = const LoginScreen();
+    } else if (subState.status == SubscriptionStatus.none) {
+      homeWidget = const ChoosePlanScreen();
+    } else if (subState.status == SubscriptionStatus.expired) {
+      homeWidget = const SubscriptionExpiredScreen();
     } else if (accountStatus.status == AccountStatus.pending || subState.status == SubscriptionStatus.pending) {
       homeWidget = AccountPendingScreen(
         onReactivated: () {
@@ -140,12 +146,6 @@ class _DairyManagementHybridAppState extends ConsumerState<DairyManagementHybrid
           ref.read(subscriptionProvider.notifier).checkSubscription(forceRefresh: true);
         },
       );
-    } else if (!_isLoggedIn && session == null && Supabase.instance.client.auth.currentUser == null) {
-      homeWidget = const LoginScreen();
-    } else if (subState.status == SubscriptionStatus.none) {
-      homeWidget = const ChoosePlanScreen();
-    } else if (subState.status == SubscriptionStatus.expired) {
-      homeWidget = const SubscriptionExpiredScreen();
     } else if (session != null) {
       homeWidget = const DashboardScreen();
     } else if (_isLoggedIn) {

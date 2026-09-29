@@ -174,6 +174,21 @@ BEGIN
     -- Calculate days remaining
     days_left := EXTRACT(DAY FROM (sub_record.end_date - now()))::INTEGER;
 
+    IF sub_record.status = 'PENDING' THEN
+        RETURN jsonb_build_object(
+            'status', 'PENDING',
+            'is_active', false,
+            'subscription_id', sub_record.subscription_id,
+            'plan_id', sub_record.plan_id,
+            'plan_name', sub_record.plan_name,
+            'amount', sub_record.amount,
+            'start_date', sub_record.start_date,
+            'end_date', sub_record.end_date,
+            'days_remaining', days_left,
+            'message', 'Subscription approval is pending admin verification'
+        );
+    END IF;
+
     IF sub_record.status = 'ACTIVE' AND sub_record.end_date > now() THEN
         is_valid := true;
         RETURN jsonb_build_object(

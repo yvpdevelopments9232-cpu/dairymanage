@@ -171,16 +171,6 @@ class _SubAuthGateState extends ConsumerState<SubAuthGate> {
       );
     }
 
-    // If account is marked pending or subscription is pending, block dashboard access and show Admin Approval screen
-    if (accountStatus.status == AccountStatus.pending || subState.status == SubscriptionStatus.pending) {
-      return AccountPendingScreen(
-        onReactivated: () {
-          ref.read(accountStatusProvider.notifier).checkStatus(forceRefresh: true);
-          ref.read(subscriptionProvider.notifier).checkSubscription(forceRefresh: true);
-        },
-      );
-    }
-
     // If no active subscription, immediately open Please Subscribe
     if (subState.status == SubscriptionStatus.none) {
       return const ChoosePlanScreen();
@@ -189,6 +179,16 @@ class _SubAuthGateState extends ConsumerState<SubAuthGate> {
     // If subscription expired, immediately open Subscription Expired
     if (subState.status == SubscriptionStatus.expired) {
       return const SubscriptionExpiredScreen();
+    }
+
+    // If account is marked pending or subscription is pending, block dashboard access and show Admin Approval screen
+    if (accountStatus.status == AccountStatus.pending || subState.status == SubscriptionStatus.pending) {
+      return AccountPendingScreen(
+        onReactivated: () {
+          ref.read(accountStatusProvider.notifier).checkStatus(forceRefresh: true);
+          ref.read(subscriptionProvider.notifier).checkSubscription(forceRefresh: true);
+        },
+      );
     }
     
     if (session == null) {

@@ -7,6 +7,7 @@ import '../providers/session_provider.dart';
 import '../services/subscription_service.dart';
 import 'login_screen.dart';
 import 'dashboard_screen.dart';
+import 'subscription/choose_plan_screen.dart';
 
 class AccountPendingScreen extends ConsumerStatefulWidget {
   final VoidCallback? onReactivated;
@@ -309,7 +310,22 @@ class _AccountPendingScreenState extends ConsumerState<AccountPendingScreen> {
                         onPressed: _isChecking ? null : _checkStatusAgain,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
+
+                    // View Plans & QR Scanner
+                    TextButton.icon(
+                      icon: const Icon(Icons.qr_code, size: 16, color: Color(0xFF0284C7)),
+                      label: const Text(
+                        'View Plans & QR Payment Scanner',
+                        style: TextStyle(color: Color(0xFF0284C7), fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const ChoosePlanScreen()),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 8),
 
                     // Logout Button
                     TextButton.icon(
