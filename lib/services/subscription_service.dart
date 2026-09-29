@@ -109,7 +109,7 @@ class SubscriptionNotifier extends Notifier<SubscriptionState> {
             .select()
             .eq('is_active', true)
             .order('price', ascending: true)
-            .timeout(const Duration(seconds: 5));
+            .timeout(const Duration(seconds: 6));
         
         if (plansRes.isNotEmpty) {
           plans = (plansRes as List).map((p) => SubscriptionPlan.fromJson(p)).toList();
@@ -118,16 +118,127 @@ class SubscriptionNotifier extends Notifier<SubscriptionState> {
         debugPrint('Plans query note (using defaults): $pe');
       }
 
-      // 2. Fetch latest subscription for current user
-      final subRes = await client
-          .from('subscriptions')
-          .select()
-          .eq('user_id', userId)
-          .order('end_date', ascending: false)
-          .limit(1)
-          .maybeSingle()
-          .timeout(const Duration(seconds: 7));
+      // 2. Check if admin approved the account in public.users table
+      bool isUserActive = false;
+      try {
+        final userRes = await client
+            .from('users')
+            .select('status')
+            .eq('id', userId)
+            .maybeSingle()
+            .timeout(const Duration(seconds: 8));
+        isUserActive = userRes != null && userRes['status']?.toString().trim().toLowerCase() == 'active';
+      } catch (ue) {
+        debugPrint('Users table status check note: $ue');
+      }
 
+      // 3. Fetch latest subscription for current user
+      Map<String, dynamic>? subRes;
+      try {
+        subRes = await client
+            .from('subscriptions')
+            .select()
+            .eq('user_id', userId)
+            .order('end_date', ascending: false)
+            .limit(1)
+            .maybeSingle()
+            .timeout(const Duration(seconds: 8));
+      } catch (se) {
+        debugPrint('Subscriptions table query note: $se');
+      }
+
+      // CASE A: Account is marked 'active' in public.users (Admin approved or subscription paid)
+      // The subscription belongs to the ACCOUNT and unlocks all devices (Android, Windows, etc.)
+      if (isUserActive) {
+        UserSubscription? activeSub;
+        if (subRes != null) {
+          final sub = UserSubscription.fromJson(subRes);
+          if (sub.isPending || !sub.isActive) {
+            // Auto-update pending or expired row to ACTIVE for 1 year
+            try {
+              await client.from('subscriptions').update({
+                'status': 'ACTIVE',
+                'start_date': DateTime.now().toIso8601String(),
+                'end_date': DateTime.now().add(const Duration(days: 365)).toIso8601String(),
+                'updated_at': DateTime.now().toIso8601String(),
+              }).eq('id', sub.id).timeout(const Duration(seconds: 5));
+            } catch (_) {}
+          }
+          activeSub = UserSubscription(
+            id: sub.id,
+            subscriptionId: sub.subscriptionId,
+            userId: sub.userId,
+            planId: sub.planId,
+            planName: sub.planName,
+            amount: sub.amount,
+            startDate: DateTime.now(),
+            endDate: DateTime.now().add(const Duration(days: 365)),
+            status: 'ACTIVE',
+            autoRenewal: true,
+          );
+        } else {
+          // No row in subscriptions table yet; auto-create 1-year active license for this active account
+          final now = DateTime.now();
+          final endDate = now.add(const Duration(days: 365));
+          final randomSuffix = (Random().nextInt(900) + 100).toString();
+          final dateStr = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+          final subId = 'DM-$dateStr-$randomSuffix';
+
+          final newSubData = {
+            'subscription_id': subId,
+            'user_id': userId,
+            'plan_id': 'premium',
+            'plan_name': 'Premium Plan',
+            'amount': 2499.0,
+            'start_date': now.toIso8601String(),
+            'end_date': endDate.toIso8601String(),
+            'status': 'ACTIVE',
+            'auto_renewal': true,
+            'updated_at': now.toIso8601String(),
+          };
+
+          try {
+            final inserted = await client
+                .from('subscriptions')
+                .insert(newSubData)
+                .select()
+                .maybeSingle()
+                .timeout(const Duration(seconds: 5));
+            if (inserted != null) {
+              activeSub = UserSubscription.fromJson(inserted);
+            }
+          } catch (e) {
+            debugPrint('Auto-insert subscription record note: $e');
+          }
+
+          activeSub ??= UserSubscription(
+            id: subId,
+            subscriptionId: subId,
+            userId: userId,
+            planId: 'premium',
+            planName: 'Premium Plan',
+            amount: 2499.0,
+            startDate: now,
+            endDate: endDate,
+            status: 'ACTIVE',
+            autoRenewal: true,
+          );
+        }
+
+        final cacheKey = AppConfig.prefKey('cached_sub_status_$userId');
+        await app_main.prefs.setString(cacheKey, 'ACTIVE');
+
+        state = state.copyWith(
+          status: SubscriptionStatus.active,
+          currentSubscription: activeSub,
+          availablePlans: plans,
+          lastChecked: DateTime.now(),
+          message: null,
+        );
+        return SubscriptionStatus.active;
+      }
+
+      // CASE B: User is not marked active in public.users yet
       if (subRes == null) {
         // No subscription found for this user
         final cacheKey = AppConfig.prefKey('cached_sub_status_$userId');
@@ -145,50 +256,6 @@ class SubscriptionNotifier extends Notifier<SubscriptionState> {
 
       final sub = UserSubscription.fromJson(subRes);
 
-      // Check if admin approved the user in public.users table
-      bool isUserActive = false;
-      try {
-        final userRes = await client.from('users').select('status').eq('id', userId).maybeSingle().timeout(const Duration(seconds: 4));
-        isUserActive = userRes != null && userRes['status']?.toString().toLowerCase() == 'active';
-      } catch (_) {}
-
-      // If user is active in users table and subscription was pending, activate it
-      if (isUserActive && sub.isPending) {
-        try {
-          await client.from('subscriptions').update({
-            'status': 'ACTIVE',
-            'start_date': DateTime.now().toIso8601String(),
-            'end_date': DateTime.now().add(Duration(days: sub.daysRemaining > 0 ? sub.daysRemaining : 365)).toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
-          }).eq('id', sub.id);
-        } catch (_) {}
-
-        final activeSub = UserSubscription(
-          id: sub.id,
-          subscriptionId: sub.subscriptionId,
-          userId: sub.userId,
-          planId: sub.planId,
-          planName: sub.planName,
-          amount: sub.amount,
-          startDate: DateTime.now(),
-          endDate: DateTime.now().add(Duration(days: sub.daysRemaining > 0 ? sub.daysRemaining : 365)),
-          status: 'ACTIVE',
-          autoRenewal: sub.autoRenewal,
-        );
-
-        final cacheKey = AppConfig.prefKey('cached_sub_status_$userId');
-        await app_main.prefs.setString(cacheKey, 'ACTIVE');
-
-        state = state.copyWith(
-          status: SubscriptionStatus.active,
-          currentSubscription: activeSub,
-          availablePlans: plans,
-          lastChecked: DateTime.now(),
-          message: null,
-        );
-        return SubscriptionStatus.active;
-      }
-
       if (sub.isPending) {
         final cacheKey = AppConfig.prefKey('cached_sub_status_$userId');
         await app_main.prefs.setString(cacheKey, 'PENDING');
@@ -205,6 +272,15 @@ class SubscriptionNotifier extends Notifier<SubscriptionState> {
 
       // Verify expiration
       if (sub.isActive) {
+        // Sync public.users status to active as well
+        try {
+          await client.from('users').upsert({
+            'id': userId,
+            'email': currentUser.email ?? '',
+            'status': 'active',
+          }).timeout(const Duration(seconds: 4));
+        } catch (_) {}
+
         final cacheKey = AppConfig.prefKey('cached_sub_status_$userId');
         await app_main.prefs.setString(cacheKey, 'ACTIVE');
 
@@ -244,6 +320,13 @@ class SubscriptionNotifier extends Notifier<SubscriptionState> {
           lastChecked: DateTime.now(),
         );
         return SubscriptionStatus.active;
+      } else if (cached == 'PENDING') {
+        state = state.copyWith(
+          status: SubscriptionStatus.pending,
+          availablePlans: SubscriptionPlan.defaultPlans,
+          lastChecked: DateTime.now(),
+        );
+        return SubscriptionStatus.pending;
       } else if (cached == 'EXPIRED') {
         state = state.copyWith(
           status: SubscriptionStatus.expired,
@@ -251,6 +334,17 @@ class SubscriptionNotifier extends Notifier<SubscriptionState> {
           lastChecked: DateTime.now(),
         );
         return SubscriptionStatus.expired;
+      }
+
+      // Fallback check of account status cache
+      final acctStatusPref = app_main.prefs.getString(AppConfig.prefKey('account_status_$userId'));
+      if (acctStatusPref == 'active') {
+        state = state.copyWith(
+          status: SubscriptionStatus.active,
+          availablePlans: SubscriptionPlan.defaultPlans,
+          lastChecked: DateTime.now(),
+        );
+        return SubscriptionStatus.active;
       }
 
       state = state.copyWith(
@@ -324,7 +418,16 @@ class SubscriptionNotifier extends Notifier<SubscriptionState> {
 
     final userSub = UserSubscription.fromJson(inserted);
 
-    // 3. Update local cache
+    // 3. Mark public.users status as 'active'
+    try {
+      await client.from('users').upsert({
+        'id': userId,
+        'email': currentUser.email ?? '',
+        'status': 'active',
+      });
+    } catch (_) {}
+
+    // 4. Update local cache
     final cacheKey = AppConfig.prefKey('cached_sub_status_$userId');
     await app_main.prefs.setString(cacheKey, 'ACTIVE');
 
