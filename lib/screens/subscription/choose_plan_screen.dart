@@ -5,6 +5,7 @@ import '../../services/subscription_service.dart';
 import '../../providers/auth_provider.dart';
 import '../login_screen.dart';
 import 'payment_screen.dart';
+import '../help_center_screen.dart';
 
 class ChoosePlanScreen extends ConsumerStatefulWidget {
   final bool isRenewing;
@@ -38,6 +39,15 @@ class _ChoosePlanScreenState extends ConsumerState<ChoosePlanScreen> {
         elevation: 1,
         automaticallyImplyLeading: widget.isRenewing,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.support_agent, color: Color(0xFF1565C0)),
+            tooltip: 'Help Center & Support',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const HelpCenterScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.red),
             tooltip: 'Logout',

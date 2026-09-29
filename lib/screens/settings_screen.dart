@@ -6,6 +6,8 @@ import '../providers/settings_provider.dart';
 import '../services/app_config.dart';
 import '../services/offline_db_helper.dart';
 import '../main.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'help_center_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -386,6 +388,73 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                         ),
                       ],
+                      const SizedBox(height: 24),
+                      Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        color: Colors.blue.shade50.withOpacity(0.5),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.support_agent, color: Colors.blue.shade800, size: 28),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    'Help Center & Developer Support',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue.shade900,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Yu_Vi Development (Mr. Vikram Malhari Pawar)\nPhone / WhatsApp: +91 6361782144 | Email: Vikrams4727@gmail.com',
+                                style: TextStyle(fontSize: 13, color: Colors.black87),
+                              ),
+                              const SizedBox(height: 16),
+                              Wrap(
+                                spacing: 12,
+                                runSpacing: 8,
+                                children: [
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(builder: (_) => const HelpCenterScreen()),
+                                      );
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.blue.shade700,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                                    ),
+                                    icon: const Icon(Icons.help_center, size: 18),
+                                    label: const Text('OPEN HELP CENTER', style: TextStyle(fontWeight: FontWeight.bold)),
+                                  ),
+                                  OutlinedButton.icon(
+                                    onPressed: () async {
+                                      final uri = Uri(scheme: 'tel', path: '6361782144');
+                                      if (await canLaunchUrl(uri)) await launchUrl(uri);
+                                    },
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.blue.shade900,
+                                      side: BorderSide(color: Colors.blue.shade700),
+                                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                                    ),
+                                    icon: const Icon(Icons.call, size: 18),
+                                    label: const Text('CALL 6361782144', style: TextStyle(fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),

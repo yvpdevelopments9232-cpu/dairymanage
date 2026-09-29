@@ -34,6 +34,7 @@ import '../services/sync_service.dart';
 import '../widgets/dashboard_home.dart';
 import '../providers/session_provider.dart';
 import 'subscription/subscription_status_screen.dart';
+import 'help_center_screen.dart';
 
 import '../models/flutter_models.dart';
 import '../providers/product_provider.dart';
@@ -116,6 +117,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     'Employee Rights',
     'Backup & Restore',
     'Subscription',
+    'Help Center',
     'Settings',
     'Switch Account'
   ];
@@ -130,6 +132,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     'Bonus',
     'Bank',
     'Reports',
+    'Help Center',
     '⬅ Back to Local Dairy',
   ];
 
@@ -430,11 +433,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               onPressed: () => _showNotificationsDialog(context, outOfStockProducts),
             ),
           ),
+          IconButton(
+            icon: const Icon(Icons.support_agent),
+            tooltip: 'Help Center (Yu_Vi Development)',
+            onPressed: () {
+              final helpIndex = _menuItems.indexOf('Help Center');
+              if (helpIndex != -1) {
+                setState(() {
+                  _isMainDairyMode = false;
+                  _selectedIndex = helpIndex;
+                });
+              }
+            },
+          ),
           PopupMenuButton<String>(
             tooltip: 'Account Options',
             onSelected: (val) {
               if (val == 'logout') {
                 _confirmLogout(context);
+              } else if (val == 'help') {
+                final helpIndex = _menuItems.indexOf('Help Center');
+                if (helpIndex != -1) {
+                  setState(() {
+                    _isMainDairyMode = false;
+                    _selectedIndex = helpIndex;
+                  });
+                }
               } else if (val == 'switch') {
                 ref.read(sessionProvider.notifier).logoutSubAccount();
                 Navigator.of(context).pushAndRemoveUntil(
@@ -444,6 +468,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               }
             },
             itemBuilder: (ctx) => [
+              const PopupMenuItem(
+                value: 'help',
+                child: Row(
+                  children: [
+                    Icon(Icons.support_agent, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Text('Help Center & Support'),
+                  ],
+                ),
+              ),
               const PopupMenuItem(
                 value: 'switch',
                 child: Row(
@@ -677,6 +711,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
         _buildMainDairyTile('Bank', Icons.account_balance),
         _buildMainDairyTile('Reports', Icons.bar_chart),
+        _buildMainDairyTile('Help Center', Icons.support_agent),
         const SizedBox(height: 8),
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -872,7 +907,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               if (session == null || session.isAdmin) {
                 allowed = true;
               } else {
-                if (menu == "Employee Management" || menu == "Employee Rights" || menu == "Settings" || menu == "Backup & Restore" || menu == "Subscription") {
+                if (menu == 'Help Center') {
+                  allowed = true; // Accessible by all users
+                } else if (menu == "Employee Management" || menu == "Employee Rights" || menu == "Settings" || menu == "Backup & Restore" || menu == "Subscription") {
                   allowed = false; // Strictly admin only
                 } else {
                   allowed = session.canView(menu);
@@ -994,6 +1031,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         case 'Rate Management':
           mainDairyContent = const DesktopWrapper(child: MainDairyRateScreen());
           break;
+        case 'Help Center':
+          mainDairyContent = const DesktopWrapper(child: HelpCenterScreen());
+          break;
         default:
           mainDairyContent = DesktopWrapper(
             child: MainDairyDashboardScreen(
@@ -1067,6 +1107,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case 'Employee Rights': content = const DesktopWrapper(child: EmployeeRightsScreen()); break;
       case 'Backup & Restore': content = const DesktopWrapper(child: BackupRestoreScreen()); break;
       case 'Subscription': content = const DesktopWrapper(child: SubscriptionStatusScreen()); break;
+      case 'Help Center': content = const DesktopWrapper(child: HelpCenterScreen()); break;
       default: content = const Center(child: Text('Coming Soon!'));
     }
     return Theme(
@@ -1113,6 +1154,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case 'Settings': iconData = Icons.settings; break;
       case 'Backup & Restore': iconData = Icons.settings_backup_restore; break;
       case 'Subscription': iconData = Icons.card_membership; break;
+      case 'Help Center': iconData = Icons.support_agent; break;
       case 'Switch Account': iconData = Icons.swap_horiz; break;
       case 'Employee Management': iconData = Icons.admin_panel_settings; break;
       case 'Employee Rights': iconData = Icons.security; break;
