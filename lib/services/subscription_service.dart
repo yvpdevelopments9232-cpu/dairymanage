@@ -378,25 +378,46 @@ class SubscriptionNotifier extends Notifier<SubscriptionState> {
     final subscriptionId = 'DM-$dateStr-$randomSuffix';
     final invoiceNo = 'INV-$dateStr-$randomSuffix';
 
-    // 1. Record payment in public.subscription_payments table
+    // 1. Record or update payment in public.subscription_payments table
     try {
-      await client.from('subscription_payments').insert({
-        'transaction_id': transactionId,
-        'user_id': userId,
-        'subscription_id': subscriptionId,
-        'plan_id': plan.id,
-        'plan_name': plan.name,
-        'amount': plan.price,
-        'payment_method': paymentMethod,
-        'payment_status': 'SUCCESS',
-        'invoice_no': invoiceNo,
-        'payment_date': now.toIso8601String(),
-      });
+      final existingPendingPay = await client
+          .from('subscription_payments')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('payment_status', 'PENDING')
+          .maybeSingle();
+
+      if (existingPendingPay != null) {
+        await client.from('subscription_payments').update({
+          'transaction_id': transactionId,
+          'subscription_id': subscriptionId,
+          'plan_id': plan.id,
+          'plan_name': plan.name,
+          'amount': plan.price,
+          'payment_method': paymentMethod,
+          'payment_status': 'SUCCESS',
+          'invoice_no': invoiceNo,
+          'payment_date': now.toIso8601String(),
+        }).eq('id', existingPendingPay['id']);
+      } else {
+        await client.from('subscription_payments').insert({
+          'transaction_id': transactionId,
+          'user_id': userId,
+          'subscription_id': subscriptionId,
+          'plan_id': plan.id,
+          'plan_name': plan.name,
+          'amount': plan.price,
+          'payment_method': paymentMethod,
+          'payment_status': 'SUCCESS',
+          'invoice_no': invoiceNo,
+          'payment_date': now.toIso8601String(),
+        });
+      }
     } catch (payErr) {
       debugPrint('Subscription payments table insert note: $payErr');
     }
 
-    // 2. Insert or update in public.subscriptions table
+    // 2. Insert or update in public.subscriptions table (Ensure strictly 1 subscription row per user)
     final subData = {
       'subscription_id': subscriptionId,
       'user_id': userId,
@@ -410,11 +431,27 @@ class SubscriptionNotifier extends Notifier<SubscriptionState> {
       'updated_at': now.toIso8601String(),
     };
 
-    final inserted = await client
+    final existingSub = await client
         .from('subscriptions')
-        .insert(subData)
-        .select()
-        .single();
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    Map<String, dynamic> inserted;
+    if (existingSub != null) {
+      inserted = await client
+          .from('subscriptions')
+          .update(subData)
+          .eq('id', existingSub['id'])
+          .select()
+          .single();
+    } else {
+      inserted = await client
+          .from('subscriptions')
+          .insert(subData)
+          .select()
+          .single();
+    }
 
     final userSub = UserSubscription.fromJson(inserted);
 
@@ -462,25 +499,45 @@ class SubscriptionNotifier extends Notifier<SubscriptionState> {
     final subscriptionId = 'DM-$dateStr-$randomSuffix';
     final invoiceNo = 'INV-$dateStr-$randomSuffix';
 
-    // 1. Record payment in public.subscription_payments table as PENDING
+    // 1. Record or update existing PENDING payment in public.subscription_payments table
     try {
-      await client.from('subscription_payments').insert({
-        'transaction_id': transactionId,
-        'user_id': userId,
-        'subscription_id': subscriptionId,
-        'plan_id': plan.id,
-        'plan_name': plan.name,
-        'amount': plan.price,
-        'payment_method': paymentMethod,
-        'payment_status': 'PENDING',
-        'invoice_no': invoiceNo,
-        'payment_date': now.toIso8601String(),
-      });
+      final existingPendingPay = await client
+          .from('subscription_payments')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('payment_status', 'PENDING')
+          .maybeSingle();
+
+      if (existingPendingPay != null) {
+        await client.from('subscription_payments').update({
+          'transaction_id': transactionId,
+          'subscription_id': subscriptionId,
+          'plan_id': plan.id,
+          'plan_name': plan.name,
+          'amount': plan.price,
+          'payment_method': paymentMethod,
+          'invoice_no': invoiceNo,
+          'payment_date': now.toIso8601String(),
+        }).eq('id', existingPendingPay['id']);
+      } else {
+        await client.from('subscription_payments').insert({
+          'transaction_id': transactionId,
+          'user_id': userId,
+          'subscription_id': subscriptionId,
+          'plan_id': plan.id,
+          'plan_name': plan.name,
+          'amount': plan.price,
+          'payment_method': paymentMethod,
+          'payment_status': 'PENDING',
+          'invoice_no': invoiceNo,
+          'payment_date': now.toIso8601String(),
+        });
+      }
     } catch (payErr) {
-      debugPrint('Subscription payments table insert note: $payErr');
+      debugPrint('Subscription payments table note: $payErr');
     }
 
-    // 2. Insert into public.subscriptions table as PENDING
+    // 2. Insert or update in public.subscriptions table (Strictly 1 subscription row per user)
     final subData = {
       'subscription_id': subscriptionId,
       'user_id': userId,
@@ -494,11 +551,27 @@ class SubscriptionNotifier extends Notifier<SubscriptionState> {
       'updated_at': now.toIso8601String(),
     };
 
-    final inserted = await client
+    final existingSub = await client
         .from('subscriptions')
-        .insert(subData)
-        .select()
-        .single();
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    Map<String, dynamic> inserted;
+    if (existingSub != null) {
+      inserted = await client
+          .from('subscriptions')
+          .update(subData)
+          .eq('id', existingSub['id'])
+          .select()
+          .single();
+    } else {
+      inserted = await client
+          .from('subscriptions')
+          .insert(subData)
+          .select()
+          .single();
+    }
 
     final userSub = UserSubscription.fromJson(inserted);
 

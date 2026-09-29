@@ -283,35 +283,37 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 ),
               ),
 
-              const SizedBox(height: 24),
+              if (_selectedMethod != 'UPI') ...[
+                const SizedBox(height: 24),
 
-              // 4. Pay Now Button
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: ElevatedButton(
-                  onPressed: _isProcessing ? null : _processPayment,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
-                    elevation: 3,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                // 4. Pay Now Button (for Cards / Net Banking / Wallets)
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: ElevatedButton(
+                    onPressed: _isProcessing ? null : _processPayment,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      foregroundColor: Colors.white,
+                      elevation: 3,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: _isProcessing
+                        ? const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5)),
+                              SizedBox(width: 14),
+                              Text('Processing Payment...', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            ],
+                          )
+                        : Text(
+                            'PAY NOW  •  ₹${widget.plan.price.toStringAsFixed(0)}',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.1),
+                          ),
                   ),
-                  child: _isProcessing
-                      ? const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5)),
-                            SizedBox(width: 14),
-                            Text('Processing Payment...', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                          ],
-                        )
-                      : Text(
-                          'PAY NOW  •  ₹${widget.plan.price.toStringAsFixed(0)}',
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.1),
-                        ),
                 ),
-              ),
+              ],
 
               const SizedBox(height: 16),
 
