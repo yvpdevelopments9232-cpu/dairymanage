@@ -173,10 +173,14 @@ REVOKE ALL ON public.role_permissions FROM anon;
 
 
 -- ------------------------------------------------------------------------------
--- 6. CLEAN POLICIES FOR RATE_CONFIGS (Allows viewing Default Rate Charts)
+-- 6. CLEAN POLICIES FOR RATE_CONFIGS (Allows viewing & deleting Default Rate Charts)
 -- ------------------------------------------------------------------------------
--- Allows users to see default Cow/Buffalo rate chart templates (user_id IS NULL)
--- but strictly restricts modifications to their own charts.
+DROP POLICY IF EXISTS "Tenant isolation for rate_configs" ON public.rate_configs;
+DROP POLICY IF EXISTS "Tenant isolation for rate_configs - SELECT" ON public.rate_configs;
+DROP POLICY IF EXISTS "Tenant isolation for rate_configs - INSERT" ON public.rate_configs;
+DROP POLICY IF EXISTS "Tenant isolation for rate_configs - UPDATE" ON public.rate_configs;
+DROP POLICY IF EXISTS "Tenant isolation for rate_configs - DELETE" ON public.rate_configs;
+
 CREATE POLICY "Tenant isolation for rate_configs - SELECT"
     ON public.rate_configs
     FOR SELECT TO authenticated
@@ -190,7 +194,7 @@ CREATE POLICY "Tenant isolation for rate_configs - INSERT"
 CREATE POLICY "Tenant isolation for rate_configs - UPDATE"
     ON public.rate_configs
     FOR UPDATE TO authenticated
-    USING (user_id = auth.uid())
+    USING (user_id = auth.uid() OR user_id IS NULL)
     WITH CHECK (user_id = auth.uid());
 
 CREATE POLICY "Tenant isolation for rate_configs - DELETE"
