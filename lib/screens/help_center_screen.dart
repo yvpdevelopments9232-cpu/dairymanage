@@ -424,6 +424,8 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
     VoidCallback? onAction,
     VoidCallback? onCopy,
   }) {
+    final isCompact = MediaQuery.of(context).size.width < 650;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -431,42 +433,65 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: const Color(0xFF475569)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF64748B))),
-                const SizedBox(height: 2),
-                SelectableText(
-                  value,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+          Row(
+            children: [
+              Icon(icon, size: 20, color: const Color(0xFF475569)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF64748B))),
+                    const SizedBox(height: 2),
+                    SelectableText(
+                      value,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                    ),
+                  ],
+                ),
+              ),
+              if (onCopy != null)
+                IconButton(
+                  icon: const Icon(Icons.copy, size: 18, color: Color(0xFF64748B)),
+                  tooltip: 'Copy',
+                  onPressed: onCopy,
+                ),
+              if (onAction != null && !isCompact) ...[
+                const SizedBox(width: 4),
+                ElevatedButton.icon(
+                  icon: Icon(actionIcon ?? Icons.arrow_forward, size: 14),
+                  label: Text(actionLabel, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: actionColor ?? const Color(0xFF1565C0),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    elevation: 0,
+                  ),
+                  onPressed: onAction,
                 ),
               ],
-            ),
+            ],
           ),
-          if (onCopy != null)
-            IconButton(
-              icon: const Icon(Icons.copy, size: 18, color: Color(0xFF64748B)),
-              tooltip: 'Copy',
-              onPressed: onCopy,
-            ),
-          if (onAction != null) ...[
-            const SizedBox(width: 4),
-            ElevatedButton.icon(
-              icon: Icon(actionIcon ?? Icons.arrow_forward, size: 14),
-              label: Text(actionLabel, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: actionColor ?? const Color(0xFF1565C0),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                elevation: 0,
+          if (onAction != null && isCompact) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: Icon(actionIcon ?? Icons.arrow_forward, size: 16),
+                label: Text(actionLabel, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: actionColor ?? const Color(0xFF1565C0),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  elevation: 0,
+                ),
+                onPressed: onAction,
               ),
-              onPressed: onAction,
             ),
           ],
         ],
@@ -476,37 +501,45 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
 
   // 4. Quick Action Cards (Call, WhatsApp, Email, Approval)
   Widget _buildQuickActionCards() {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
+    final items = [
+      _buildActionTile(
+        title: 'Call Support',
+        subtitle: 'Direct Voice Call',
+        icon: Icons.phone_in_talk,
+        color: const Color(0xFF16A34A),
+        onTap: _makeCall,
+      ),
+      _buildActionTile(
+        title: 'WhatsApp',
+        subtitle: 'Instant Chat & Help',
+        icon: Icons.chat_bubble_outline,
+        color: const Color(0xFF059669),
+        onTap: () => _openWhatsApp(),
+      ),
+      _buildActionTile(
+        title: 'Email Desk',
+        subtitle: 'Inquiries & Reports',
+        icon: Icons.mail_outline,
+        color: const Color(0xFF2563EB),
+        onTap: () => _sendEmail(),
+      ),
+    ];
+
+    if (isMobile) {
+      return Column(
+        children: items.map((tile) => Padding(padding: const EdgeInsets.only(bottom: 10), child: tile)).toList(),
+      );
+    }
+
     return Row(
       children: [
-        Expanded(
-          child: _buildActionTile(
-            title: 'Call Support',
-            subtitle: 'Direct Voice Call',
-            icon: Icons.phone_in_talk,
-            color: const Color(0xFF16A34A),
-            onTap: _makeCall,
-          ),
-        ),
+        Expanded(child: items[0]),
         const SizedBox(width: 12),
-        Expanded(
-          child: _buildActionTile(
-            title: 'WhatsApp',
-            subtitle: 'Instant Chat & Help',
-            icon: Icons.chat_bubble_outline,
-            color: const Color(0xFF059669),
-            onTap: () => _openWhatsApp(),
-          ),
-        ),
+        Expanded(child: items[1]),
         const SizedBox(width: 12),
-        Expanded(
-          child: _buildActionTile(
-            title: 'Email Desk',
-            subtitle: 'Inquiries & Reports',
-            icon: Icons.mail_outline,
-            color: const Color(0xFF2563EB),
-            onTap: () => _sendEmail(),
-          ),
-        ),
+        Expanded(child: items[2]),
       ],
     );
   }

@@ -10,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/app_db.dart';
 import '../../services/translations.dart';
 import '../../providers/language_provider.dart';
+import '../../providers/display_mode_provider.dart';
 
 class MainDairyReportsScreen extends ConsumerStatefulWidget {
   const MainDairyReportsScreen({super.key});
@@ -288,6 +289,8 @@ class _MainDairyReportsScreenState extends ConsumerState<MainDairyReportsScreen>
     ref.watch(languageProvider);
     final dairiesAsync = ref.watch(mainDairyProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
+    final displayMode = ref.watch(displayModeProvider);
+    final isMobile = displayMode == DisplayMode.mobile || MediaQuery.of(context).size.width < 700;
 
     return Scaffold(
       appBar: AppBar(
@@ -296,9 +299,12 @@ class _MainDairyReportsScreenState extends ConsumerState<MainDairyReportsScreen>
         iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
           controller: _tabController,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
           indicatorColor: Colors.white,
+          indicatorWeight: 3,
           tabs: [
             Tab(icon: const Icon(Icons.receipt_long), text: 'Dairy Ledger Statement'.tr),
             Tab(icon: const Icon(Icons.calendar_today), text: 'Annual Dispatch Summary'.tr),
@@ -314,69 +320,142 @@ class _MainDairyReportsScreenState extends ConsumerState<MainDairyReportsScreen>
               Container(
                 padding: const EdgeInsets.all(16),
                 color: Colors.grey.shade50,
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: dairiesAsync.when(
-                        loading: () => const CircularProgressIndicator(),
-                        error: (e, _) => const Text('Error'),
-                        data: (list) => DropdownButtonFormField<String>(
-                          value: _selectedDairyId,
-                          decoration: InputDecoration(labelText: 'Select Main Dairy'.tr, border: const OutlineInputBorder()),
-                          items: list.map((d) => DropdownMenuItem(value: d.id, child: Text(d.name))).toList(),
-                          onChanged: (v) {
-                            setState(() => _selectedDairyId = v);
-                            _fetchLedger();
-                          },
-                        ),
+                child: isMobile
+                    ? Column(
+                        children: [
+                          dairiesAsync.when(
+                            loading: () => const CircularProgressIndicator(),
+                            error: (e, _) => const Text('Error'),
+                            data: (list) => DropdownButtonFormField<String>(
+                              value: _selectedDairyId,
+                              decoration: InputDecoration(labelText: 'Select Main Dairy'.tr, border: const OutlineInputBorder()),
+                              items: list.map((d) => DropdownMenuItem(value: d.id, child: Text(d.name))).toList(),
+                              onChanged: (v) {
+                                setState(() => _selectedDairyId = v);
+                                _fetchLedger();
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          InkWell(
+                            onTap: () async {
+                              final range = await showDateRangePicker(
+                                context: context,
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime.now(),
+                                initialDateRange: DateTimeRange(start: _startDate, end: _endDate),
+                              );
+                              if (range != null) {
+                                setState(() {
+                                  _startDate = range.start;
+                                  _endDate = range.end;
+                                });
+                                _fetchLedger();
+                              }
+                            },
+                            child: InputDecorator(
+                              decoration: InputDecoration(labelText: 'Date Range'.tr, border: const OutlineInputBorder()),
+                              child: Text(
+                                '${DateFormat('dd MMM yy').format(_startDate)} - ${DateFormat('dd MMM yy').format(_endDate)}',
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: _fetchLedger,
+                                  icon: const Icon(Icons.search),
+                                  label: Text('GENERATE'.tr),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: primaryColor,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () {
+                                    final dairies = dairiesAsync.value ?? [];
+                                    final dairy = dairies.where((d) => d.id == _selectedDairyId).firstOrNull;
+                                    _printLedgerPdf(dairy?.name ?? 'Main Dairy');
+                                  },
+                                  icon: const Icon(Icons.print),
+                                  label: Text('PRINT PDF'.tr),
+                                  style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: dairiesAsync.when(
+                              loading: () => const CircularProgressIndicator(),
+                              error: (e, _) => const Text('Error'),
+                              data: (list) => DropdownButtonFormField<String>(
+                                value: _selectedDairyId,
+                                decoration: InputDecoration(labelText: 'Select Main Dairy'.tr, border: const OutlineInputBorder()),
+                                items: list.map((d) => DropdownMenuItem(value: d.id, child: Text(d.name))).toList(),
+                                onChanged: (v) {
+                                  setState(() => _selectedDairyId = v);
+                                  _fetchLedger();
+                                },
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 3,
+                            child: InkWell(
+                              onTap: () async {
+                                final range = await showDateRangePicker(
+                                  context: context,
+                                  firstDate: DateTime(2020),
+                                  lastDate: DateTime.now(),
+                                  initialDateRange: DateTimeRange(start: _startDate, end: _endDate),
+                                );
+                                if (range != null) {
+                                  setState(() {
+                                    _startDate = range.start;
+                                    _endDate = range.end;
+                                  });
+                                  _fetchLedger();
+                                }
+                              },
+                              child: InputDecorator(
+                                decoration: InputDecoration(labelText: 'Date Range'.tr, border: const OutlineInputBorder()),
+                                child: Text('${DateFormat('dd MMM yy').format(_startDate)} - ${DateFormat('dd MMM yy').format(_endDate)}'),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          ElevatedButton.icon(
+                            onPressed: _fetchLedger,
+                            icon: const Icon(Icons.search),
+                            label: Text('GENERATE'.tr),
+                            style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20)),
+                          ),
+                          const SizedBox(width: 12),
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              final dairies = dairiesAsync.value ?? [];
+                              final dairy = dairies.where((d) => d.id == _selectedDairyId).firstOrNull;
+                              _printLedgerPdf(dairy?.name ?? 'Main Dairy');
+                            },
+                            icon: const Icon(Icons.print),
+                            label: Text('PRINT PDF'.tr),
+                            style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20)),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 3,
-                      child: InkWell(
-                        onTap: () async {
-                          final range = await showDateRangePicker(
-                            context: context,
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime.now(),
-                            initialDateRange: DateTimeRange(start: _startDate, end: _endDate),
-                          );
-                          if (range != null) {
-                            setState(() {
-                              _startDate = range.start;
-                              _endDate = range.end;
-                            });
-                            _fetchLedger();
-                          }
-                        },
-                        child: InputDecorator(
-                          decoration: InputDecoration(labelText: 'Date Range'.tr, border: const OutlineInputBorder()),
-                          child: Text('${DateFormat('dd MMM yy').format(_startDate)} - ${DateFormat('dd MMM yy').format(_endDate)}'),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton.icon(
-                      onPressed: _fetchLedger,
-                      icon: const Icon(Icons.search),
-                      label: Text('GENERATE'.tr),
-                      style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20)),
-                    ),
-                    const SizedBox(width: 12),
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        final dairies = dairiesAsync.value ?? [];
-                        final dairy = dairies.where((d) => d.id == _selectedDairyId).firstOrNull;
-                        _printLedgerPdf(dairy?.name ?? 'Main Dairy');
-                      },
-                      icon: const Icon(Icons.print),
-                      label: Text('PRINT PDF'.tr),
-                      style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20)),
-                    ),
-                  ],
-                ),
               ),
               Expanded(
                 child: _isLoadingLedger
@@ -491,14 +570,25 @@ class _MainDairyReportsScreenState extends ConsumerState<MainDairyReportsScreen>
                                   elevation: 3,
                                   child: Padding(
                                     padding: const EdgeInsets.all(20),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                      children: [
-                                        Text('${'Total Billing: '.tr}₹${_totalBilling.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                        Text('${'Total Paid: '.tr}₹${_totalPaid.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green)),
-                                        Text('${'Receivable Balance: '.tr}₹${_totalRemaining.toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: _totalRemaining > 0 ? Colors.red : Colors.green)),
-                                      ],
-                                    ),
+                                    child: isMobile
+                                        ? Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text('${'Total Billing: '.tr}₹${_totalBilling.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                              const SizedBox(height: 8),
+                                              Text('${'Total Paid: '.tr}₹${_totalPaid.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.green)),
+                                              const SizedBox(height: 8),
+                                              Text('${'Receivable Balance: '.tr}₹${_totalRemaining.toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: _totalRemaining > 0 ? Colors.red : Colors.green)),
+                                            ],
+                                          )
+                                        : Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                            children: [
+                                              Text('${'Total Billing: '.tr}₹${_totalBilling.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                              Text('${'Total Paid: '.tr}₹${_totalPaid.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green)),
+                                              Text('${'Receivable Balance: '.tr}₹${_totalRemaining.toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: _totalRemaining > 0 ? Colors.red : Colors.green)),
+                                            ],
+                                          ),
                                   ),
                                 ),
                               ],
@@ -514,10 +604,12 @@ class _MainDairyReportsScreenState extends ConsumerState<MainDairyReportsScreen>
               Container(
                 padding: const EdgeInsets.all(16),
                 color: Colors.grey.shade50,
-                child: Row(
+                child: Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 12,
+                  runSpacing: 10,
                   children: [
                     Text('Select Year: '.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    const SizedBox(width: 8),
                     DropdownButton<int>(
                       value: _selectedYear,
                       items: [2024, 2025, 2026, 2027].map((y) => DropdownMenuItem(value: y, child: Text('$y'))).toList(),
@@ -526,7 +618,6 @@ class _MainDairyReportsScreenState extends ConsumerState<MainDairyReportsScreen>
                         _fetchAnnualReport();
                       },
                     ),
-                    const SizedBox(width: 16),
                     ElevatedButton.icon(
                       onPressed: _fetchAnnualReport,
                       icon: const Icon(Icons.refresh),

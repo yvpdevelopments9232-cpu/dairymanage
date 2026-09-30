@@ -7,6 +7,7 @@ import '../../providers/main_dairy_rate_provider.dart';
 import '../../providers/main_dairy_collection_provider.dart';
 import '../../services/translations.dart';
 import '../../providers/language_provider.dart';
+import '../../providers/display_mode_provider.dart';
 
 class MainDairyCollectionScreen extends ConsumerStatefulWidget {
   const MainDairyCollectionScreen({super.key});
@@ -309,6 +310,8 @@ class _MainDairyCollectionScreenState extends ConsumerState<MainDairyCollectionS
   @override
   Widget build(BuildContext context) {
     ref.watch(languageProvider);
+    final displayMode = ref.watch(displayModeProvider);
+    final isMobile = displayMode == DisplayMode.mobile || MediaQuery.of(context).size.width < 700;
     final notifier = ref.watch(mainDairyCollectionProvider.notifier);
     final collectionsAsync = ref.watch(mainDairyCollectionProvider);
     final dairiesAsync = ref.watch(mainDairyProvider);
@@ -384,30 +387,58 @@ class _MainDairyCollectionScreenState extends ConsumerState<MainDairyCollectionS
                 return Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   color: Colors.blue.shade900,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildStatItem(
-                        'COW MILK'.tr,
-                        '${cowQty.toStringAsFixed(1)} Ltr',
-                        'Fat: ${cowAvgFat.toStringAsFixed(1)} | SNF: ${cowAvgSnf.toStringAsFixed(1)}',
-                      ),
-                      Container(height: 40, width: 1, color: Colors.white30),
-                      _buildStatItem(
-                        'BUFFALO MILK'.tr,
-                        '${buffQty.toStringAsFixed(1)} Ltr',
-                        'Fat: ${buffAvgFat.toStringAsFixed(1)} | SNF: ${buffAvgSnf.toStringAsFixed(1)}',
-                      ),
-                      Container(height: 40, width: 1, color: Colors.white30),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text('TOTAL SHIFT AMOUNT'.tr, style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold)),
-                          Text('₹ ${totalAmt.toStringAsFixed(2)}', style: const TextStyle(color: Colors.greenAccent, fontSize: 18, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                    ],
-                  ),
+                  child: isMobile
+                      ? Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                _buildStatItem(
+                                  'COW MILK'.tr,
+                                  '${cowQty.toStringAsFixed(1)} Ltr',
+                                  'Fat: ${cowAvgFat.toStringAsFixed(1)} | SNF: ${cowAvgSnf.toStringAsFixed(1)}',
+                                ),
+                                _buildStatItem(
+                                  'BUFFALO MILK'.tr,
+                                  '${buffQty.toStringAsFixed(1)} Ltr',
+                                  'Fat: ${buffAvgFat.toStringAsFixed(1)} | SNF: ${buffAvgSnf.toStringAsFixed(1)}',
+                                ),
+                              ],
+                            ),
+                            const Divider(color: Colors.white24, height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('TOTAL SHIFT AMOUNT'.tr, style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                                Text('₹ ${totalAmt.toStringAsFixed(2)}', style: const TextStyle(color: Colors.greenAccent, fontSize: 18, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ],
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildStatItem(
+                              'COW MILK'.tr,
+                              '${cowQty.toStringAsFixed(1)} Ltr',
+                              'Fat: ${cowAvgFat.toStringAsFixed(1)} | SNF: ${cowAvgSnf.toStringAsFixed(1)}',
+                            ),
+                            Container(height: 40, width: 1, color: Colors.white30),
+                            _buildStatItem(
+                              'BUFFALO MILK'.tr,
+                              '${buffQty.toStringAsFixed(1)} Ltr',
+                              'Fat: ${buffAvgFat.toStringAsFixed(1)} | SNF: ${buffAvgSnf.toStringAsFixed(1)}',
+                            ),
+                            Container(height: 40, width: 1, color: Colors.white30),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text('TOTAL SHIFT AMOUNT'.tr, style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold)),
+                                Text('₹ ${totalAmt.toStringAsFixed(2)}', style: const TextStyle(color: Colors.greenAccent, fontSize: 18, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ],
+                        ),
                 );
               },
               orElse: () => const SizedBox.shrink(),
@@ -422,30 +453,29 @@ class _MainDairyCollectionScreenState extends ConsumerState<MainDairyCollectionS
                 child: Column(
                   children: [
                     // ROW 1: D. ID, Search Dairy, Milk Type
-                    Row(
-                      children: [
-                        SizedBox(
-                          width: 80,
-                          child: TextFormField(
-                            controller: _dairyNoController,
-                            focusNode: _dairyNoFocus,
-                            decoration: InputDecoration(
-                              labelText: 'D. ID'.tr,
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                              filled: true,
-                              fillColor: Colors.white,
+                    if (isMobile)
+                      Column(
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            child: TextFormField(
+                              controller: _dairyNoController,
+                              focusNode: _dairyNoFocus,
+                              decoration: InputDecoration(
+                                labelText: 'D. ID'.tr,
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                filled: true,
+                                fillColor: Colors.white,
+                              ),
+                              keyboardType: TextInputType.number,
+                              textInputAction: TextInputAction.next,
+                              onFieldSubmitted: (val) {
+                                if (dairiesAsync.hasValue) _onDairyNoSubmitted(val, dairiesAsync.value!);
+                              },
                             ),
-                            keyboardType: TextInputType.number,
-                            textInputAction: TextInputAction.next,
-                            onFieldSubmitted: (val) {
-                              if (dairiesAsync.hasValue) _onDairyNoSubmitted(val, dairiesAsync.value!);
-                            },
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          flex: 3,
-                          child: dairiesAsync.when(
+                          const SizedBox(height: 8),
+                          dairiesAsync.when(
                             loading: () => const CircularProgressIndicator(),
                             error: (e, st) => const Text('Error loading dairies'),
                             data: (dairies) => Autocomplete<MainDairy>(
@@ -499,11 +529,8 @@ class _MainDairyCollectionScreenState extends ConsumerState<MainDairyCollectionS
                               },
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          flex: 2,
-                          child: DropdownButtonFormField<String>(
+                          const SizedBox(height: 8),
+                          DropdownButtonFormField<String>(
                             decoration: InputDecoration(
                               labelText: 'Milk Type'.tr,
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -519,89 +546,286 @@ class _MainDairyCollectionScreenState extends ConsumerState<MainDairyCollectionS
                               _fetchApplicableRate();
                             },
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      )
+                    else
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 80,
+                            child: TextFormField(
+                              controller: _dairyNoController,
+                              focusNode: _dairyNoFocus,
+                              decoration: InputDecoration(
+                                labelText: 'D. ID'.tr,
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                filled: true,
+                                fillColor: Colors.white,
+                              ),
+                              keyboardType: TextInputType.number,
+                              textInputAction: TextInputAction.next,
+                              onFieldSubmitted: (val) {
+                                if (dairiesAsync.hasValue) _onDairyNoSubmitted(val, dairiesAsync.value!);
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            flex: 3,
+                            child: dairiesAsync.when(
+                              loading: () => const CircularProgressIndicator(),
+                              error: (e, st) => const Text('Error loading dairies'),
+                              data: (dairies) => Autocomplete<MainDairy>(
+                                optionsBuilder: (TextEditingValue textEditingValue) {
+                                  if (textEditingValue.text.isEmpty) return dairies;
+                                  final q = textEditingValue.text.toLowerCase().trim();
+                                  final qNum = int.tryParse(q.replaceAll(RegExp(r'[^0-9]'), ''));
+                                  return dairies.where((d) =>
+                                      d.name.toLowerCase().contains(q) ||
+                                      (d.dairyNo != null && (d.dairyNo == qNum || d.dairyNo.toString().contains(q))));
+                                },
+                                displayStringForOption: (MainDairy option) =>
+                                    '#${option.dairyNo != null ? option.dairyNo.toString().padLeft(3, '0') : ""} - ${option.name}',
+                                onSelected: (MainDairy selection) {
+                                  setState(() {
+                                    _selectedDairyId = selection.id;
+                                    _dairyNoController.text = selection.dairyNo != null ? selection.dairyNo.toString().padLeft(3, '0') : '';
+                                    if (selection.animalType != null && selection.animalType!.isNotEmpty) {
+                                      _milkType = selection.animalType == 'Buffalo' ? 'Buffalo Milk' : 'Cow Milk';
+                                    }
+                                  });
+                                  _fetchApplicableRate();
+                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                    _qtyFocus.requestFocus();
+                                  });
+                                },
+                                fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                                  _autocompleteController = controller;
+                                  if (_selectedDairyId != null) {
+                                    try {
+                                      final d = dairies.firstWhere((x) => x.id == _selectedDairyId);
+                                      final formattedNo = d.dairyNo != null ? d.dairyNo.toString().padLeft(3, '0') : '';
+                                      final expected = '#$formattedNo - ${d.name}';
+                                      if (controller.text != expected) {
+                                        WidgetsBinding.instance.addPostFrameCallback((_) => controller.text = expected);
+                                      }
+                                    } catch (_) {}
+                                  }
+                                  return TextFormField(
+                                    controller: controller,
+                                    focusNode: focusNode,
+                                    onFieldSubmitted: (v) => onFieldSubmitted(),
+                                    decoration: InputDecoration(
+                                      labelText: 'Search Main Dairy by Name/No'.tr,
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                      suffixIcon: const Icon(Icons.search),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            flex: 2,
+                            child: DropdownButtonFormField<String>(
+                              decoration: InputDecoration(
+                                labelText: 'Milk Type'.tr,
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                filled: true,
+                                fillColor: Colors.white,
+                              ),
+                              value: _milkType,
+                              items: ['Cow Milk', 'Buffalo Milk']
+                                  .map((e) => DropdownMenuItem(value: e, child: Text(e.tr)))
+                                  .toList(),
+                              onChanged: (val) {
+                                setState(() => _milkType = val!);
+                                _fetchApplicableRate();
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
 
                     const SizedBox(height: 12),
 
                     // ROW 2: Qty, Fat, SNF, Rate, Total, SAVE
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildTextField(
-                            'Qty (Ltr)'.tr,
-                            _qtyController,
-                            _qtyFocus,
-                            _fatFocus,
-                            (v) => _fetchApplicableRate(),
+                    if (isMobile)
+                      Column(
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildTextField(
+                                  'Qty (Ltr)'.tr,
+                                  _qtyController,
+                                  _qtyFocus,
+                                  _fatFocus,
+                                  (v) => _fetchApplicableRate(),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildTextField(
+                                  'Fat %'.tr,
+                                  _fatController,
+                                  _fatFocus,
+                                  _snfFocus,
+                                  (v) => _fetchApplicableRate(),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildTextField(
+                                  'SNF %'.tr,
+                                  _snfController,
+                                  _snfFocus,
+                                  _saveFocus,
+                                  (v) => _fetchApplicableRate(),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _buildTextField(
-                            'Fat %'.tr,
-                            _fatController,
-                            _fatFocus,
-                            _snfFocus,
-                            (v) => _fetchApplicableRate(),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildTextField(
+                                  'Rate'.tr,
+                                  _rateController,
+                                  null,
+                                  null,
+                                  (v) => _calculateTotal(),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildTextField(
+                                  'Total ₹'.tr,
+                                  _totalController,
+                                  null,
+                                  null,
+                                  null,
+                                  readOnly: true,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _buildTextField(
-                            'SNF %'.tr,
-                            _snfController,
-                            _snfFocus,
-                            _saveFocus,
-                            (v) => _fetchApplicableRate(),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              if (_editingId != null) ...[
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: _cancelEdit,
+                                    style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+                                    child: Text('CANCEL'.tr),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                              ],
+                              Expanded(
+                                flex: 2,
+                                child: SizedBox(
+                                  height: 48,
+                                  child: ElevatedButton(
+                                    focusNode: _saveFocus,
+                                    onPressed: _isSaving ? null : _submit,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: primaryColor,
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                    child: _isSaving
+                                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white))
+                                        : Text(_editingId != null ? 'UPDATE'.tr : 'SAVE'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _buildTextField(
-                            'Rate'.tr,
-                            _rateController,
-                            null,
-                            null,
-                            (v) => _calculateTotal(),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _buildTextField(
-                            'Total ₹'.tr,
-                            _totalController,
-                            null,
-                            null,
-                            null,
-                            readOnly: true,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        if (_editingId != null)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: OutlinedButton(
-                              onPressed: _cancelEdit,
-                              style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20)),
-                              child: Text('CANCEL'.tr),
+                        ],
+                      )
+                    else
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildTextField(
+                              'Qty (Ltr)'.tr,
+                              _qtyController,
+                              _qtyFocus,
+                              _fatFocus,
+                              (v) => _fetchApplicableRate(),
                             ),
                           ),
-                        ElevatedButton(
-                          focusNode: _saveFocus,
-                          onPressed: _isSaving ? null : _submit,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primaryColor,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildTextField(
+                              'Fat %'.tr,
+                              _fatController,
+                              _fatFocus,
+                              _snfFocus,
+                              (v) => _fetchApplicableRate(),
+                            ),
                           ),
-                          child: _isSaving
-                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white))
-                              : Text(_editingId != null ? 'UPDATE'.tr : 'SAVE'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        ),
-                      ],
-                    ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildTextField(
+                              'SNF %'.tr,
+                              _snfController,
+                              _snfFocus,
+                              _saveFocus,
+                              (v) => _fetchApplicableRate(),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildTextField(
+                              'Rate'.tr,
+                              _rateController,
+                              null,
+                              null,
+                              (v) => _calculateTotal(),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildTextField(
+                              'Total ₹'.tr,
+                              _totalController,
+                              null,
+                              null,
+                              null,
+                              readOnly: true,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          if (_editingId != null)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: OutlinedButton(
+                                onPressed: _cancelEdit,
+                                style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20)),
+                                child: Text('CANCEL'.tr),
+                              ),
+                            ),
+                          ElevatedButton(
+                            focusNode: _saveFocus,
+                            onPressed: _isSaving ? null : _submit,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryColor,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                            ),
+                            child: _isSaving
+                                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white))
+                                : Text(_editingId != null ? 'UPDATE'.tr : 'SAVE'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),

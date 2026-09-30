@@ -168,6 +168,143 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     );
   }
 
+  Widget _buildAddStaffForm(bool isMobile, Color primaryColor) {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Add New Staff'.tr, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
+              const Divider(height: 32),
+              TextFormField(
+                controller: _nameCtrl,
+                decoration: InputDecoration(labelText: 'Full Name *'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                validator: (v) => v!.isEmpty ? 'Required'.tr : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _phoneCtrl,
+                decoration: InputDecoration(labelText: 'Phone Number'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _roleCtrl,
+                decoration: InputDecoration(labelText: 'Role (e.g., Driver, Milker)'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: [
+                  SizedBox(
+                    width: isMobile ? double.infinity : (MediaQuery.of(context).size.width / 4 - 40),
+                    child: TextFormField(
+                      controller: _salaryCtrl,
+                      decoration: InputDecoration(labelText: 'Base Salary / Wage *'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                      keyboardType: TextInputType.number,
+                      validator: (v) => v!.isEmpty ? 'Required'.tr : null,
+                    ),
+                  ),
+                  SizedBox(
+                    width: isMobile ? double.infinity : (MediaQuery.of(context).size.width / 4 - 60),
+                    child: DropdownButtonFormField<String>(
+                      decoration: InputDecoration(labelText: 'Type *'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                      value: _salaryType,
+                      items: ['Monthly', 'Daily'].map((e) => DropdownMenuItem(value: e, child: Text(e.tr))).toList(),
+                      onChanged: (v) => setState(() => _salaryType = v!),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: _isSaving ? null : _submit,
+                  style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                  icon: _isSaving ? const CircularProgressIndicator(color: Colors.white) : const Icon(Icons.check_circle),
+                  label: Text(_isSaving ? 'SAVING...'.tr : 'REGISTER STAFF'.tr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStaffDirectory(bool isMobile, Color primaryColor, AsyncValue<List<dynamic>> staffAsync) {
+    return Container(
+      color: Colors.grey.shade50,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            color: Colors.white,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Staff Directory'.tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ElevatedButton.icon(
+                  onPressed: () => _showAttendanceDialog(context),
+                  icon: const Icon(Icons.checklist, size: 18),
+                  label: Text('Mark Attendance'.tr),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: staffAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, s) => Center(child: Text('Error: $e')),
+              data: (staffList) {
+                if (staffList.isEmpty) return Center(child: Text('No staff members registered.'.tr));
+                return ListView.builder(
+                  padding: const EdgeInsets.only(top: 8, bottom: 20),
+                  itemCount: staffList.length,
+                  itemBuilder: (context, index) {
+                    final staff = staffList[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      child: ListTile(
+                        leading: CircleAvatar(backgroundColor: primaryColor.withOpacity(0.1), child: Icon(Icons.person, color: primaryColor)),
+                        title: Text(staff.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text('${staff.role ?? 'No Role'} | ₹${staff.salaryAmount} ${staff.salaryType.tr}'),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text('Balance'.tr, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                            Text('₹${staff.balance.toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, color: staff.balance < 0 ? Colors.red : Colors.green)),
+                          ],
+                        ),
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DesktopWrapper(child: StaffLedgerScreen(staff: staff)))),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.watch(languageProvider);
@@ -176,149 +313,57 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     final staffAsync = ref.watch(staffProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
 
+    if (isMobile) {
+      return DefaultTabController(
+        length: 2,
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text('Staff Management'.tr, style: const TextStyle(color: Colors.black87)),
+            backgroundColor: Colors.white,
+            elevation: 1,
+            bottom: TabBar(
+              labelColor: primaryColor,
+              unselectedLabelColor: Colors.grey.shade600,
+              indicatorColor: primaryColor,
+              indicatorWeight: 3,
+              tabs: [
+                Tab(icon: const Icon(Icons.people), text: 'Staff Directory'.tr),
+                Tab(icon: const Icon(Icons.person_add), text: 'Add Staff'.tr),
+              ],
+            ),
+          ),
+          body: TabBarView(
+            children: [
+              _buildStaffDirectory(true, primaryColor, staffAsync),
+              SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: _buildAddStaffForm(true, primaryColor),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Staff Management'.tr, style: const TextStyle(color: Colors.black87)),
         backgroundColor: Colors.white,
         elevation: 1,
       ),
-      body: Flex(
-        direction: isMobile ? Axis.vertical : Axis.horizontal,
+      body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            flex: isMobile ? 0 : 1,
+            flex: 1,
             child: SingleChildScrollView(
-              padding: EdgeInsets.all(isMobile ? 16 : 24),
-              child: Card(
-                elevation: 3,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Padding(
-                  padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Add New Staff'.tr, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
-                        const Divider(height: 32),
-                        TextFormField(
-                          controller: _nameCtrl,
-                          decoration: InputDecoration(labelText: 'Full Name *'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                          validator: (v) => v!.isEmpty ? 'Required'.tr : null,
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _phoneCtrl,
-                          decoration: InputDecoration(labelText: 'Phone Number'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                          keyboardType: TextInputType.phone,
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _roleCtrl,
-                          decoration: InputDecoration(labelText: 'Role (e.g., Driver, Milker)'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                        ),
-                        const SizedBox(height: 16),
-                        Wrap(
-                          spacing: 16,
-                          runSpacing: 16,
-                          children: [
-                            SizedBox(
-                              width: isMobile ? double.infinity : (MediaQuery.of(context).size.width / 4 - 40),
-                              child: TextFormField(
-                                controller: _salaryCtrl,
-                                decoration: InputDecoration(labelText: 'Base Salary / Wage *'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                                keyboardType: TextInputType.number,
-                                validator: (v) => v!.isEmpty ? 'Required'.tr : null,
-                              ),
-                            ),
-                            SizedBox(
-                              width: isMobile ? double.infinity : (MediaQuery.of(context).size.width / 4 - 60),
-                              child: DropdownButtonFormField<String>(
-                                decoration: InputDecoration(labelText: 'Type *'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                                value: _salaryType,
-                                items: ['Monthly', 'Daily'].map((e) => DropdownMenuItem(value: e, child: Text(e.tr))).toList(),
-                                onChanged: (v) => setState(() => _salaryType = v!),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton.icon(
-                            onPressed: _isSaving ? null : _submit,
-                            style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-                            icon: _isSaving ? const CircularProgressIndicator(color: Colors.white) : const Icon(Icons.check_circle),
-                            label: Text(_isSaving ? 'SAVING...'.tr : 'REGISTER STAFF'.tr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+              padding: const EdgeInsets.all(24),
+              child: _buildAddStaffForm(false, primaryColor),
             ),
           ),
-          
           Expanded(
-            flex: isMobile ? 1 : 2,
-            child: Container(
-              color: Colors.grey.shade50,
-              height: isMobile ? 500 : double.infinity,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16.0), 
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Staff Directory'.tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                        ElevatedButton.icon(
-                          onPressed: () => _showAttendanceDialog(context),
-                          icon: const Icon(Icons.checklist),
-                          label: Text('Mark Attendance'.tr),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: staffAsync.when(
-                      loading: () => const Center(child: CircularProgressIndicator()),
-                      error: (e, s) => Center(child: Text('Error: $e')),
-                      data: (staffList) {
-                        if (staffList.isEmpty) return Center(child: Text('No staff members registered.'.tr));
-                        return ListView.builder(
-                          itemCount: staffList.length,
-                          itemBuilder: (context, index) {
-                            final staff = staffList[index];
-                            return Card(
-                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              child: ListTile(
-                                leading: CircleAvatar(backgroundColor: primaryColor.withOpacity(0.1), child: Icon(Icons.person, color: primaryColor)),
-                                title: Text(staff.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                subtitle: Text('${staff.role ?? 'No Role'} | ₹${staff.salaryAmount} ${staff.salaryType.tr}'),
-                                trailing: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text('Balance'.tr, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-                                    Text('₹${staff.balance.toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, color: staff.balance < 0 ? Colors.red : Colors.green)),
-                                  ],
-                                ),
-                                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DesktopWrapper(child: StaffLedgerScreen(staff: staff)))),
-                              ),
-                            );
-                          },
-                        );
-                      }
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            flex: 2,
+            child: _buildStaffDirectory(false, primaryColor, staffAsync),
           ),
         ],
       ),

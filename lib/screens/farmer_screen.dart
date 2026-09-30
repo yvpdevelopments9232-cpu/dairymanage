@@ -94,66 +94,83 @@ class FarmerScreen extends ConsumerWidget {
                 elevation: 2,
                 margin: const EdgeInsets.only(bottom: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  leading: CircleAvatar(
-                    radius: 25,
-                    backgroundColor: primaryColor.withOpacity(0.1),
-                    child: Icon(Icons.person, color: primaryColor),
-                  ),
-                  title: Text(
-                    '#$displayId  ${farmer.name}', 
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
-                  ),
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 4.0),
-                    child: Text('${farmer.village ?? "No Village".tr} | 📞 ${farmer.mobile ?? "N/A"}'),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text('Ledger Bal'.tr, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                          const SizedBox(height: 4),
-                          Text(
-                            '₹ ${farmer.currentBalance.toStringAsFixed(2)}', 
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold, 
-                              fontSize: 15,
-                              color: farmer.currentBalance < 0 ? Colors.red.shade700 : Colors.green.shade700
-                            )
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 8),
-                      // Dropdown menu for Edit and Delete
-                      PopupMenuButton<String>(
-                        onSelected: (value) {
-                          if (value == 'edit') {
-                            _showFarmerDialog(context, existingFarmer: farmer);
-                          } else if (value == 'delete') {
-                            _confirmDelete(context, ref, farmer);
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          PopupMenuItem(
-                            value: 'edit',
-                            child: Row(children: [const Icon(Icons.edit, size: 20), const SizedBox(width: 8), Text('Edit'.tr)]),
-                          ),
-                          PopupMenuItem(
-                            value: 'delete',
-                            child: Row(children: [const Icon(Icons.delete, color: Colors.red, size: 20), const SizedBox(width: 8), Text('Delete'.tr, style: const TextStyle(color: Colors.red))]),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
                   onTap: () {
-                    // TODO: Open Farmer Profile / Ledger History
+                    // Open Farmer Profile / Ledger History
                   },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundColor: primaryColor.withOpacity(0.1),
+                          child: Icon(Icons.person, color: primaryColor, size: 28),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '#$displayId  ${farmer.name}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${farmer.village ?? "No Village".tr} | 📞 ${farmer.mobile ?? "N/A"}',
+                                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Text(
+                                    '${"Ledger Bal".tr}: ',
+                                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                                  ),
+                                  Text(
+                                    '₹ ${farmer.currentBalance.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: farmer.currentBalance < 0 ? Colors.red.shade700 : Colors.green.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Dropdown menu for Edit and Delete
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_vert, color: Colors.grey),
+                          onSelected: (value) {
+                            if (value == 'edit') {
+                              _showFarmerDialog(context, existingFarmer: farmer);
+                            } else if (value == 'delete') {
+                              _confirmDelete(context, ref, farmer);
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            PopupMenuItem(
+                              value: 'edit',
+                              child: Row(children: [const Icon(Icons.edit, size: 20), const SizedBox(width: 8), Text('Edit'.tr)]),
+                            ),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Row(children: [const Icon(Icons.delete, color: Colors.red, size: 20), const SizedBox(width: 8), Text('Delete'.tr, style: const TextStyle(color: Colors.red))]),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               );
             },

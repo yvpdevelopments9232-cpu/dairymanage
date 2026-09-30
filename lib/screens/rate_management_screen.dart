@@ -453,38 +453,53 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: Colors.amber.shade400, width: 1.2),
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.edit_note, color: Colors.amber.shade900, size: 26),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Editing Active Configuration: $_animalType (${isIncrease ? "Increase" : "Decrease"})',
-                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber.shade900, fontSize: 14),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.edit_note, color: Colors.amber.shade900, size: 24),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Editing Active Configuration: $_animalType (${isIncrease ? "Increase" : "Decrease"})',
+                                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber.shade900, fontSize: 14),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Modify base price or ranges below and tap "Update Configuration", or "Save as New Version" for a new date.',
+                                style: TextStyle(color: Colors.brown.shade700, fontSize: 12),
+                              ),
+                            ],
                           ),
-                          Text(
-                            'Modify base price or ranges below and tap "Update Configuration", or "Save as New Version" for a new date.',
-                            style: TextStyle(color: Colors.brown.shade700, fontSize: 12),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    TextButton.icon(
-                      icon: const Icon(Icons.add_circle, size: 18),
-                      label: const Text('Create New Instead'),
-                      style: TextButton.styleFrom(foregroundColor: Colors.blue.shade900),
-                      onPressed: () {
-                        setState(() {
-                          _editingConfigId = null;
-                          _effectiveDate = DateTime.now();
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Switched to New Configuration mode.'), duration: Duration(seconds: 1)),
-                        );
-                      },
+                    const SizedBox(height: 6),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        icon: const Icon(Icons.add_circle, size: 18),
+                        label: const Text('Create New Instead'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.blue.shade900,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _editingConfigId = null;
+                            _effectiveDate = DateTime.now();
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Switched to New Configuration mode.'), duration: Duration(seconds: 1)),
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),
@@ -1014,6 +1029,8 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           labelColor: Colors.blue.shade900,
           unselectedLabelColor: Colors.grey.shade700,
           indicatorColor: Colors.blue.shade900,

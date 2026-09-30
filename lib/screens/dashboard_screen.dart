@@ -629,13 +629,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white),
-            tooltip: 'Open Menu',
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
+        leading: _isMainDairyMode
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                tooltip: AppTranslations.tr('Local Dairy', lang),
+                onPressed: () {
+                  setState(() {
+                    _isMainDairyMode = false;
+                    _selectedIndex = 0;
+                  });
+                },
+              )
+            : Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu, color: Colors.white),
+                  tooltip: 'Open Menu',
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+              ),
         title: Text(
           _isMainDairyMode
               ? AppTranslations.tr('Main Dairy Portal', lang)
@@ -654,7 +665,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
               child: SyncStatusBadge(),
             ),
-          if (_isMainDairyMode)
+          if (_isMainDairyMode && isDesktop)
             TextButton.icon(
               icon: const Icon(Icons.arrow_back, color: Colors.white),
               label: Text(AppTranslations.tr('Local Dairy', lang).toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
