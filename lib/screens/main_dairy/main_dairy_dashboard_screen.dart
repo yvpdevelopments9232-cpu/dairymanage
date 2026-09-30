@@ -24,7 +24,7 @@ class MainDairyDashboardScreen extends ConsumerWidget {
         children: [
           // Top Bar with Calendar Date Selector
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            padding: EdgeInsets.symmetric(horizontal: isMobile ? 14 : 24, vertical: isMobile ? 12 : 16),
             color: Colors.white,
             child: Wrap(
               alignment: WrapAlignment.spaceBetween,
@@ -49,7 +49,7 @@ class MainDairyDashboardScreen extends ConsumerWidget {
                       children: [
                         Text(
                           'Main Dairy Daily Overview'.tr,
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor),
+                          style: TextStyle(fontSize: isMobile ? 18 : 20, fontWeight: FontWeight.bold, color: primaryColor),
                         ),
                         Text(
                           'Outward milk dispatches and collection tracking'.tr,
@@ -96,14 +96,14 @@ class MainDairyDashboardScreen extends ConsumerWidget {
                 final dateFormatted = DateFormat('dd MMMM yyyy').format(DateTime.parse(stats.selectedDate));
 
                 return SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
+                  padding: EdgeInsets.all(isMobile ? 14 : 24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // HERO CARD: TOTAL MILK COLLECTION AMOUNT (Requested Feature)
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(24),
+                        padding: EdgeInsets.all(isMobile ? 16 : 24),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [Colors.indigo.shade900, Colors.indigo.shade700],
@@ -273,29 +273,54 @@ class MainDairyDashboardScreen extends ConsumerWidget {
                       const SizedBox(height: 24),
 
                       // SHIFTS BREAKDOWN CARDS
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildShiftCard(
+                      if (isMobile)
+                        Column(
+                          children: [
+                            _buildShiftCard(
                               shiftName: 'Morning Shift'.tr,
                               icon: Icons.wb_sunny,
                               iconColor: Colors.amber.shade700,
                               quantity: stats.morningQuantity,
                               amount: stats.morningAmount,
+                              isMobile: true,
                             ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildShiftCard(
+                            const SizedBox(height: 14),
+                            _buildShiftCard(
                               shiftName: 'Evening Shift'.tr,
                               icon: Icons.nights_stay,
                               iconColor: Colors.indigo.shade600,
                               quantity: stats.eveningQuantity,
                               amount: stats.eveningAmount,
+                              isMobile: true,
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        )
+                      else
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildShiftCard(
+                                shiftName: 'Morning Shift'.tr,
+                                icon: Icons.wb_sunny,
+                                iconColor: Colors.amber.shade700,
+                                quantity: stats.morningQuantity,
+                                amount: stats.morningAmount,
+                                isMobile: false,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildShiftCard(
+                                shiftName: 'Evening Shift'.tr,
+                                icon: Icons.nights_stay,
+                                iconColor: Colors.indigo.shade600,
+                                quantity: stats.eveningQuantity,
+                                amount: stats.eveningAmount,
+                                isMobile: false,
+                              ),
+                            ),
+                          ],
+                        ),
                       const SizedBox(height: 28),
 
                       // DISPATCH DETAILS TABLE FOR SELECTED DATE
@@ -458,12 +483,13 @@ class MainDairyDashboardScreen extends ConsumerWidget {
     required Color iconColor,
     required double quantity,
     required double amount,
+    bool isMobile = false,
   }) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: EdgeInsets.all(isMobile ? 14 : 18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -471,31 +497,58 @@ class MainDairyDashboardScreen extends ConsumerWidget {
               children: [
                 Icon(icon, color: iconColor, size: 24),
                 const SizedBox(width: 8),
-                Text(shiftName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Expanded(
+                  child: Text(
+                    shiftName,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Quantity'.tr, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                    const SizedBox(height: 2),
-                    Text('${quantity.toStringAsFixed(2)} L', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Quantity'.tr,
+                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${quantity.toStringAsFixed(2)} L',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text('Total Amount'.tr, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                    const SizedBox(height: 2),
-                    Text(
-                      '₹ ${amount.toStringAsFixed(2)}',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.indigo.shade800),
-                    ),
-                  ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Total Amount'.tr,
+                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '₹ ${amount.toStringAsFixed(2)}',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.indigo.shade800),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

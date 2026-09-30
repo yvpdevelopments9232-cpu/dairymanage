@@ -261,6 +261,9 @@ class _MainDairyPaymentScreenState extends ConsumerState<MainDairyPaymentScreen>
 
     final isNarrow = MediaQuery.of(context).size.width < 900;
 
+    final formCard = _buildFormCard(context, isNarrow, dairies);
+    final historyCard = _buildHistorySection(context, isNarrow, paymentsAsync, dairies);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -280,19 +283,52 @@ class _MainDairyPaymentScreenState extends ConsumerState<MainDairyPaymentScreen>
           ),
         ],
       ),
-      body: Flex(
-        direction: isNarrow ? Axis.vertical : Axis.horizontal,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // LEFT PANEL: Payment Entry Form
-          Expanded(
-            flex: isNarrow ? 0 : 5,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Card(
-                elevation: 3,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Padding(
+      body: isNarrow
+          ? SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: formCard,
+                  ),
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: historyCard,
+                  ),
+                ],
+              ),
+            )
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: formCard,
+                  ),
+                ),
+                const VerticalDivider(width: 1, thickness: 1),
+                Expanded(
+                  flex: 6,
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: historyCard,
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildFormCard(BuildContext context, bool isNarrow, List<MainDairy> dairies) {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
                   padding: const EdgeInsets.all(20.0),
                   child: Form(
                     key: _formKey,
@@ -595,217 +631,239 @@ class _MainDairyPaymentScreenState extends ConsumerState<MainDairyPaymentScreen>
                     ),
                   ),
                 ),
-              ),
+    );
+  }
+
+  List<MainDairyPayment> _filterPayments(List<MainDairyPayment> payments) {
+    return payments.where((p) {
+      if (_historyDateFilter != null) {
+        final filterStr = DateFormat('yyyy-MM-dd').format(_historyDateFilter!);
+        if (p.paymentDate != filterStr) return false;
+      }
+      if (_historyQuery.isNotEmpty) {
+        final name = (p.dairyName ?? '').toLowerCase();
+        final noStr = p.dairyNo != null ? p.dairyNo.toString().padLeft(3, '0') : '';
+        final ref = (p.referenceNo ?? '').toLowerCase();
+        final mode = p.paymentMode.toLowerCase();
+        if (!name.contains(_historyQuery) && !noStr.contains(_historyQuery) && !ref.contains(_historyQuery) && !mode.contains(_historyQuery)) {
+          return false;
+        }
+      }
+      return true;
+    }).toList();
+  }
+
+  Widget _buildSummaryBanner(int count, double totalReceived) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.green.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.green.shade200),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            '$count Record(s) Found',
+            style: TextStyle(fontWeight: FontWeight.w600, color: Colors.green.shade900, fontSize: 13),
+          ),
+          Text(
+            'Total Received: ₹ ${totalReceived.toStringAsFixed(2)}',
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green.shade900, fontSize: 14),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistorySection(
+    BuildContext context,
+    bool isNarrow,
+    AsyncValue<List<MainDairyPayment>> paymentsAsync,
+    List<MainDairy> dairies,
+  ) {
+    Widget buildList(List<MainDairyPayment> filtered) {
+      if (filtered.isEmpty) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.receipt_long_outlined, size: 60, color: Colors.grey.shade400),
+                const SizedBox(height: 12),
+                Text(
+                  'No Main Dairy transactions found'.tr,
+                  style: const TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+              ],
             ),
           ),
+        );
+      }
+      return ListView.builder(
+        shrinkWrap: isNarrow,
+        physics: isNarrow ? const NeverScrollableScrollPhysics() : null,
+        itemCount: filtered.length,
+        itemBuilder: (context, index) {
+          final p = filtered[index];
+          final dairyNoStr = p.dairyNo != null ? '#${p.dairyNo.toString().padLeft(3, '0')} ' : '';
+          final dairyTitle = '$dairyNoStr${p.dairyName ?? "Main Dairy"}';
 
-          if (!isNarrow) const VerticalDivider(width: 1, thickness: 1),
-
-          // RIGHT PANEL: Recent Main Dairy Transactions
-          Expanded(
-            flex: isNarrow ? 0 : 6,
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
+          return Card(
+            elevation: 1,
+            margin: const EdgeInsets.only(bottom: 8),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              leading: CircleAvatar(
+                radius: 20,
+                backgroundColor: Colors.green.shade50,
+                child: const Icon(Icons.arrow_downward, color: Colors.green, size: 20),
+              ),
+              title: Text(
+                dairyTitle,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Recent Main Dairy Transactions'.tr,
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo),
-                      ),
-                      if (_historyDateFilter != null)
-                        TextButton.icon(
-                          onPressed: () => setState(() => _historyDateFilter = null),
-                          icon: const Icon(Icons.clear, size: 16),
-                          label: Text('Clear Date Filter'.tr),
-                        ),
-                    ],
+                  const SizedBox(height: 2),
+                  Text(
+                    '${p.paymentDate} | ${p.paymentMode}${p.referenceNo != null && p.referenceNo!.isNotEmpty ? " | Ref: ${p.referenceNo}" : ""}',
+                    style: const TextStyle(fontSize: 12, color: Colors.black87),
                   ),
-                  const SizedBox(height: 12),
-
-                  // Search & Date Filter Bar
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _searchHistoryCtrl,
-                          decoration: InputDecoration(
-                            hintText: 'Search History by Dairy Name / D. ID...'.tr,
-                            prefixIcon: const Icon(Icons.search, size: 20),
-                            suffixIcon: _searchHistoryCtrl.text.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear, size: 18),
-                                    onPressed: () {
-                                      _searchHistoryCtrl.clear();
-                                      setState(() => _historyQuery = '');
-                                    },
-                                  )
-                                : null,
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          ),
-                          onChanged: (v) => setState(() => _historyQuery = v.trim().toLowerCase()),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      IconButton(
-                        onPressed: _pickHistoryDate,
-                        tooltip: 'Filter by Date',
-                        style: IconButton.styleFrom(
-                          backgroundColor: _historyDateFilter != null ? Colors.indigo.shade100 : Colors.grey.shade100,
-                        ),
-                        icon: Icon(
-                          Icons.calendar_month,
-                          color: _historyDateFilter != null ? Colors.indigo : Colors.grey.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Transactions List
-                  Expanded(
-                    child: paymentsAsync.when(
-                      loading: () => const Center(child: CircularProgressIndicator()),
-                      error: (err, st) => Center(child: Text('Error loading payments: $err')),
-                      data: (payments) {
-                        final filtered = payments.where((p) {
-                          if (_historyDateFilter != null) {
-                            final filterStr = DateFormat('yyyy-MM-dd').format(_historyDateFilter!);
-                            if (p.paymentDate != filterStr) return false;
-                          }
-                          if (_historyQuery.isNotEmpty) {
-                            final name = (p.dairyName ?? '').toLowerCase();
-                            final noStr = p.dairyNo != null ? p.dairyNo.toString().padLeft(3, '0') : '';
-                            final ref = (p.referenceNo ?? '').toLowerCase();
-                            final mode = p.paymentMode.toLowerCase();
-                            if (!name.contains(_historyQuery) && !noStr.contains(_historyQuery) && !ref.contains(_historyQuery) && !mode.contains(_historyQuery)) {
-                              return false;
-                            }
-                          }
-                          return true;
-                        }).toList();
-
-                        final totalReceived = filtered.fold<double>(0.0, (sum, item) => sum + item.amount);
-
-                        return Column(
-                          children: [
-                            // Summary Banner
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                              margin: const EdgeInsets.only(bottom: 10),
-                              decoration: BoxDecoration(
-                                color: Colors.green.shade50,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.green.shade200),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    '${filtered.length} Record(s) Found',
-                                    style: TextStyle(fontWeight: FontWeight.w600, color: Colors.green.shade900, fontSize: 13),
-                                  ),
-                                  Text(
-                                    'Total Received: ₹ ${totalReceived.toStringAsFixed(2)}',
-                                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green.shade900, fontSize: 14),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            // List
-                            Expanded(
-                              child: filtered.isEmpty
-                                  ? Center(
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Icon(Icons.receipt_long_outlined, size: 60, color: Colors.grey.shade400),
-                                          const SizedBox(height: 12),
-                                          Text(
-                                            'No Main Dairy transactions found'.tr,
-                                            style: const TextStyle(fontSize: 16, color: Colors.grey),
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : ListView.builder(
-                                      itemCount: filtered.length,
-                                      itemBuilder: (context, index) {
-                                        final p = filtered[index];
-                                        final dairyNoStr = p.dairyNo != null ? '#${p.dairyNo.toString().padLeft(3, '0')} ' : '';
-                                        final dairyTitle = '$dairyNoStr${p.dairyName ?? "Main Dairy"}';
-
-                                        return Card(
-                                          elevation: 1,
-                                          margin: const EdgeInsets.only(bottom: 8),
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                          child: ListTile(
-                                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                                            leading: CircleAvatar(
-                                              radius: 20,
-                                              backgroundColor: Colors.green.shade50,
-                                              child: const Icon(Icons.arrow_downward, color: Colors.green, size: 20),
-                                            ),
-                                            title: Text(
-                                              dairyTitle,
-                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                            ),
-                                            subtitle: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                const SizedBox(height: 2),
-                                                Text(
-                                                  '${p.paymentDate} | ${p.paymentMode}${p.referenceNo != null && p.referenceNo!.isNotEmpty ? " | Ref: ${p.referenceNo}" : ""}',
-                                                  style: const TextStyle(fontSize: 12, color: Colors.black87),
-                                                ),
-                                                if (p.remarks != null && p.remarks!.isNotEmpty)
-                                                  Text(
-                                                    p.remarks!,
-                                                    style: const TextStyle(fontSize: 11, color: Colors.grey, fontStyle: FontStyle.italic),
-                                                  ),
-                                              ],
-                                            ),
-                                            trailing: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text(
-                                                  '₹ ${p.amount.toStringAsFixed(2)}',
-                                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.green),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                IconButton(
-                                                  icon: const Icon(Icons.edit, size: 18, color: Colors.blue),
-                                                  tooltip: 'Edit Payment',
-                                                  onPressed: () => _editPayment(p, dairies),
-                                                ),
-                                                IconButton(
-                                                  icon: const Icon(Icons.delete, size: 18, color: Colors.red),
-                                                  tooltip: 'Delete Payment',
-                                                  onPressed: () => _deletePayment(p),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                            ),
-                          ],
-                        );
-                      },
+                  if (p.remarks != null && p.remarks!.isNotEmpty)
+                    Text(
+                      p.remarks!,
+                      style: const TextStyle(fontSize: 11, color: Colors.grey, fontStyle: FontStyle.italic),
                     ),
+                ],
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '₹ ${p.amount.toStringAsFixed(2)}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.green),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.edit, size: 18, color: Colors.blue),
+                    tooltip: 'Edit Payment',
+                    onPressed: () => _editPayment(p, dairies),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+                    tooltip: 'Delete Payment',
+                    onPressed: () => _deletePayment(p),
                   ),
                 ],
               ),
             ),
+          );
+        },
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: isNarrow ? MainAxisSize.min : MainAxisSize.max,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Recent Main Dairy Transactions'.tr,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo),
+            ),
+            if (_historyDateFilter != null)
+              TextButton.icon(
+                onPressed: () => setState(() => _historyDateFilter = null),
+                icon: const Icon(Icons.clear, size: 16),
+                label: Text('Clear Date Filter'.tr),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // Search & Date Filter Bar
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _searchHistoryCtrl,
+                decoration: InputDecoration(
+                  hintText: 'Search History by Dairy Name / D. ID...'.tr,
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  suffixIcon: _searchHistoryCtrl.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () {
+                            _searchHistoryCtrl.clear();
+                            setState(() => _historyQuery = '');
+                          },
+                        )
+                      : null,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                ),
+                onChanged: (v) => setState(() => _historyQuery = v.trim().toLowerCase()),
+              ),
+            ),
+            const SizedBox(width: 10),
+            IconButton(
+              onPressed: _pickHistoryDate,
+              tooltip: 'Filter by Date',
+              style: IconButton.styleFrom(
+                backgroundColor: _historyDateFilter != null ? Colors.indigo.shade100 : Colors.grey.shade100,
+              ),
+              icon: Icon(
+                Icons.calendar_month,
+                color: _historyDateFilter != null ? Colors.indigo : Colors.grey.shade700,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // Transactions List
+        if (isNarrow)
+          paymentsAsync.when(
+            loading: () => const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator())),
+            error: (err, st) => Center(child: Text('Error loading payments: $err')),
+            data: (payments) {
+              final filtered = _filterPayments(payments);
+              final totalReceived = filtered.fold<double>(0.0, (sum, item) => sum + item.amount);
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildSummaryBanner(filtered.length, totalReceived),
+                  buildList(filtered),
+                ],
+              );
+            },
+          )
+        else
+          Expanded(
+            child: paymentsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, st) => Center(child: Text('Error loading payments: $err')),
+              data: (payments) {
+                final filtered = _filterPayments(payments);
+                final totalReceived = filtered.fold<double>(0.0, (sum, item) => sum + item.amount);
+                return Column(
+                  children: [
+                    _buildSummaryBanner(filtered.length, totalReceived),
+                    Expanded(child: buildList(filtered)),
+                  ],
+                );
+              },
+            ),
           ),
-        ],
-      ),
+      ],
     );
   }
 }

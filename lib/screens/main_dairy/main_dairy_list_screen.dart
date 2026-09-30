@@ -322,65 +322,96 @@ class _MainDairyListScreenState extends ConsumerState<MainDairyListScreen> {
                             elevation: 2,
                             margin: const EdgeInsets.only(bottom: 12),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-                              leading: CircleAvatar(
-                                radius: 24,
-                                backgroundColor: primaryColor.withOpacity(0.1),
-                                child: Icon(Icons.business, color: primaryColor),
-                              ),
-                              title: Text(
-                                '#$displayId  ${dairy.name}',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                              ),
-                              subtitle: Padding(
-                                padding: const EdgeInsets.only(top: 4.0),
-                                child: Text(
-                                  '${dairy.village != null && dairy.village!.isNotEmpty ? dairy.village : (dairy.address ?? "No Village")} | 📞 ${dairy.mobile ?? "N/A"}${dairy.animalType != null ? " | ${dairy.animalType}" : ""}',
-                                  style: const TextStyle(fontSize: 13, color: Colors.black87),
-                                ),
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
+                            child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                  // Top Row: Avatar + Name & ID + More Popup
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
-                                      const Text('Receivable Bal', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        '₹ ${dairy.currentBalance.toStringAsFixed(2)}',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 15,
-                                          color: dairy.currentBalance > 0 ? Colors.red.shade700 : Colors.green.shade700,
+                                      CircleAvatar(
+                                        radius: 20,
+                                        backgroundColor: primaryColor.withOpacity(0.1),
+                                        child: Icon(Icons.business, color: primaryColor, size: 22),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              '#$displayId  ${dairy.name}',
+                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              '${dairy.village != null && dairy.village!.isNotEmpty ? dairy.village : (dairy.address ?? "No Village")} | 📞 ${dairy.mobile ?? "N/A"}${dairy.animalType != null ? " | ${dairy.animalType}" : ""}',
+                                              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
                                         ),
+                                      ),
+                                      PopupMenuButton<String>(
+                                        icon: const Icon(Icons.more_vert),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                        onSelected: (value) {
+                                          if (value == 'edit') {
+                                            _showDairyDialog(context, existingDairy: dairy);
+                                          } else if (value == 'delete') {
+                                            _confirmDelete(context, dairy);
+                                          }
+                                        },
+                                        itemBuilder: (context) => [
+                                          const PopupMenuItem(
+                                            value: 'edit',
+                                            child: Row(children: [Icon(Icons.edit, size: 20), SizedBox(width: 8), Text('Edit')]),
+                                          ),
+                                          const PopupMenuItem(
+                                            value: 'delete',
+                                            child: Row(children: [Icon(Icons.delete, color: Colors.red, size: 20), SizedBox(width: 8), Text('Delete', style: TextStyle(color: Colors.red))]),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(width: 6),
-                                  IconButton(
-                                    icon: const Icon(Icons.payments, color: Colors.green),
-                                    tooltip: 'Receive Payment',
-                                    onPressed: () => _showPaymentDialog(context, dairy),
-                                  ),
-                                  PopupMenuButton<String>(
-                                    onSelected: (value) {
-                                      if (value == 'edit') {
-                                        _showDairyDialog(context, existingDairy: dairy);
-                                      } else if (value == 'delete') {
-                                        _confirmDelete(context, dairy);
-                                      }
-                                    },
-                                    itemBuilder: (context) => [
-                                      const PopupMenuItem(
-                                        value: 'edit',
-                                        child: Row(children: [Icon(Icons.edit, size: 20), SizedBox(width: 8), Text('Edit')]),
+                                  const Divider(height: 20),
+                                  // Bottom Row: Balance + Receive Payment Button
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text('Receivable Bal', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            '₹ ${dairy.currentBalance.toStringAsFixed(2)}',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                              color: dairy.currentBalance > 0 ? Colors.red.shade700 : Colors.green.shade700,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      const PopupMenuItem(
-                                        value: 'delete',
-                                        child: Row(children: [Icon(Icons.delete, color: Colors.red, size: 20), SizedBox(width: 8), Text('Delete', style: TextStyle(color: Colors.red))]),
+                                      ElevatedButton.icon(
+                                        icon: const Icon(Icons.payments, size: 18),
+                                        label: const Text('Receive Payment', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.green.shade700,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                          elevation: 1,
+                                        ),
+                                        onPressed: () => _showPaymentDialog(context, dairy),
                                       ),
                                     ],
                                   ),

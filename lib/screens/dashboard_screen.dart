@@ -204,112 +204,175 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               children: [
                 Icon(Icons.tune, color: primaryColor),
                 const SizedBox(width: 10),
-                Text(
-                  AppTranslations.tr('Select Display Mode', lang),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                Expanded(
+                  child: Text(
+                    AppTranslations.tr('Select Display Mode', lang),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
                 ),
               ],
             ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Option 1: Previous / Desktop Mode
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    decoration: BoxDecoration(
-                      color: activeMode == DisplayMode.previous ? Colors.blue.shade50 : Colors.transparent,
+            content: SizedBox(
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Option 1: Previous / Desktop Mode
+                    InkWell(
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: activeMode == DisplayMode.previous ? Colors.blue.shade400 : Colors.grey.shade300,
-                        width: activeMode == DisplayMode.previous ? 2 : 1,
-                      ),
-                    ),
-                    child: RadioListTile<DisplayMode>(
-                      value: DisplayMode.previous,
-                      groupValue: activeMode,
-                      activeColor: primaryColor,
-                      secondary: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.desktop_windows, color: Colors.blue),
-                      ),
-                      title: Text(
-                        AppTranslations.tr('Previous / Desktop Mode', lang),
-                        style: TextStyle(
-                          fontWeight: activeMode == DisplayMode.previous ? FontWeight.bold : FontWeight.normal,
-                          fontSize: 15,
-                        ),
-                      ),
-                      subtitle: Text(
-                        AppTranslations.tr('Preserves original desktop layout and zoom controls', lang),
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      onChanged: (mode) {
-                        if (mode != null) {
-                          ref.read(displayModeProvider.notifier).setDisplayMode(mode);
-                          Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(AppTranslations.tr('Previous / Desktop Mode', lang)),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                        }
+                      onTap: () {
+                        ref.read(displayModeProvider.notifier).setDisplayMode(DisplayMode.previous);
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(AppTranslations.tr('Previous / Desktop Mode', lang)),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
                       },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: activeMode == DisplayMode.previous ? Colors.blue.shade50 : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: activeMode == DisplayMode.previous ? Colors.blue.shade400 : Colors.grey.shade300,
+                            width: activeMode == DisplayMode.previous ? 2 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Radio<DisplayMode>(
+                              value: DisplayMode.previous,
+                              groupValue: activeMode,
+                              activeColor: primaryColor,
+                              onChanged: (mode) {
+                                if (mode != null) {
+                                  ref.read(displayModeProvider.notifier).setDisplayMode(mode);
+                                  Navigator.pop(ctx);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(AppTranslations.tr('Previous / Desktop Mode', lang)),
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    AppTranslations.tr('Previous / Desktop Mode', lang),
+                                    style: TextStyle(
+                                      fontWeight: activeMode == DisplayMode.previous ? FontWeight.bold : FontWeight.w600,
+                                      fontSize: 15,
+                                      color: activeMode == DisplayMode.previous ? Colors.blue.shade900 : Colors.black87,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    AppTranslations.tr('Preserves original desktop layout and zoom controls', lang),
+                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade100,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.desktop_windows, color: Colors.blue, size: 22),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                  // Option 2: Mobile Mode
-                  Container(
-                    decoration: BoxDecoration(
-                      color: activeMode == DisplayMode.mobile ? Colors.green.shade50 : Colors.transparent,
+                    // Option 2: Mobile Mode
+                    InkWell(
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: activeMode == DisplayMode.mobile ? Colors.green.shade400 : Colors.grey.shade300,
-                        width: activeMode == DisplayMode.mobile ? 2 : 1,
-                      ),
-                    ),
-                    child: RadioListTile<DisplayMode>(
-                      value: DisplayMode.mobile,
-                      groupValue: activeMode,
-                      activeColor: Colors.green.shade700,
-                      secondary: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(Icons.smartphone, color: Colors.green.shade800),
-                      ),
-                      title: Text(
-                        AppTranslations.tr('Mobile Mode', lang),
-                        style: TextStyle(
-                          fontWeight: activeMode == DisplayMode.mobile ? FontWeight.bold : FontWeight.normal,
-                          fontSize: 15,
-                        ),
-                      ),
-                      subtitle: Text(
-                        AppTranslations.tr('Responsive touch-friendly layout optimized for mobile', lang),
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      onChanged: (mode) {
-                        if (mode != null) {
-                          ref.read(displayModeProvider.notifier).setDisplayMode(mode);
-                          Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(AppTranslations.tr('Mobile Mode', lang)),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                        }
+                      onTap: () {
+                        ref.read(displayModeProvider.notifier).setDisplayMode(DisplayMode.mobile);
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(AppTranslations.tr('Mobile Mode', lang)),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
                       },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: activeMode == DisplayMode.mobile ? Colors.green.shade50 : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: activeMode == DisplayMode.mobile ? Colors.green.shade400 : Colors.grey.shade300,
+                            width: activeMode == DisplayMode.mobile ? 2 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Radio<DisplayMode>(
+                              value: DisplayMode.mobile,
+                              groupValue: activeMode,
+                              activeColor: Colors.green.shade700,
+                              onChanged: (mode) {
+                                if (mode != null) {
+                                  ref.read(displayModeProvider.notifier).setDisplayMode(mode);
+                                  Navigator.pop(ctx);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(AppTranslations.tr('Mobile Mode', lang)),
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    AppTranslations.tr('Mobile Mode', lang),
+                                    style: TextStyle(
+                                      fontWeight: activeMode == DisplayMode.mobile ? FontWeight.bold : FontWeight.w600,
+                                      fontSize: 15,
+                                      color: activeMode == DisplayMode.mobile ? Colors.green.shade900 : Colors.black87,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    AppTranslations.tr('Responsive touch-friendly layout optimized for mobile', lang),
+                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.green.shade100,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(Icons.smartphone, color: Colors.green.shade800, size: 22),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             actions: [

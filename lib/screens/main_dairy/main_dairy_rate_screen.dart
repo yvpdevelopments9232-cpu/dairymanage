@@ -338,9 +338,10 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
     final lang = ref.watch(languageProvider);
     final themeColor = isIncrease ? Colors.green.shade600 : Colors.red.shade600;
     final bgColor = isIncrease ? Colors.green.shade50 : Colors.red.shade50;
+    final isMobile = MediaQuery.of(context).size.width < 600;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(isMobile ? 12 : 16),
       child: Form(
         key: isIncrease ? _incFormKey : _decFormKey,
         child: Column(
@@ -360,11 +361,13 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
                       children: [
                         Icon(isIncrease ? Icons.arrow_upward : Icons.arrow_downward, color: themeColor, size: 28),
                         const SizedBox(width: 8),
-                        Text(
-                          isIncrease
-                              ? AppTranslations.tr('Main Dairy Rate Increase Chart', lang)
-                              : AppTranslations.tr('Main Dairy Rate Decrease Chart', lang),
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: themeColor),
+                        Expanded(
+                          child: Text(
+                            isIncrease
+                                ? AppTranslations.tr('Main Dairy Rate Increase Chart', lang)
+                                : AppTranslations.tr('Main Dairy Rate Decrease Chart', lang),
+                            style: TextStyle(fontSize: isMobile ? 17 : 20, fontWeight: FontWeight.bold, color: themeColor),
+                          ),
                         ),
                       ],
                     ),
@@ -453,38 +456,51 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: Colors.amber.shade400, width: 1.2),
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.edit_note, color: Colors.amber.shade900, size: 26),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.edit_note, color: Colors.amber.shade900, size: 24),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
                             'Editing Active Main Dairy Configuration: $_animalType (${isIncrease ? "Increase" : "Decrease"})',
-                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber.shade900, fontSize: 14),
+                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber.shade900, fontSize: 13),
                           ),
-                          Text(
-                            'Modify base values or ranges below and tap "Update Configuration", or "Save as New Version".',
-                            style: TextStyle(color: Colors.brown.shade700, fontSize: 12),
-                          ),
-                        ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 32.0),
+                      child: Text(
+                        'Modify base values or ranges below and tap "Update Configuration", or "Save as New Version".',
+                        style: TextStyle(color: Colors.brown.shade700, fontSize: 12),
                       ),
                     ),
-                    TextButton.icon(
-                      icon: const Icon(Icons.add_circle, size: 18),
-                      label: const Text('Create New Instead'),
-                      style: TextButton.styleFrom(foregroundColor: Colors.blue.shade900),
-                      onPressed: () {
-                        setState(() {
-                          _editingConfigId = null;
-                          _effectiveDate = DateTime.now();
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Switched to New Configuration mode.'), duration: Duration(seconds: 1)),
-                        );
-                      },
+                    const SizedBox(height: 6),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        icon: const Icon(Icons.add_circle, size: 16),
+                        label: const Text('Create New Instead', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.blue.shade900,
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _editingConfigId = null;
+                            _effectiveDate = DateTime.now();
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Switched to New Configuration mode.'), duration: Duration(seconds: 1)),
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),
@@ -935,6 +951,8 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           labelColor: Colors.blue.shade900,
           unselectedLabelColor: Colors.grey.shade700,
           indicatorColor: Colors.blue.shade900,
