@@ -48,6 +48,14 @@ CREATE POLICY "Users can insert own pending profile"
     FOR INSERT TO authenticated
     WITH CHECK (auth.uid() = id AND status = 'pending');
 
+-- Users can update their own profile (status must remain pending)
+DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
+CREATE POLICY "Users can update own profile"
+    ON public.users
+    FOR UPDATE TO authenticated
+    USING (auth.uid() = id)
+    WITH CHECK (auth.uid() = id AND status = 'pending');
+
 GRANT ALL ON public.users TO authenticated;
 
 
@@ -154,7 +162,8 @@ DECLARE
         'bonus_transactions',
         'staff',
         'staff_transactions',
-        'staff_attendance'
+        'staff_attendance',
+        'audit_logs'
     ];
 BEGIN
     FOREACH tbl IN ARRAY tables
@@ -171,6 +180,14 @@ BEGIN
                 WHERE table_schema = 'public' AND table_name = tbl AND column_name = 'owner_id'
             ) INTO has_owner_id;
 
+            -- Set automatic default to auth.uid()
+            IF has_user_id THEN
+                EXECUTE format('ALTER TABLE public.%I ALTER COLUMN user_id SET DEFAULT auth.uid();', tbl);
+            END IF;
+            IF has_owner_id THEN
+                EXECUTE format('ALTER TABLE public.%I ALTER COLUMN owner_id SET DEFAULT auth.uid();', tbl);
+            END IF;
+
             -- Construct precise tenant condition matching this table's schema
             IF has_user_id AND has_owner_id THEN
                 condition := '(user_id = auth.uid() OR owner_id = auth.uid())';
@@ -179,8 +196,8 @@ BEGIN
             ELSIF has_owner_id THEN
                 condition := '(owner_id = auth.uid())';
             ELSE
-                -- Neither exists; add user_id column
-                EXECUTE format('ALTER TABLE public.%I ADD COLUMN IF NOT EXISTS user_id UUID;', tbl);
+                -- Neither exists; add user_id column with DEFAULT auth.uid()
+                EXECUTE format('ALTER TABLE public.%I ADD COLUMN IF NOT EXISTS user_id UUID DEFAULT auth.uid();', tbl);
                 condition := '(user_id = auth.uid())';
             END IF;
 
