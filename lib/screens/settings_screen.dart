@@ -145,8 +145,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         data: (settings) {
           WidgetsBinding.instance.addPostFrameCallback((_) => _initData(settings));
 
+          final isMobile = MediaQuery.of(context).size.width < 600;
+
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
+            padding: EdgeInsets.all(isMobile ? 12.0 : 24.0),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 800),
@@ -347,7 +349,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         elevation: 2,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         child: Padding(
-                          padding: const EdgeInsets.all(24.0),
+                          padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -355,7 +357,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 children: [
                                   Icon(Icons.business, color: primaryColor, size: 28),
                                   const SizedBox(width: 12),
-                                  Text(AppTranslations.tr('General Settings', currentLang), style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
+                                  Expanded(
+                                    child: Text(
+                                      AppTranslations.tr('General Settings', currentLang),
+                                      style: TextStyle(fontSize: isMobile ? 18 : 20, fontWeight: FontWeight.bold, color: primaryColor),
+                                    ),
+                                  ),
                                 ],
                               ),
                               const Divider(height: 32),
@@ -426,7 +433,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         elevation: 2,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         child: Padding(
-                          padding: const EdgeInsets.all(24.0),
+                          padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -434,18 +441,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 children: [
                                   Icon(Icons.print, color: primaryColor, size: 28),
                                   const SizedBox(width: 12),
-                                  Text(AppTranslations.tr('Receipt Printing Details', currentLang), style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
+                                  Expanded(
+                                    child: Text(
+                                      AppTranslations.tr('Receipt Printing Details', currentLang),
+                                      style: TextStyle(fontSize: isMobile ? 18 : 20, fontWeight: FontWeight.bold, color: primaryColor),
+                                    ),
+                                  ),
                                 ],
                               ),
                               const Divider(height: 32),
                               TextFormField(
                                 controller: _headerCtrl,
-                                decoration: InputDecoration(labelText: AppTranslations.tr('Receipt Header (e.g. Thanks for visiting!)', currentLang), border: const OutlineInputBorder()),
+                                decoration: InputDecoration(
+                                  labelText: AppTranslations.tr('Receipt Header', currentLang),
+                                  helperText: currentLang == 'mr' ? 'उदा. भेट दिल्याबद्दल धन्यवाद!' : 'e.g. Thanks for visiting!',
+                                  border: const OutlineInputBorder(),
+                                ),
                               ),
                               const SizedBox(height: 16),
                               TextFormField(
                                 controller: _footerCtrl,
-                                decoration: InputDecoration(labelText: AppTranslations.tr('Receipt Footer (e.g. Visit again)', currentLang), border: const OutlineInputBorder()),
+                                decoration: InputDecoration(
+                                  labelText: AppTranslations.tr('Receipt Footer', currentLang),
+                                  helperText: currentLang == 'mr' ? 'उदा. पुन्हा भेट द्या' : 'e.g. Visit again',
+                                  border: const OutlineInputBorder(),
+                                ),
                               ),
                             ],
                           ),
@@ -476,7 +496,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           elevation: 2,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           child: Padding(
-                            padding: const EdgeInsets.all(24.0),
+                            padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -484,8 +504,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   children: [
                                     Icon(Icons.backup, color: Colors.teal.shade800, size: 28),
                                     const SizedBox(width: 12),
-                                    Text(AppTranslations.tr('Local Database Backup & Restore', currentLang),
-                                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.teal.shade800)),
+                                    Expanded(
+                                      child: Text(
+                                        AppTranslations.tr('Local Database Backup & Restore', currentLang),
+                                        style: TextStyle(fontSize: isMobile ? 18 : 20, fontWeight: FontWeight.bold, color: Colors.teal.shade800),
+                                      ),
+                                    ),
                                   ],
                                 ),
                                 const Divider(height: 32),

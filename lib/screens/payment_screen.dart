@@ -459,21 +459,95 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                     final p = filtered[index];
                     final isPaymentIn = p.paymentType == 'In';
                     final color = isPaymentIn ? Colors.green : Colors.red;
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: color.withOpacity(0.1),
-                        child: Icon(isPaymentIn ? Icons.arrow_downward : Icons.arrow_upward, color: color),
+                    return Card(
+                      elevation: 0,
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: BorderSide(color: Colors.grey.shade200),
                       ),
-                      title: Text(p.partyName ?? 'Unknown (${p.partyType.tr})', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text('${p.paymentDate} | ${p.paymentMode.tr}'),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('₹${p.amount.toStringAsFixed(2)}', style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16)),
-                          const SizedBox(width: 8),
-                          IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => _editPayment(p)),
-                          IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _deletePayment(p.id)),
-                        ],
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                CircleAvatar(
+                                  radius: 18,
+                                  backgroundColor: color.withOpacity(0.12),
+                                  child: Icon(
+                                    isPaymentIn ? Icons.arrow_downward : Icons.arrow_upward,
+                                    color: color,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    p.partyName ?? 'Unknown (${p.partyType.tr})',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '₹${p.amount.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    color: color,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 46.0),
+                                  child: Text(
+                                    '${p.paymentDate} • ${p.paymentMode.tr}',
+                                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                                  ),
+                                ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                      tooltip: 'Edit'.tr,
+                                      onPressed: () {
+                                        _editPayment(p);
+                                        if (isMobile) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Editing payment for ${p.partyName}'.tr),
+                                              duration: const Duration(seconds: 1),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                    ),
+                                    const SizedBox(width: 4),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                      tooltip: 'Delete'.tr,
+                                      onPressed: () => _deletePayment(p.id),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   },

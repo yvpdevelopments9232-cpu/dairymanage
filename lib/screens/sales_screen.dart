@@ -319,6 +319,131 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     );
   }
 
+  void _confirmDeleteSale(BuildContext context, Sale sale) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Delete Sale'.tr),
+        content: Text('${'Are you sure you want to delete sale'.tr} ${sale.invoiceNo} (₹${sale.grandTotal})? ${'This will adjust product stock.'.tr}'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('CANCEL'.tr)),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await ref.read(salesProvider.notifier).deleteSale(sale.id, sale.invoiceNo);
+                ref.invalidate(productsProvider);
+                ref.invalidate(customersProvider);
+                ref.invalidate(farmersProvider);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sale deleted successfully'.tr)));
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                }
+              }
+            },
+            child: Text('DELETE'.tr, style: const TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditSaleDialog(BuildContext context, Sale sale) {
+    final paidCtrl = TextEditingController(text: sale.paidAmount.toString());
+    final totalCtrl = TextEditingController(text: sale.grandTotal.toString());
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final total = double.tryParse(totalCtrl.text) ?? sale.grandTotal;
+          final paid = double.tryParse(paidCtrl.text) ?? sale.paidAmount;
+          final bal = total - paid;
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text('${'Edit Sale'.tr} - ${sale.invoiceNo}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('${'Customer/Farmer:'.tr} ${sale.customerName ?? sale.farmerName ?? 'Unknown'.tr}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: totalCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Total Amount (₹)'.tr,
+                      border: const OutlineInputBorder(),
+                    ),
+                    onChanged: (_) => setDialogState(() {}),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: paidCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Paid Amount (₹)'.tr,
+                      border: const OutlineInputBorder(),
+                    ),
+                    onChanged: (_) => setDialogState(() {}),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Balance (₹):'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text('₹${bal.toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, color: bal > 0 ? Colors.red : Colors.green)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text('CANCEL'.tr)),
+              ElevatedButton(
+                onPressed: () async {
+                  final newTotal = double.tryParse(totalCtrl.text) ?? sale.grandTotal;
+                  final newPaid = double.tryParse(paidCtrl.text) ?? sale.paidAmount;
+                  Navigator.pop(ctx);
+                  try {
+                    await ref.read(salesProvider.notifier).updateSale(
+                      saleId: sale.id,
+                      qty: 1,
+                      rate: newTotal,
+                      paidAmount: newPaid,
+                    );
+                    ref.invalidate(customersProvider);
+                    ref.invalidate(farmersProvider);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sale updated successfully'.tr), backgroundColor: Colors.green));
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                    }
+                  }
+                },
+                child: Text('UPDATE'.tr),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildHistoryContent(BuildContext context, Color primaryColor, AsyncValue<List<Sale>> salesAsync) {
     return Container(
       color: Colors.grey.shade50,
@@ -339,17 +464,87 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                 itemBuilder: (context, index) {
                   final s = sales[index];
                   final name = s.customerName ?? s.farmerName ?? 'Unknown'.tr;
-                  return ListTile(
-                    leading: const CircleAvatar(child: Icon(Icons.storefront)),
-                    title: Text(name),
-                    subtitle: Text('${s.invoiceNo} | ₹${s.grandTotal}'),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text('${'Paid:'.tr} ₹${s.paidAmount}', style: const TextStyle(color: Colors.green, fontSize: 12)),
-                        Text('${'Bal:'.tr} ₹${s.balance}', style: const TextStyle(color: Colors.red, fontSize: 12)),
-                      ],
+                  return Card(
+                    elevation: 0,
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      side: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const CircleAvatar(
+                                radius: 18,
+                                child: Icon(Icons.storefront, size: 20),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      name,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      '${s.invoiceNo} • ${s.saleDate}',
+                                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '₹${s.grandTotal}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(left: 46.0),
+                                child: Row(
+                                  children: [
+                                    Text('${'Paid:'.tr} ₹${s.paidAmount}', style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.w600)),
+                                    const SizedBox(width: 12),
+                                    Text('${'Bal:'.tr} ₹${s.balance}', style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.w600)),
+                                  ],
+                                ),
+                              ),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                    tooltip: 'Edit'.tr,
+                                    onPressed: () => _showEditSaleDialog(context, s),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                    tooltip: 'Delete'.tr,
+                                    onPressed: () => _confirmDeleteSale(context, s),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },

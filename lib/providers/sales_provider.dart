@@ -79,6 +79,56 @@ class SalesNotifier extends AsyncNotifier<List<Sale>> {
       rethrow;
     }
   }
+
+  Future<void> deleteSale(String saleId, String invoiceNo) async {
+    final supabase = ref.read(supabaseClientProvider);
+    state = const AsyncValue.loading();
+    try {
+      await supabase.from('sale_items').delete().eq('sale_id', saleId);
+      try {
+        await supabase.from('payments').delete().like('remarks', '%$invoiceNo%');
+      } catch (_) {}
+      await supabase.from('sales').delete().eq('id', saleId);
+      state = await AsyncValue.guard(() => _fetchSales());
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+
+  Future<void> updateSale({
+    required String saleId,
+    required double qty,
+    required double rate,
+    required double paidAmount,
+  }) async {
+    final supabase = ref.read(supabaseClientProvider);
+    state = const AsyncValue.loading();
+    try {
+      final totalAmount = qty * rate;
+      final balance = totalAmount - paidAmount;
+
+      await supabase.from('sales').update({
+        'subtotal': totalAmount,
+        'grand_total': totalAmount,
+        'paid_amount': paidAmount,
+        'balance': balance,
+      }).eq('id', saleId);
+
+      try {
+        await supabase.from('sale_items').update({
+          'quantity': qty,
+          'rate': rate,
+          'total_amount': totalAmount,
+        }).eq('sale_id', saleId);
+      } catch (_) {}
+
+      state = await AsyncValue.guard(() => _fetchSales());
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
 }
 
 final salesProvider = AsyncNotifierProvider<SalesNotifier, List<Sale>>(() {

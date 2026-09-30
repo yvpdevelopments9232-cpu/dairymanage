@@ -75,6 +75,57 @@ class PurchaseNotifier extends AsyncNotifier<List<Purchase>> {
       rethrow;
     }
   }
+
+  Future<void> deletePurchase(String purchaseId, String invoiceNo) async {
+    final supabase = ref.read(supabaseClientProvider);
+    state = const AsyncValue.loading();
+    try {
+      await supabase.from('purchase_items').delete().eq('purchase_id', purchaseId);
+      try {
+        await supabase.from('payments').delete().like('remarks', '%$invoiceNo%');
+      } catch (_) {}
+      await supabase.from('purchases').delete().eq('id', purchaseId);
+      state = await AsyncValue.guard(() => _fetchPurchases());
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+
+  Future<void> updatePurchase({
+    required String purchaseId,
+    required double qty,
+    required double purchaseRate,
+    required double paidAmount,
+    String? vehicleNo,
+  }) async {
+    final supabase = ref.read(supabaseClientProvider);
+    state = const AsyncValue.loading();
+    try {
+      final totalAmount = qty * purchaseRate;
+      final balance = totalAmount - paidAmount;
+
+      await supabase.from('purchases').update({
+        'subtotal': totalAmount,
+        'grand_total': totalAmount,
+        'paid_amount': paidAmount,
+        'balance': balance,
+        if (vehicleNo != null) 'vehicle_no': vehicleNo,
+      }).eq('id', purchaseId);
+
+      try {
+        await supabase.from('purchase_items').update({
+          'quantity': qty,
+          'purchase_rate': purchaseRate,
+        }).eq('purchase_id', purchaseId);
+      } catch (_) {}
+
+      state = await AsyncValue.guard(() => _fetchPurchases());
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
 }
 
 final purchaseProvider = AsyncNotifierProvider<PurchaseNotifier, List<Purchase>>(() {

@@ -629,21 +629,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: _isMainDairyMode
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                tooltip: AppTranslations.tr('Local Dairy', lang),
-                onPressed: () {
-                  setState(() {
-                    _isMainDairyMode = false;
-                    _selectedIndex = 0;
-                  });
-                },
-              )
+        leading: isDesktop
+            ? null
             : Builder(
                 builder: (context) => IconButton(
                   icon: const Icon(Icons.menu, color: Colors.white),
-                  tooltip: 'Open Menu',
+                  tooltip: AppTranslations.tr('Open Menu', lang),
                   onPressed: () => Scaffold.of(context).openDrawer(),
                 ),
               ),
@@ -729,7 +720,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             icon: const Icon(Icons.more_vert, color: Colors.white),
             tooltip: AppTranslations.tr('Options', lang),
             onSelected: (val) {
-              if (val == 'mode') {
+              if (val == 'local_dairy') {
+                setState(() {
+                  _isMainDairyMode = false;
+                  _selectedIndex = 0;
+                });
+              } else if (val == 'mode') {
                 _showDisplayModeDialog(context);
               } else if (val == 'language') {
                 _showLanguageDialog(context);
@@ -758,6 +754,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             itemBuilder: (ctx) {
               final activeDisplayMode = ref.read(displayModeProvider);
               return [
+                if (_isMainDairyMode)
+                  PopupMenuItem(
+                    value: 'local_dairy',
+                    child: Row(
+                      children: [
+                        Icon(Icons.arrow_back, color: Colors.blue.shade700, size: 20),
+                        const SizedBox(width: 10),
+                        Text(
+                          AppTranslations.tr('Local Dairy', lang),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
                 // 1. Mode Option
                 PopupMenuItem(
                   value: 'mode',
