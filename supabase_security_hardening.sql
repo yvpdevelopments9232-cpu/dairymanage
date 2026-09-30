@@ -1,5 +1,5 @@
 -- ==============================================================================
--- MASTER SUPABASE SECURITY HARDENING & TENANT ISOLATION SCRIPT
+-- MASTER SUPABASE SECURITY HARDENING & TENANT ISOLATION SCRIPT (AUTO-DETECT COLUMNS)
 -- Paste and Run this in your Supabase SQL Editor:
 -- Dashboard -> SQL Editor -> New Query -> Paste & Click 'Run'
 -- ==============================================================================
@@ -120,11 +120,14 @@ GRANT ALL ON public.subscription_payments TO authenticated;
 
 
 -- ------------------------------------------------------------------------------
--- 5. HARDEN ALL BUSINESS TABLES (Strict Tenant Isolation)
+-- 5. HARDEN ALL BUSINESS TABLES (Dynamic Column Detection: user_id vs owner_id)
 -- ------------------------------------------------------------------------------
 DO $do$
 DECLARE
     tbl text;
+    has_user_id boolean;
+    has_owner_id boolean;
+    condition text;
     tables text[] := ARRAY[
         'farmers',
         'animals',
@@ -157,6 +160,30 @@ BEGIN
     FOREACH tbl IN ARRAY tables
     LOOP
         IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = tbl) THEN
+            -- Check which tenant column exists in this table
+            SELECT EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_schema = 'public' AND table_name = tbl AND column_name = 'user_id'
+            ) INTO has_user_id;
+
+            SELECT EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_schema = 'public' AND table_name = tbl AND column_name = 'owner_id'
+            ) INTO has_owner_id;
+
+            -- Construct precise tenant condition matching this table's schema
+            IF has_user_id AND has_owner_id THEN
+                condition := '(user_id = auth.uid() OR owner_id = auth.uid())';
+            ELSIF has_user_id THEN
+                condition := '(user_id = auth.uid())';
+            ELSIF has_owner_id THEN
+                condition := '(owner_id = auth.uid())';
+            ELSE
+                -- Neither exists; add user_id column
+                EXECUTE format('ALTER TABLE public.%I ADD COLUMN IF NOT EXISTS user_id UUID;', tbl);
+                condition := '(user_id = auth.uid())';
+            END IF;
+
             -- Enable Row Level Security
             EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY;', tbl);
             
@@ -166,14 +193,13 @@ BEGIN
             EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I;', 'Allow all operations for authenticated users', tbl);
             EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I;', 'Tenant isolation for ' || tbl, tbl);
             
-            -- Create bulletproof tenant policy:
-            -- An authenticated user can only access rows where user_id or owner_id equals their auth.uid()
+            -- Create bulletproof tenant policy using the exact detected condition
             EXECUTE format('
                 CREATE POLICY %I ON public.%I
                 FOR ALL TO authenticated
-                USING (user_id = auth.uid() OR owner_id = auth.uid())
-                WITH CHECK (user_id = auth.uid() OR owner_id = auth.uid());
-            ', 'Tenant isolation for ' || tbl, tbl);
+                USING (%s)
+                WITH CHECK (%s);
+            ', 'Tenant isolation for ' || tbl, tbl, condition, condition);
             
             -- Grant table access to authenticated role
             EXECUTE format('GRANT ALL ON public.%I TO authenticated;', tbl);
@@ -198,29 +224,24 @@ BEGIN
             CREATE POLICY "Tenant isolation for sale_items" ON public.sale_items
             FOR ALL TO authenticated
             USING (
-                user_id = auth.uid() 
-                OR EXISTS (
+                EXISTS (
                     SELECT 1 FROM public.sales s 
                     WHERE s.id = sale_items.sale_id 
-                      AND (s.user_id = auth.uid() OR s.owner_id = auth.uid())
+                      AND s.user_id = auth.uid()
                 )
             )
             WITH CHECK (
-                user_id = auth.uid() 
-                OR EXISTS (
+                EXISTS (
                     SELECT 1 FROM public.sales s 
                     WHERE s.id = sale_items.sale_id 
-                      AND (s.user_id = auth.uid() OR s.owner_id = auth.uid())
+                      AND s.user_id = auth.uid()
                 )
             );
         ';
         EXECUTE 'GRANT ALL ON public.sale_items TO authenticated;';
     END IF;
-END $do$;
 
--- purchase_items
-DO $do$
-BEGIN
+    -- purchase_items
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'purchase_items') THEN
         EXECUTE 'ALTER TABLE public.purchase_items ENABLE ROW LEVEL SECURITY;';
         EXECUTE 'DROP POLICY IF EXISTS "Allow all public purchase_items" ON public.purchase_items;';
@@ -231,19 +252,17 @@ BEGIN
             CREATE POLICY "Tenant isolation for purchase_items" ON public.purchase_items
             FOR ALL TO authenticated
             USING (
-                user_id = auth.uid() 
-                OR EXISTS (
+                EXISTS (
                     SELECT 1 FROM public.purchases p 
                     WHERE p.id = purchase_items.purchase_id 
-                      AND (p.user_id = auth.uid() OR p.owner_id = auth.uid())
+                      AND p.user_id = auth.uid()
                 )
             )
             WITH CHECK (
-                user_id = auth.uid() 
-                OR EXISTS (
+                EXISTS (
                     SELECT 1 FROM public.purchases p 
                     WHERE p.id = purchase_items.purchase_id 
-                      AND (p.user_id = auth.uid() OR p.owner_id = auth.uid())
+                      AND p.user_id = auth.uid()
                 )
             );
         ';
