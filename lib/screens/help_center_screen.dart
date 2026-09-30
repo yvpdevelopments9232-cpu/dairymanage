@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/app_config.dart';
 import '../providers/session_provider.dart';
+import '../services/translations.dart';
+import '../providers/language_provider.dart';
 
 class HelpCenterScreen extends ConsumerStatefulWidget {
   const HelpCenterScreen({super.key});
@@ -138,6 +140,7 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
     final isDesktop = MediaQuery.of(context).size.width > 900;
     final primaryColor = const Color(0xFF1565C0);
     final canPop = Navigator.canPop(context);
@@ -146,7 +149,7 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
       backgroundColor: const Color(0xFFF1F5F9),
       appBar: canPop
           ? AppBar(
-              title: const Text('Help Center & Support', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              title: Text('Help Center & Support'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
               backgroundColor: const Color(0xFF0F172A),
               foregroundColor: Colors.white,
               elevation: 1,
@@ -255,9 +258,9 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
               children: [
                 Row(
                   children: [
-                    const Text(
-                      'HELP CENTER & SUPPORT',
-                      style: TextStyle(
+                    Text(
+                      'HELP CENTER & SUPPORT'.tr,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 22,
                         fontWeight: FontWeight.bold,

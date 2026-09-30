@@ -5,6 +5,8 @@ import '../../models/flutter_models.dart';
 import '../../providers/main_dairy_provider.dart';
 import '../../providers/main_dairy_rate_provider.dart';
 import '../../providers/main_dairy_collection_provider.dart';
+import '../../services/translations.dart';
+import '../../providers/language_provider.dart';
 
 class MainDairyCollectionScreen extends ConsumerStatefulWidget {
   const MainDairyCollectionScreen({super.key});
@@ -247,10 +249,10 @@ class _MainDairyCollectionScreenState extends ConsumerState<MainDairyCollectionS
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Entry'),
-        content: const Text('Are you sure you want to delete this dispatch entry? This will reverse the ledger balance.'),
+        title: Text('Delete Entry'.tr),
+        content: Text('Are you sure you want to delete this dispatch entry? This will reverse the ledger balance.'.tr),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCEL')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('CANCEL'.tr)),
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
@@ -260,7 +262,7 @@ class _MainDairyCollectionScreenState extends ConsumerState<MainDairyCollectionS
                 if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
               }
             },
-            child: const Text('DELETE', style: TextStyle(color: Colors.red)),
+            child: Text('DELETE'.tr, style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -306,6 +308,7 @@ class _MainDairyCollectionScreenState extends ConsumerState<MainDairyCollectionS
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
     final notifier = ref.watch(mainDairyCollectionProvider.notifier);
     final collectionsAsync = ref.watch(mainDairyCollectionProvider);
     final dairiesAsync = ref.watch(mainDairyProvider);
@@ -313,7 +316,7 @@ class _MainDairyCollectionScreenState extends ConsumerState<MainDairyCollectionS
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Main Dairy Milk Collection / Dispatch', style: TextStyle(color: Colors.white, fontSize: 18)),
+        title: Text('Main Dairy Milk Collection / Dispatch'.tr, style: const TextStyle(color: Colors.white, fontSize: 18)),
         backgroundColor: primaryColor,
         actions: [
           TextButton.icon(
@@ -340,7 +343,7 @@ class _MainDairyCollectionScreenState extends ConsumerState<MainDairyCollectionS
               child: DropdownButton<String>(
                 value: notifier.currentShift,
                 items: ['Morning', 'Evening']
-                    .map((s) => DropdownMenuItem(value: s, child: Text(s, style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold))))
+                    .map((s) => DropdownMenuItem(value: s, child: Text(s.tr, style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold))))
                     .toList(),
                 onChanged: (val) {
                   if (val != null) notifier.setFilters(notifier.currentDate, val);
@@ -385,13 +388,13 @@ class _MainDairyCollectionScreenState extends ConsumerState<MainDairyCollectionS
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       _buildStatItem(
-                        'COW MILK',
+                        'COW MILK'.tr,
                         '${cowQty.toStringAsFixed(1)} Ltr',
                         'Fat: ${cowAvgFat.toStringAsFixed(1)} | SNF: ${cowAvgSnf.toStringAsFixed(1)}',
                       ),
                       Container(height: 40, width: 1, color: Colors.white30),
                       _buildStatItem(
-                        'BUFFALO MILK',
+                        'BUFFALO MILK'.tr,
                         '${buffQty.toStringAsFixed(1)} Ltr',
                         'Fat: ${buffAvgFat.toStringAsFixed(1)} | SNF: ${buffAvgSnf.toStringAsFixed(1)}',
                       ),
@@ -399,7 +402,7 @@ class _MainDairyCollectionScreenState extends ConsumerState<MainDairyCollectionS
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          const Text('TOTAL SHIFT AMOUNT', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold)),
+                          Text('TOTAL SHIFT AMOUNT'.tr, style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold)),
                           Text('₹ ${totalAmt.toStringAsFixed(2)}', style: const TextStyle(color: Colors.greenAccent, fontSize: 18, fontWeight: FontWeight.bold)),
                         ],
                       ),
@@ -427,7 +430,7 @@ class _MainDairyCollectionScreenState extends ConsumerState<MainDairyCollectionS
                             controller: _dairyNoController,
                             focusNode: _dairyNoFocus,
                             decoration: InputDecoration(
-                              labelText: 'D. ID',
+                              labelText: 'D. ID'.tr,
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                               filled: true,
                               fillColor: Colors.white,
@@ -486,7 +489,7 @@ class _MainDairyCollectionScreenState extends ConsumerState<MainDairyCollectionS
                                   focusNode: focusNode,
                                   onFieldSubmitted: (v) => onFieldSubmitted(),
                                   decoration: InputDecoration(
-                                    labelText: 'Search Main Dairy by Name/No',
+                                    labelText: 'Search Main Dairy by Name/No'.tr,
                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                                     filled: true,
                                     fillColor: Colors.white,
@@ -502,14 +505,14 @@ class _MainDairyCollectionScreenState extends ConsumerState<MainDairyCollectionS
                           flex: 2,
                           child: DropdownButtonFormField<String>(
                             decoration: InputDecoration(
-                              labelText: 'Milk Type',
+                              labelText: 'Milk Type'.tr,
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                               filled: true,
                               fillColor: Colors.white,
                             ),
                             value: _milkType,
                             items: ['Cow Milk', 'Buffalo Milk']
-                                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                                .map((e) => DropdownMenuItem(value: e, child: Text(e.tr)))
                                 .toList(),
                             onChanged: (val) {
                               setState(() => _milkType = val!);
@@ -527,7 +530,7 @@ class _MainDairyCollectionScreenState extends ConsumerState<MainDairyCollectionS
                       children: [
                         Expanded(
                           child: _buildTextField(
-                            'Qty (Ltr)',
+                            'Qty (Ltr)'.tr,
                             _qtyController,
                             _qtyFocus,
                             _fatFocus,
@@ -537,7 +540,7 @@ class _MainDairyCollectionScreenState extends ConsumerState<MainDairyCollectionS
                         const SizedBox(width: 8),
                         Expanded(
                           child: _buildTextField(
-                            'Fat %',
+                            'Fat %'.tr,
                             _fatController,
                             _fatFocus,
                             _snfFocus,
@@ -547,7 +550,7 @@ class _MainDairyCollectionScreenState extends ConsumerState<MainDairyCollectionS
                         const SizedBox(width: 8),
                         Expanded(
                           child: _buildTextField(
-                            'SNF %',
+                            'SNF %'.tr,
                             _snfController,
                             _snfFocus,
                             _saveFocus,
@@ -557,7 +560,7 @@ class _MainDairyCollectionScreenState extends ConsumerState<MainDairyCollectionS
                         const SizedBox(width: 8),
                         Expanded(
                           child: _buildTextField(
-                            'Rate',
+                            'Rate'.tr,
                             _rateController,
                             null,
                             null,
@@ -567,7 +570,7 @@ class _MainDairyCollectionScreenState extends ConsumerState<MainDairyCollectionS
                         const SizedBox(width: 8),
                         Expanded(
                           child: _buildTextField(
-                            'Total ₹',
+                            'Total ₹'.tr,
                             _totalController,
                             null,
                             null,
@@ -582,7 +585,7 @@ class _MainDairyCollectionScreenState extends ConsumerState<MainDairyCollectionS
                             child: OutlinedButton(
                               onPressed: _cancelEdit,
                               style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20)),
-                              child: const Text('CANCEL'),
+                              child: Text('CANCEL'.tr),
                             ),
                           ),
                         ElevatedButton(
@@ -595,7 +598,7 @@ class _MainDairyCollectionScreenState extends ConsumerState<MainDairyCollectionS
                           ),
                           child: _isSaving
                               ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white))
-                              : Text(_editingId != null ? 'UPDATE' : 'SAVE', style: const TextStyle(fontWeight: FontWeight.bold)),
+                              : Text(_editingId != null ? 'UPDATE'.tr : 'SAVE'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
@@ -619,9 +622,9 @@ class _MainDairyCollectionScreenState extends ConsumerState<MainDairyCollectionS
               error: (e, st) => Center(child: Text('Error: $e')),
               data: (collections) {
                 if (collections.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.all(32.0),
-                    child: Center(child: Text('No collections for this shift.')),
+                  return Padding(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Center(child: Text('No collections for this shift.'.tr)),
                   );
                 }
 

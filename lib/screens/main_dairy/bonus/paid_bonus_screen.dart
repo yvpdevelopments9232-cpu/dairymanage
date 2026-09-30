@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../models/flutter_models.dart';
 import '../../../providers/bonus_provider.dart';
+import '../../../providers/language_provider.dart';
+import '../../../services/translations.dart';
 import 'bonus_payment_screen.dart';
 
 class PaidBonusScreen extends ConsumerStatefulWidget {
@@ -66,6 +68,7 @@ class _PaidBonusScreenState extends ConsumerState<PaidBonusScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
     final summaryAsync = ref.watch(bonusCalculationProvider);
 
     return Scaffold(
@@ -80,17 +83,17 @@ class _PaidBonusScreenState extends ConsumerState<PaidBonusScreen> {
               children: [
                 const Icon(Icons.workspace_premium, size: 20, color: Color(0xFF2563EB)),
                 const SizedBox(width: 8),
-                Text('Bonus', style: TextStyle(fontSize: 14, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+                Text('Bonus'.tr, style: TextStyle(fontSize: 14, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
                 const SizedBox(width: 6),
                 const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
                 const SizedBox(width: 6),
-                const Text('Paid Bonus', style: TextStyle(fontSize: 14, color: Color(0xFF1E293B), fontWeight: FontWeight.bold)),
+                Text('Paid Bonus'.tr, style: const TextStyle(fontSize: 14, color: Color(0xFF1E293B), fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Paid Bonus',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+            Text(
+              'Paid Bonus'.tr,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
             ),
             const SizedBox(height: 16),
 
@@ -113,8 +116,8 @@ class _PaidBonusScreenState extends ConsumerState<PaidBonusScreen> {
                 spacing: 12,
                 runSpacing: 10,
                 children: [
-                  _buildDateField('From Date', _fromDateController, () => _selectDate(context, true)),
-                  _buildDateField('To Date', _toDateController, () => _selectDate(context, false)),
+                  _buildDateField('From Date'.tr, _fromDateController, () => _selectDate(context, true)),
+                  _buildDateField('To Date'.tr, _toDateController, () => _selectDate(context, false)),
                   Padding(
                     padding: const EdgeInsets.only(top: 18.0),
                     child: ElevatedButton(
@@ -125,7 +128,7 @@ class _PaidBonusScreenState extends ConsumerState<PaidBonusScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 13),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
-                      child: const Text('Apply', style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: Text('Filter'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -164,11 +167,11 @@ class _PaidBonusScreenState extends ConsumerState<PaidBonusScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Paid Farmers (${paidFarmers.length})',
+                            '${"Paid Farmers".tr} (${paidFarmers.length})',
                             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                           ),
                           Text(
-                            'Total Paid: ₹ ${NumberFormat('#,##0.00').format(summary.paidBonus)}',
+                            '${"Total Paid".tr}: ₹ ${NumberFormat('#,##0.00').format(summary.paidBonus)}',
                             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
                           ),
                         ],
@@ -178,9 +181,9 @@ class _PaidBonusScreenState extends ConsumerState<PaidBonusScreen> {
                         Container(
                           height: 160,
                           alignment: Alignment.center,
-                          child: const Text(
-                            'No paid bonus records found for this period.',
-                            style: TextStyle(color: Colors.grey),
+                          child: Text(
+                            'No paid bonus records found for this period.'.tr,
+                            style: const TextStyle(color: Colors.grey),
                           ),
                         )
                       else
@@ -192,14 +195,14 @@ class _PaidBonusScreenState extends ConsumerState<PaidBonusScreen> {
                             horizontalMargin: 12,
                             headingTextStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF334155)),
                             dataTextStyle: const TextStyle(fontSize: 13, color: Color(0xFF1E293B)),
-                            columns: const [
-                              DataColumn(label: Text('Sr.')),
-                              DataColumn(label: Text('Farmer Name')),
-                              DataColumn(label: Text('Milk (L)')),
-                              DataColumn(label: Text('Animal Type')),
-                              DataColumn(label: Text('Total Bonus')),
-                              DataColumn(label: Text('Paid Amount')),
-                              DataColumn(label: Text('Status')),
+                            columns: [
+                              DataColumn(label: Text('Sr.'.tr)),
+                              DataColumn(label: Text('Farmer Name'.tr)),
+                              DataColumn(label: Text('Milk (L)'.tr)),
+                              DataColumn(label: Text('Animal Type'.tr)),
+                              DataColumn(label: Text('Total Bonus'.tr)),
+                              DataColumn(label: Text('Paid Amount'.tr)),
+                              DataColumn(label: Text('Status'.tr)),
                             ],
                             rows: paidFarmers.asMap().entries.map((entry) {
                               final idx = entry.key + 1;
@@ -221,7 +224,7 @@ class _PaidBonusScreenState extends ConsumerState<PaidBonusScreen> {
                                     ),
                                   ),
                                   DataCell(Text(item.totalMilk.toStringAsFixed(1))),
-                                  DataCell(Text(item.animalType)),
+                                  DataCell(Text(item.animalType.tr)),
                                   DataCell(Text('₹ ${item.totalBonus.toStringAsFixed(2)}')),
                                   DataCell(
                                     Text(
@@ -238,7 +241,7 @@ class _PaidBonusScreenState extends ConsumerState<PaidBonusScreen> {
                                         border: Border.all(color: const Color(0xFF86EFAC)),
                                       ),
                                       child: Text(
-                                        item.status,
+                                        item.status.tr,
                                         style: const TextStyle(
                                           fontSize: 11,
                                           fontWeight: FontWeight.bold,

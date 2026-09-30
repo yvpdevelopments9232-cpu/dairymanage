@@ -9,6 +9,7 @@ import '../main.dart';
 import '../providers/auth_provider.dart';
 import '../providers/language_provider.dart';
 import '../services/translations.dart';
+import '../providers/display_mode_provider.dart';
 import '../widgets/desktop_wrapper.dart';
 import 'farmer_screen.dart';
 import 'milk_collection_screen.dart';
@@ -69,8 +70,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   bool _isMainDairyMode = false;
   int _mainDairySelectedIndex = 0;
   String _mainDairySelectedMenu = 'Dashboard';
-  bool _isBonusExpanded = true;
-  bool _isLocalDairyBonusExpanded = true;
+  bool _isBonusExpanded = false;
+  bool _isLocalDairyBonusExpanded = false;
   String _localDairyBonusSelectedSub = 'Bonus Dashboard';
 
   // Track if stock alert was shown this session
@@ -185,6 +186,250 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         );
       }
     }
+  }
+
+  void _showDisplayModeDialog(BuildContext context) {
+    final lang = ref.read(languageProvider);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => Consumer(
+        builder: (context, ref, _) {
+          final activeMode = ref.watch(displayModeProvider);
+          final primaryColor = Theme.of(context).colorScheme.primary;
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Icon(Icons.tune, color: primaryColor),
+                const SizedBox(width: 10),
+                Text(
+                  AppTranslations.tr('Select Display Mode', lang),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Option 1: Previous / Desktop Mode
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: activeMode == DisplayMode.previous ? Colors.blue.shade50 : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: activeMode == DisplayMode.previous ? Colors.blue.shade400 : Colors.grey.shade300,
+                        width: activeMode == DisplayMode.previous ? 2 : 1,
+                      ),
+                    ),
+                    child: RadioListTile<DisplayMode>(
+                      value: DisplayMode.previous,
+                      groupValue: activeMode,
+                      activeColor: primaryColor,
+                      secondary: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.desktop_windows, color: Colors.blue),
+                      ),
+                      title: Text(
+                        AppTranslations.tr('Previous / Desktop Mode', lang),
+                        style: TextStyle(
+                          fontWeight: activeMode == DisplayMode.previous ? FontWeight.bold : FontWeight.normal,
+                          fontSize: 15,
+                        ),
+                      ),
+                      subtitle: Text(
+                        AppTranslations.tr('Preserves original desktop layout and zoom controls', lang),
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      onChanged: (mode) {
+                        if (mode != null) {
+                          ref.read(displayModeProvider.notifier).setDisplayMode(mode);
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(AppTranslations.tr('Previous / Desktop Mode', lang)),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                  // Option 2: Mobile Mode
+                  Container(
+                    decoration: BoxDecoration(
+                      color: activeMode == DisplayMode.mobile ? Colors.green.shade50 : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: activeMode == DisplayMode.mobile ? Colors.green.shade400 : Colors.grey.shade300,
+                        width: activeMode == DisplayMode.mobile ? 2 : 1,
+                      ),
+                    ),
+                    child: RadioListTile<DisplayMode>(
+                      value: DisplayMode.mobile,
+                      groupValue: activeMode,
+                      activeColor: Colors.green.shade700,
+                      secondary: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.smartphone, color: Colors.green.shade800),
+                      ),
+                      title: Text(
+                        AppTranslations.tr('Mobile Mode', lang),
+                        style: TextStyle(
+                          fontWeight: activeMode == DisplayMode.mobile ? FontWeight.bold : FontWeight.normal,
+                          fontSize: 15,
+                        ),
+                      ),
+                      subtitle: Text(
+                        AppTranslations.tr('Responsive touch-friendly layout optimized for mobile', lang),
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      onChanged: (mode) {
+                        if (mode != null) {
+                          ref.read(displayModeProvider.notifier).setDisplayMode(mode);
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(AppTranslations.tr('Mobile Mode', lang)),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(AppTranslations.tr('CANCEL', lang)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _showLanguageDialog(BuildContext context) {
+    final lang = ref.read(languageProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => Consumer(
+        builder: (context, ref, _) {
+          final activeLang = ref.watch(languageProvider);
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Icon(Icons.translate, color: primaryColor),
+                const SizedBox(width: 10),
+                Text(
+                  AppTranslations.tr('Select Language', activeLang),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // English
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: activeLang == 'en' ? Colors.blue.shade50 : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: activeLang == 'en' ? Colors.blue.shade400 : Colors.grey.shade300,
+                        width: activeLang == 'en' ? 2 : 1,
+                      ),
+                    ),
+                    child: RadioListTile<String>(
+                      value: 'en',
+                      groupValue: activeLang,
+                      activeColor: primaryColor,
+                      secondary: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text('EN', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                      ),
+                      title: const Text('English', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      subtitle: const Text('Default English display', style: TextStyle(fontSize: 12)),
+                      onChanged: (val) async {
+                        if (val != null) {
+                          Navigator.pop(ctx);
+                          await ref.read(languageProvider.notifier).setLanguage(val);
+                        }
+                      },
+                    ),
+                  ),
+
+                  // Marathi
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: activeLang == 'mr' ? Colors.orange.shade50 : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: activeLang == 'mr' ? Colors.orange.shade400 : Colors.grey.shade300,
+                        width: activeLang == 'mr' ? 2 : 1,
+                      ),
+                    ),
+                    child: RadioListTile<String>(
+                      value: 'mr',
+                      groupValue: activeLang,
+                      activeColor: Colors.deepOrange,
+                      secondary: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text('म', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.deepOrange)),
+                      ),
+                      title: const Text('मराठी (Marathi)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      subtitle: const Text('संपूर्ण सॉफ्टवेअर शुद्ध मराठीत भाषांतरित करा', style: TextStyle(fontSize: 12)),
+                      onChanged: (val) async {
+                        if (val != null) {
+                          Navigator.pop(ctx);
+                          await ref.read(languageProvider.notifier).setLanguage(val);
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(AppTranslations.tr('CANCEL', activeLang)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   void _showNotificationsDialog(BuildContext context, List<Product> outOfStockProducts) {
@@ -341,10 +586,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = false; // Always use mobile drawer layout so it doesn't permanently occupy the screen
+    final lang = ref.watch(languageProvider);
+    final displayMode = ref.watch(displayModeProvider);
+    final isDesktop = displayMode == DisplayMode.previous && MediaQuery.of(context).size.width >= 1000;
     final primaryColor = Theme.of(context).colorScheme.primary;
     final outOfStockProducts = ref.watch(outOfStockProductsProvider);
-    final lang = ref.watch(languageProvider);
 
     // Automatic reminder notification when opening Dashboard if products are out of stock
     if (outOfStockProducts.isNotEmpty && !_hasShownStockAlert) {
@@ -450,10 +696,37 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               }
             },
           ),
+          // User Avatar / Logo Icon
+          Consumer(
+            builder: (context, ref, child) {
+              final settingsAsync = ref.watch(settingsProvider);
+              final logoBytes = settingsAsync.value?.logoBytes;
+              if (logoBytes != null) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: CircleAvatar(
+                    radius: 14,
+                    backgroundImage: MemoryImage(logoBytes),
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+          // Three-Dot Menu (⋮)
           PopupMenuButton<String>(
-            tooltip: 'Account Options',
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            tooltip: AppTranslations.tr('Options', lang),
             onSelected: (val) {
-              if (val == 'logout') {
+              if (val == 'mode') {
+                _showDisplayModeDialog(context);
+              } else if (val == 'language') {
+                _showLanguageDialog(context);
+              } else if (val == 'mode_desktop') {
+                ref.read(displayModeProvider.notifier).setDisplayMode(DisplayMode.previous);
+              } else if (val == 'mode_mobile') {
+                ref.read(displayModeProvider.notifier).setDisplayMode(DisplayMode.mobile);
+              } else if (val == 'logout') {
                 _confirmLogout(context);
               } else if (val == 'help') {
                 final helpIndex = _menuItems.indexOf('Help Center');
@@ -471,54 +744,124 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 );
               }
             },
-            itemBuilder: (ctx) => [
-              PopupMenuItem(
-                value: 'help',
-                child: Row(
-                  children: [
-                    const Icon(Icons.support_agent, color: Colors.blue),
-                    const SizedBox(width: 8),
-                    Text(AppTranslations.tr('Help Center', lang)),
-                  ],
+            itemBuilder: (ctx) {
+              final activeDisplayMode = ref.read(displayModeProvider);
+              return [
+                // 1. Mode Option
+                PopupMenuItem(
+                  value: 'mode',
+                  child: Row(
+                    children: [
+                      Icon(
+                        activeDisplayMode == DisplayMode.mobile ? Icons.smartphone : Icons.desktop_windows,
+                        color: Colors.blue.shade700,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          AppTranslations.tr('Mode', lang),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: activeDisplayMode == DisplayMode.mobile ? Colors.green.shade50 : Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: activeDisplayMode == DisplayMode.mobile ? Colors.green.shade300 : Colors.blue.shade300,
+                          ),
+                        ),
+                        child: Text(
+                          activeDisplayMode == DisplayMode.mobile
+                              ? AppTranslations.tr('Mobile Mode', lang)
+                              : AppTranslations.tr('Previous / Desktop Mode', lang),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: activeDisplayMode == DisplayMode.mobile ? Colors.green.shade800 : Colors.blue.shade800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              PopupMenuItem(
-                value: 'switch',
-                child: Row(
-                  children: [
-                    const Icon(Icons.swap_horiz, color: Colors.blue),
-                    const SizedBox(width: 8),
-                    Text(AppTranslations.tr('Switch Account', lang)),
-                  ],
+                // 2. Language Option
+                PopupMenuItem(
+                  value: 'language',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.translate,
+                        color: Colors.orange.shade800,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          AppTranslations.tr('Language', lang),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: lang == 'mr' ? Colors.orange.shade50 : Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: lang == 'mr' ? Colors.orange.shade300 : Colors.blue.shade300,
+                          ),
+                        ),
+                        child: Text(
+                          lang == 'mr' ? 'मराठी' : 'English',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: lang == 'mr' ? Colors.orange.shade900 : Colors.blue.shade800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    const Icon(Icons.logout, color: Colors.red),
-                    const SizedBox(width: 8),
-                    Text(AppTranslations.tr('Logout', lang), style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                  ],
+                const PopupMenuDivider(),
+                // 2. Help Center
+                PopupMenuItem(
+                  value: 'help',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.support_agent, color: Colors.blue, size: 20),
+                      const SizedBox(width: 10),
+                      Text(AppTranslations.tr('Help Center', lang)),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16.0, left: 4.0),
-              child: Consumer(
-                builder: (context, ref, child) {
-                  final settingsAsync = ref.watch(settingsProvider);
-                  final logoBytes = settingsAsync.value?.logoBytes;
-                  if (logoBytes != null) {
-                    return CircleAvatar(
-                      radius: 16,
-                      backgroundImage: MemoryImage(logoBytes),
-                    );
-                  }
-                  return const Icon(Icons.account_circle, size: 32, color: Colors.white);
-                },
-              ),
-            ),
+                // 3. Switch Account
+                PopupMenuItem(
+                  value: 'switch',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.swap_horiz, color: Colors.blue, size: 20),
+                      const SizedBox(width: 10),
+                      Text(AppTranslations.tr('Switch Account', lang)),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                // 4. Logout
+                PopupMenuItem(
+                  value: 'logout',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.logout, color: Colors.red, size: 20),
+                      const SizedBox(width: 10),
+                      Text(AppTranslations.tr('Logout', lang), style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ];
+            },
           ),
         ],
       ),
@@ -966,6 +1309,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildMainContent() {
+    final lang = ref.watch(languageProvider);
+    final displayMode = ref.watch(displayModeProvider);
+
     if (_isMainDairyMode) {
       Widget mainDairyContent;
       switch (_mainDairySelectedMenu) {
@@ -985,23 +1331,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           );
           break;
         case 'Milk Collection':
-          mainDairyContent = const DesktopWrapper(child: MainDairyCollectionScreen());
+          mainDairyContent = DesktopWrapper(child: const MainDairyCollectionScreen());
           break;
         case 'Farmers / Members':
         case 'Main Dairies':
         case 'Main Dairies / Members':
-          mainDairyContent = const DesktopWrapper(child: MainDairyListScreen());
+          mainDairyContent = DesktopWrapper(child: const MainDairyListScreen());
           break;
         case 'Milk Purchase':
-          mainDairyContent = const DesktopWrapper(child: PurchaseScreen());
+          mainDairyContent = DesktopWrapper(child: const PurchaseScreen());
           break;
         case 'Milk Sale':
-          mainDairyContent = const DesktopWrapper(child: SalesScreen());
+          mainDairyContent = DesktopWrapper(child: const SalesScreen());
           break;
         case 'Payments':
         case 'Bank':
         case 'Payments & Ledgers':
-          mainDairyContent = const DesktopWrapper(child: MainDairyPaymentScreen());
+          mainDairyContent = DesktopWrapper(child: const MainDairyPaymentScreen());
           break;
         case 'Bonus':
         case 'Bonus Dashboard':
@@ -1019,25 +1365,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           );
           break;
         case 'Bonus Settings':
-          mainDairyContent = const DesktopWrapper(child: BonusSettingsScreen());
+          mainDairyContent = DesktopWrapper(child: const BonusSettingsScreen());
           break;
         case 'Paid Bonus':
-          mainDairyContent = const DesktopWrapper(child: PaidBonusScreen());
+          mainDairyContent = DesktopWrapper(child: const PaidBonusScreen());
           break;
         case 'Remaining Bonus':
-          mainDairyContent = const DesktopWrapper(child: RemainingBonusScreen());
+          mainDairyContent = DesktopWrapper(child: const RemainingBonusScreen());
           break;
         case 'Bonus Transactions':
-          mainDairyContent = const DesktopWrapper(child: BonusTransactionsScreen());
+          mainDairyContent = DesktopWrapper(child: const BonusTransactionsScreen());
           break;
         case 'Reports':
-          mainDairyContent = const DesktopWrapper(child: MainDairyReportsScreen());
+          mainDairyContent = DesktopWrapper(child: const MainDairyReportsScreen());
           break;
         case 'Rate Management':
           mainDairyContent = const MainDairyRateScreen();
           break;
         case 'Help Center':
-          mainDairyContent = const DesktopWrapper(child: HelpCenterScreen());
+          mainDairyContent = DesktopWrapper(child: const HelpCenterScreen());
           break;
         default:
           mainDairyContent = DesktopWrapper(
@@ -1046,11 +1392,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
           );
       }
-      return Theme(
-        data: Theme.of(context).copyWith(
-          scaffoldBackgroundColor: Colors.indigo.shade50.withOpacity(0.3),
+      return KeyedSubtree(
+        key: ValueKey('main_dairy_${_mainDairySelectedMenu}_${lang}_$displayMode'),
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            scaffoldBackgroundColor: Colors.indigo.shade50.withOpacity(0.3),
+          ),
+          child: mainDairyContent,
         ),
-        child: mainDairyContent,
       );
     }
 
@@ -1069,57 +1418,60 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         );
         break;
-      case 'Farmers': content = const DesktopWrapper(child: FarmerScreen()); break;
-      case 'Animals': content = const DesktopWrapper(child: AnimalScreen()); break;
-      case 'Milk Collection': content = const DesktopWrapper(child: MilkCollectionScreen()); break;
-      case 'Sales': content = const DesktopWrapper(child: SalesScreen()); break;
-      case 'Customers': content = const DesktopWrapper(child: CustomerScreen()); break;
-      case 'Products': content = const DesktopWrapper(child: ProductScreen()); break;
-      case 'Stock': content = const DesktopWrapper(child: StockScreen()); break;
-      case 'Suppliers': content = const DesktopWrapper(child: SupplierScreen()); break;
-      case 'Purchases': content = const DesktopWrapper(child: PurchaseScreen()); break;
-      case 'Payments': content = const DesktopWrapper(child: PaymentScreen()); break;
-      case 'Expenses': content = const DesktopWrapper(child: ExpenseScreen()); break;
-      case 'Staff': content = const DesktopWrapper(child: StaffScreen()); break;
-      case 'Advances': content = const DesktopWrapper(child: AdvanceScreen()); break;
-      case 'Reports': content = const DesktopWrapper(child: ReportsScreen()); break;
+      case 'Farmers': content = DesktopWrapper(child: const FarmerScreen()); break;
+      case 'Animals': content = DesktopWrapper(child: const AnimalScreen()); break;
+      case 'Milk Collection': content = DesktopWrapper(child: const MilkCollectionScreen()); break;
+      case 'Sales': content = DesktopWrapper(child: const SalesScreen()); break;
+      case 'Customers': content = DesktopWrapper(child: const CustomerScreen()); break;
+      case 'Products': content = DesktopWrapper(child: const ProductScreen()); break;
+      case 'Stock': content = DesktopWrapper(child: const StockScreen()); break;
+      case 'Suppliers': content = DesktopWrapper(child: const SupplierScreen()); break;
+      case 'Purchases': content = DesktopWrapper(child: const PurchaseScreen()); break;
+      case 'Payments': content = DesktopWrapper(child: const PaymentScreen()); break;
+      case 'Expenses': content = DesktopWrapper(child: const ExpenseScreen()); break;
+      case 'Staff': content = DesktopWrapper(child: const StaffScreen()); break;
+      case 'Advances': content = DesktopWrapper(child: const AdvanceScreen()); break;
+      case 'Reports': content = DesktopWrapper(child: const ReportsScreen()); break;
       case 'Rate Management': content = const RateManagementScreen(); break;
       case 'Bonus':
         switch (_localDairyBonusSelectedSub) {
           case 'Bonus Dashboard':
-            content = const DesktopWrapper(child: BonusDashboardScreen());
+            content = DesktopWrapper(child: const BonusDashboardScreen());
             break;
           case 'Bonus Settings':
-            content = const DesktopWrapper(child: BonusSettingsScreen());
+            content = DesktopWrapper(child: const BonusSettingsScreen());
             break;
           case 'Paid Bonus':
-            content = const DesktopWrapper(child: PaidBonusScreen());
+            content = DesktopWrapper(child: const PaidBonusScreen());
             break;
           case 'Remaining Bonus':
-            content = const DesktopWrapper(child: RemainingBonusScreen());
+            content = DesktopWrapper(child: const RemainingBonusScreen());
             break;
           case 'Bonus Transactions':
-            content = const DesktopWrapper(child: BonusTransactionsScreen());
+            content = DesktopWrapper(child: const BonusTransactionsScreen());
             break;
           case 'Local Dairy Bonus Slip':
           default:
-            content = const DesktopWrapper(child: LocalDairyBonusScreen());
+            content = DesktopWrapper(child: const LocalDairyBonusScreen());
             break;
         }
         break;
-      case 'Settings': content = const DesktopWrapper(child: SettingsScreen()); break;
-      case 'Employee Management': content = const DesktopWrapper(child: EmployeeManagementScreen()); break;
-      case 'Employee Rights': content = const DesktopWrapper(child: EmployeeRightsScreen()); break;
-      case 'Backup & Restore': content = const DesktopWrapper(child: BackupRestoreScreen()); break;
-      case 'Subscription': content = const DesktopWrapper(child: SubscriptionStatusScreen()); break;
-      case 'Help Center': content = const DesktopWrapper(child: HelpCenterScreen()); break;
+      case 'Settings': content = DesktopWrapper(child: const SettingsScreen()); break;
+      case 'Employee Management': content = DesktopWrapper(child: const EmployeeManagementScreen()); break;
+      case 'Employee Rights': content = DesktopWrapper(child: const EmployeeRightsScreen()); break;
+      case 'Backup & Restore': content = DesktopWrapper(child: const BackupRestoreScreen()); break;
+      case 'Subscription': content = DesktopWrapper(child: const SubscriptionStatusScreen()); break;
+      case 'Help Center': content = DesktopWrapper(child: const HelpCenterScreen()); break;
       default: content = const Center(child: Text('Coming Soon!'));
     }
-    return Theme(
-      data: Theme.of(context).copyWith(
-        scaffoldBackgroundColor: _getColorForIndex(_selectedIndex),
+    return KeyedSubtree(
+      key: ValueKey('${menu}_${lang}_$displayMode'),
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          scaffoldBackgroundColor: _getColorForIndex(_selectedIndex),
+        ),
+        child: content,
       ),
-      child: content,
     );
   }
 

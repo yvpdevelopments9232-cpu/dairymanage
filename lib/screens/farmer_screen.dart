@@ -4,6 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/farmer_provider.dart';
 import '../models/flutter_models.dart';
 import '../services/app_db.dart';
+import '../services/translations.dart';
+import '../providers/language_provider.dart';
 
 class FarmerScreen extends ConsumerWidget {
   const FarmerScreen({super.key});
@@ -19,17 +21,17 @@ class FarmerScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Farmer'),
-        content: Text('Are you sure you want to delete ${farmer.name}?\n\nThis will also delete their associated animals and milk collections.'),
+        title: Text('Delete Farmer'.tr),
+        content: Text('${'Are you sure you want to delete'.tr} ${farmer.name}?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCEL')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('CANCEL'.tr)),
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
               try {
                 await ref.read(farmersProvider.notifier).deleteFarmer(farmer.id);
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Farmer deleted successfully')));
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Farmer deleted successfully'.tr)));
                 }
               } catch (e) {
                 if (context.mounted) {
@@ -37,7 +39,7 @@ class FarmerScreen extends ConsumerWidget {
                 }
               }
             },
-            child: const Text('DELETE', style: TextStyle(color: Colors.red)),
+            child: Text('DELETE'.tr, style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -46,6 +48,7 @@ class FarmerScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageProvider);
     final farmersAsync = ref.watch(farmersProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
 
@@ -53,7 +56,7 @@ class FarmerScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showFarmerDialog(context),
         icon: const Icon(Icons.add),
-        label: const Text('Add Farmer'),
+        label: Text('Add Farmer'.tr),
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
       ),
@@ -68,12 +71,12 @@ class FarmerScreen extends ConsumerWidget {
                 children: [
                   Icon(Icons.people_outline, size: 80, color: Colors.grey.shade400),
                   const SizedBox(height: 16),
-                  const Text('No farmers added yet.', style: TextStyle(fontSize: 18, color: Colors.grey)),
+                  Text('No farmers added yet.'.tr, style: const TextStyle(fontSize: 18, color: Colors.grey)),
                   const SizedBox(height: 8),
                   TextButton.icon(
                     onPressed: () => _showFarmerDialog(context),
                     icon: const Icon(Icons.add),
-                    label: const Text('Add your first Farmer'),
+                    label: Text('Add your first Farmer'.tr),
                   )
                 ],
               ),
@@ -104,7 +107,7 @@ class FarmerScreen extends ConsumerWidget {
                   ),
                   subtitle: Padding(
                     padding: const EdgeInsets.only(top: 4.0),
-                    child: Text('${farmer.village ?? "No Village"} | 📞 ${farmer.mobile ?? "N/A"}'),
+                    child: Text('${farmer.village ?? "No Village".tr} | 📞 ${farmer.mobile ?? "N/A"}'),
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -113,7 +116,7 @@ class FarmerScreen extends ConsumerWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          const Text('Ledger Bal', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          Text('Ledger Bal'.tr, style: const TextStyle(fontSize: 12, color: Colors.grey)),
                           const SizedBox(height: 4),
                           Text(
                             '₹ ${farmer.currentBalance.toStringAsFixed(2)}', 
@@ -136,13 +139,13 @@ class FarmerScreen extends ConsumerWidget {
                           }
                         },
                         itemBuilder: (context) => [
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'edit',
-                            child: Row(children: [Icon(Icons.edit, size: 20), SizedBox(width: 8), Text('Edit')]),
+                            child: Row(children: [const Icon(Icons.edit, size: 20), const SizedBox(width: 8), Text('Edit'.tr)]),
                           ),
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'delete',
-                            child: Row(children: [Icon(Icons.delete, color: Colors.red, size: 20), SizedBox(width: 8), Text('Delete', style: TextStyle(color: Colors.red))]),
+                            child: Row(children: [const Icon(Icons.delete, color: Colors.red, size: 20), const SizedBox(width: 8), Text('Delete'.tr, style: const TextStyle(color: Colors.red))]),
                           ),
                         ],
                       ),
@@ -233,7 +236,7 @@ class _FarmerDialogState extends ConsumerState<FarmerDialog> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.farmer == null ? 'Farmer and Animal added successfully!' : 'Farmer updated successfully!'), 
+            content: Text(widget.farmer == null ? 'Farmer and Animal added successfully!'.tr : 'Farmer updated successfully!'.tr), 
             backgroundColor: Colors.green
           )
         );
@@ -260,15 +263,15 @@ class _FarmerDialogState extends ConsumerState<FarmerDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = ref.watch(languageProvider);
     final isEditing = widget.farmer != null;
 
     return AlertDialog(
-      title: Text(isEditing ? 'Edit Farmer Details' : 'Add New Farmer', style: const TextStyle(fontWeight: FontWeight.bold)),
+      title: Text(isEditing ? 'Edit Farmer Details'.tr : 'Add New Farmer'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       content: SingleChildScrollView(
         child: ConstrainedBox(
-constraints: const BoxConstraints(maxWidth: 400),
-
+          constraints: const BoxConstraints(maxWidth: 400),
           child: Form(
             key: _formKey,
             child: Column(
@@ -277,17 +280,17 @@ constraints: const BoxConstraints(maxWidth: 400),
                 TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(
-                    labelText: 'Full Name *', 
+                    labelText: 'Full Name *'.tr, 
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     prefixIcon: const Icon(Icons.person_outline)
                   ),
-                  validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
+                  validator: (val) => val == null || val.trim().isEmpty ? 'Required'.tr : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _mobileController,
                   decoration: InputDecoration(
-                    labelText: 'Mobile Number', 
+                    labelText: 'Mobile Number'.tr, 
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     prefixIcon: const Icon(Icons.phone_outlined)
                   ),
@@ -297,40 +300,38 @@ constraints: const BoxConstraints(maxWidth: 400),
                 TextFormField(
                   controller: _villageController,
                   decoration: InputDecoration(
-                    labelText: 'Village', 
+                    labelText: 'Village'.tr, 
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     prefixIcon: const Icon(Icons.home_outlined)
                   ),
                 ),
                 
                 // Show animal dropdown for both add and edit
-                  if (true) ...[
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    value: _selectedAnimalType,
-                    decoration: InputDecoration(
-                      labelText: 'Primary Animal Type',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      prefixIcon: const Icon(Icons.pets),
-                    ),
-                    items: _animalTypes.map((type) {
-                      return DropdownMenuItem(
-                        value: type,
-                        child: Text(type),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() => _selectedAnimalType = val);
-                      }
-                    },
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: _selectedAnimalType,
+                  decoration: InputDecoration(
+                    labelText: 'Primary Animal Type'.tr,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    prefixIcon: const Icon(Icons.pets),
                   ),
-                ],
+                  items: _animalTypes.map((type) {
+                    return DropdownMenuItem(
+                      value: type,
+                      child: Text(type.tr),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() => _selectedAnimalType = val);
+                    }
+                  },
+                ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _addressController,
                   decoration: InputDecoration(
-                    labelText: 'Full Address', 
+                    labelText: 'Full Address'.tr, 
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     prefixIcon: const Icon(Icons.location_on_outlined)
                   ),
@@ -345,7 +346,7 @@ constraints: const BoxConstraints(maxWidth: 400),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context), 
-          child: const Text('CANCEL')
+          child: Text('CANCEL'.tr),
         ),
         ElevatedButton(
           onPressed: _isSaving ? null : _submit,
@@ -356,7 +357,7 @@ constraints: const BoxConstraints(maxWidth: 400),
           ),
           child: _isSaving 
               ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
-              : Text(isEditing ? 'UPDATE' : 'SAVE FARMER', style: const TextStyle(fontWeight: FontWeight.bold)),
+              : Text(isEditing ? 'UPDATE'.tr : 'SAVE FARMER'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
         ),
       ],
     );

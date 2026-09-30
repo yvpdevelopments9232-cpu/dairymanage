@@ -7,6 +7,9 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../providers/expense_report_provider.dart';
 import '../providers/settings_provider.dart';
+import '../services/translations.dart';
+import '../providers/language_provider.dart';
+import '../providers/display_mode_provider.dart';
 
 class ExpenseReportScreen extends ConsumerStatefulWidget {
   const ExpenseReportScreen({super.key});
@@ -155,13 +158,15 @@ class _ExpenseReportScreenState extends ConsumerState<ExpenseReportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
+    final displayMode = ref.watch(displayModeProvider);
+    final isMobile = displayMode == DisplayMode.mobile;
     final reportAsync = ref.watch(expenseReportProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
-    final isMobile = false; // Forced desktop layout as per user request
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profit & Expense Report', style: TextStyle(color: Colors.white)),
+        title: Text('Profit & Expense Report'.tr, style: const TextStyle(color: Colors.white)),
         backgroundColor: primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -171,75 +176,108 @@ class _ExpenseReportScreenState extends ConsumerState<ExpenseReportScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.white,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _startDate == null ? 'Select Date Range' : '${DateFormat('dd-MMM-yyyy').format(_startDate!)} to ${DateFormat('dd-MMM-yyyy').format(_endDate!)}',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            child: isMobile
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        _startDate == null ? 'Select Date Range'.tr : '${DateFormat('dd-MMM-yyyy').format(_startDate!)} to ${DateFormat('dd-MMM-yyyy').format(_endDate!)}',
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _pickDateRange,
+                              icon: const Icon(Icons.date_range),
+                              label: Text('FILTER'.tr),
+                            ),
+                          ),
+                          if (reportAsync.hasValue) ...[
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () => _printPdf(reportAsync.value!),
+                                icon: const Icon(Icons.print),
+                                label: Text('PRINT'.tr),
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _startDate == null ? 'Select Date Range'.tr : '${DateFormat('dd-MMM-yyyy').format(_startDate!)} to ${DateFormat('dd-MMM-yyyy').format(_endDate!)}',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: _pickDateRange,
+                        icon: const Icon(Icons.date_range),
+                        label: Text('FILTER'.tr),
+                      ),
+                      const SizedBox(width: 8),
+                      if (reportAsync.hasValue)
+                        ElevatedButton.icon(
+                          onPressed: () => _printPdf(reportAsync.value!),
+                          icon: const Icon(Icons.print),
+                          label: Text('PRINT'.tr),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                        ),
+                    ],
                   ),
-                ),
-                ElevatedButton.icon(
-                  onPressed: _pickDateRange,
-                  icon: const Icon(Icons.date_range),
-                  label: const Text('FILTER'),
-                ),
-                const SizedBox(width: 8),
-                if (reportAsync.hasValue)
-                  ElevatedButton.icon(
-                    onPressed: () => _printPdf(reportAsync.value!),
-                    icon: const Icon(Icons.print),
-                    label: const Text('PRINT'),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
-                  ),
-              ],
-            ),
           ),
           
           Expanded(
             child: reportAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, s) => Center(child: Text('Error: $e')),
+              error: (e, s) => Center(child: Text('${'Error'.tr}: $e')),
               data: (report) {
                 if (_startDate == null) {
-                  return const Center(child: Text('Please select a date range to generate the report.'));
+                  return Center(child: Text('Please select a date range to generate the report.'.tr));
                 }
 
                 return SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(isMobile ? 12 : 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Financial Overview', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
+                      Text('Financial Overview'.tr, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
                       const SizedBox(height: 16),
                       Wrap(
                         children: [
-                          _buildSummaryCard('Total Sales (Revenue)', report.totalRevenue, Colors.green, isMobile),
-                          _buildSummaryCard('Profit on Sales', report.productProfit, Colors.teal, isMobile),
-                          _buildSummaryCard('Milk Sale Cost', report.milkSaleCost, Colors.blue.shade700, isMobile),
-                          _buildSummaryCard('Milk Purchase Cost', report.milkCost, Colors.purple, isMobile),
-                          _buildSummaryCard('Profit on Milk', report.milkProfit, report.milkProfit >= 0 ? Colors.green.shade700 : Colors.red, isMobile),
-                          _buildSummaryCard('Stock Purchase Cost', report.purchaseCost, Colors.indigo, isMobile),
-                          _buildSummaryCard('Operational Expenses', report.expenseCost, Colors.orange, isMobile),
-                          _buildSummaryCard('NET PROFIT', report.netProfit, report.netProfit >= 0 ? Colors.blue.shade900 : Colors.red.shade900, isMobile),
+                          _buildSummaryCard('Total Sales (Revenue)'.tr, report.totalRevenue, Colors.green, isMobile),
+                          _buildSummaryCard('Profit on Sales'.tr, report.productProfit, Colors.teal, isMobile),
+                          _buildSummaryCard('Milk Sale Cost'.tr, report.milkSaleCost, Colors.blue.shade700, isMobile),
+                          _buildSummaryCard('Milk Purchase Cost'.tr, report.milkCost, Colors.purple, isMobile),
+                          _buildSummaryCard('Profit on Milk'.tr, report.milkProfit, report.milkProfit >= 0 ? Colors.green.shade700 : Colors.red, isMobile),
+                          _buildSummaryCard('Stock Purchase Cost'.tr, report.purchaseCost, Colors.indigo, isMobile),
+                          _buildSummaryCard('Operational Expenses'.tr, report.expenseCost, Colors.orange, isMobile),
+                          _buildSummaryCard('NET PROFIT'.tr, report.netProfit, report.netProfit >= 0 ? Colors.blue.shade900 : Colors.red.shade900, isMobile),
                         ],
                       ),
                       const SizedBox(height: 24),
-                      Text('Detailed Expenses', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
+                      Text('Detailed Expenses'.tr, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
                       const SizedBox(height: 16),
                       if (report.expenses.isEmpty)
-                        const Text('No expenses recorded in this date range.')
+                        Text('No expenses recorded in this date range.'.tr)
                       else
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: DataTable(
                             headingRowColor: MaterialStateProperty.all(Colors.grey.shade200),
-                            columns: const [
-                              DataColumn(label: Text('Date', style: TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Category', style: TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Description', style: TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Pay Mode', style: TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Amount (₹)', style: TextStyle(fontWeight: FontWeight.bold))),
+                            columns: [
+                              DataColumn(label: Text('Date'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                              DataColumn(label: Text('Category'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                              DataColumn(label: Text('Description'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                              DataColumn(label: Text('Pay Mode'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                              DataColumn(label: Text('Amount (₹)'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
                             ],
                             rows: report.expenses.map((e) => DataRow(cells: [
                               DataCell(Text(DateFormat('dd-MMM-yyyy').format(DateTime.parse(e.expenseDate)))),

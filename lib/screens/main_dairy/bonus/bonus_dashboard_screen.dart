@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import '../../../models/flutter_models.dart';
 import '../../../providers/bonus_provider.dart';
 import 'bonus_payment_screen.dart';
+import '../../../services/translations.dart';
+import '../../../providers/language_provider.dart';
 
 class BonusDashboardScreen extends ConsumerStatefulWidget {
   final Function(int)? onNavigateSubTab;
@@ -33,8 +35,8 @@ class _BonusDashboardScreenState extends ConsumerState<BonusDashboardScreen> {
 
   @override
   void dispose() {
-    _fromDateController.disposeOrder();
-    _toDateController.disposeOrder();
+    _fromDateController.dispose();
+    _toDateController.dispose();
     super.dispose();
   }
 
@@ -69,6 +71,7 @@ class _BonusDashboardScreenState extends ConsumerState<BonusDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = ref.watch(languageProvider);
     final summaryAsync = ref.watch(bonusCalculationProvider);
 
     return Scaffold(
@@ -110,16 +113,16 @@ class _BonusDashboardScreenState extends ConsumerState<BonusDashboardScreen> {
                         child: const Icon(Icons.workspace_premium, color: Color(0xFF1E40AF), size: 26),
                       ),
                       const SizedBox(width: 12),
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Bonus Dashboard',
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                            'Bonus Dashboard'.tr,
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                           ),
                           Text(
-                            'Farmer bonus calculations and distribution overview',
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                            'Farmer bonus calculations and distribution overview'.tr,
+                            style: const TextStyle(fontSize: 12, color: Colors.grey),
                           ),
                         ],
                       ),
@@ -130,8 +133,8 @@ class _BonusDashboardScreenState extends ConsumerState<BonusDashboardScreen> {
                     spacing: 10,
                     runSpacing: 8,
                     children: [
-                      _buildDateField('From Date', _fromDateController, () => _selectDate(context, true)),
-                      _buildDateField('To Date', _toDateController, () => _selectDate(context, false)),
+                      _buildDateField('From Date'.tr, _fromDateController, () => _selectDate(context, true)),
+                      _buildDateField('To Date'.tr, _toDateController, () => _selectDate(context, false)),
                       ElevatedButton(
                         onPressed: _applyFilter,
                         style: ElevatedButton.styleFrom(
@@ -141,7 +144,7 @@ class _BonusDashboardScreenState extends ConsumerState<BonusDashboardScreen> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           elevation: 1,
                         ),
-                        child: const Text('Apply', style: TextStyle(fontWeight: FontWeight.bold)),
+                        child: Text('Apply'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
@@ -182,7 +185,7 @@ class _BonusDashboardScreenState extends ConsumerState<BonusDashboardScreen> {
                           childAspectRatio: isNarrow ? 2.5 : 2.0,
                           children: [
                             _buildMetricCard(
-                              title: 'Total Collection',
+                              title: 'Total Collection'.tr,
                               value: '${NumberFormat('#,##0.00').format(summary.totalCollection)} L',
                               icon: Icons.water_drop,
                               bgColor: const Color(0xFFEFF6FF),
@@ -190,7 +193,7 @@ class _BonusDashboardScreenState extends ConsumerState<BonusDashboardScreen> {
                               textColor: const Color(0xFF1E40AF),
                             ),
                             _buildMetricCard(
-                              title: 'Total Bonus',
+                              title: 'Total Bonus'.tr,
                               value: '₹ ${NumberFormat('#,##0.00').format(summary.totalBonus)}',
                               icon: Icons.currency_rupee,
                               bgColor: const Color(0xFFF0FDF4),
@@ -198,7 +201,7 @@ class _BonusDashboardScreenState extends ConsumerState<BonusDashboardScreen> {
                               textColor: const Color(0xFF15803D),
                             ),
                             _buildMetricCard(
-                              title: 'Paid Bonus',
+                              title: 'Paid Bonus'.tr,
                               value: '₹ ${NumberFormat('#,##0.00').format(summary.paidBonus)}',
                               icon: Icons.check_circle_outline,
                               bgColor: const Color(0xFFFAF5FF),
@@ -206,7 +209,7 @@ class _BonusDashboardScreenState extends ConsumerState<BonusDashboardScreen> {
                               textColor: const Color(0xFF7E22CE),
                             ),
                             _buildMetricCard(
-                              title: 'Remaining Bonus',
+                              title: 'Remaining Bonus'.tr,
                               value: '₹ ${NumberFormat('#,##0.00').format(summary.remainingBonus)}',
                               icon: Icons.schedule,
                               bgColor: const Color(0xFFFFF7ED),

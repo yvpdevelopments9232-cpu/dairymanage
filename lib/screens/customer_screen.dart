@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/customer_provider.dart';
 import '../models/flutter_models.dart';
+import '../providers/language_provider.dart';
+import '../providers/display_mode_provider.dart';
+import '../services/translations.dart';
 
 class CustomerScreen extends ConsumerWidget {
   const CustomerScreen({super.key});
@@ -17,17 +20,17 @@ class CustomerScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Customer'),
-        content: Text('Are you sure you want to delete ${customer.name}?'),
+        title: Text('Delete Customer'.tr),
+        content: Text('${'Are you sure you want to delete'.tr} ${customer.name}?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCEL')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('CANCEL'.tr)),
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
               try {
                 await ref.read(customersProvider.notifier).deleteCustomer(customer.id);
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Customer deleted successfully')));
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Customer deleted successfully'.tr)));
                 }
               } catch (e) {
                 if (context.mounted) {
@@ -35,7 +38,7 @@ class CustomerScreen extends ConsumerWidget {
                 }
               }
             },
-            child: const Text('DELETE', style: TextStyle(color: Colors.red)),
+            child: Text('DELETE'.tr, style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -44,6 +47,9 @@ class CustomerScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(languageProvider);
+    final displayMode = ref.watch(displayModeProvider);
+    final isMobile = displayMode == DisplayMode.mobile || MediaQuery.of(context).size.width < 700;
     final customersAsync = ref.watch(customersProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
 
@@ -51,7 +57,7 @@ class CustomerScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCustomerDialog(context),
         icon: const Icon(Icons.add),
-        label: const Text('Add Customer'),
+        label: Text('Add Customer'.tr),
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
       ),
@@ -66,12 +72,12 @@ class CustomerScreen extends ConsumerWidget {
                 children: [
                   Icon(Icons.storefront, size: 80, color: Colors.grey.shade400),
                   const SizedBox(height: 16),
-                  const Text('No customers added yet.', style: TextStyle(fontSize: 18, color: Colors.grey)),
+                  Text('No customers added yet.'.tr, style: const TextStyle(fontSize: 18, color: Colors.grey)),
                   const SizedBox(height: 8),
                   TextButton.icon(
                     onPressed: () => _showCustomerDialog(context),
                     icon: const Icon(Icons.add),
-                    label: const Text('Add your first Customer'),
+                    label: Text('Add your first Customer'.tr),
                   )
                 ],
               ),
@@ -83,75 +89,75 @@ class CustomerScreen extends ConsumerWidget {
             itemBuilder: (context, index) {
               final customer = customers[index];
 
+              final tile = ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                leading: CircleAvatar(
+                  radius: 22,
+                  backgroundColor: Colors.orange.shade50,
+                  child: const Icon(Icons.store, color: Colors.orange),
+                ),
+                title: Text(
+                  customer.name, 
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
+                ),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 4.0),
+                  child: Text('${customer.customerType.tr} | 📞 ${customer.mobile ?? "N/A"}'),
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text('Bal:'.tr, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                        const SizedBox(height: 2),
+                        Text(
+                          '₹ ${customer.currentBalance.toStringAsFixed(2)}', 
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold, 
+                            fontSize: 14,
+                            color: customer.currentBalance > 0 ? Colors.red.shade700 : Colors.green.shade700
+                          )
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 4),
+                    PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          _showCustomerDialog(context, existingCustomer: customer);
+                        } else if (value == 'delete') {
+                          _confirmDelete(context, ref, customer);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Row(children: [const Icon(Icons.edit, size: 20), const SizedBox(width: 8), Text('Edit'.tr)]),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Row(children: [const Icon(Icons.delete, color: Colors.red, size: 20), const SizedBox(width: 8), Text('Delete'.tr, style: const TextStyle(color: Colors.red))]),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+
               return Card(
                 elevation: 2,
                 margin: const EdgeInsets.only(bottom: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: SingleChildScrollView(
+                child: isMobile ? tile : SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: ConstrainedBox(
                     constraints: BoxConstraints(minWidth: MediaQuery.of(context).size.width - 24),
-                    child: IntrinsicWidth(
-                      child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  leading: CircleAvatar(
-                    radius: 25,
-                    backgroundColor: Colors.orange.shade50,
-                    child: const Icon(Icons.store, color: Colors.orange),
-                  ),
-                  title: Text(
-                    customer.name, 
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
-                  ),
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 4.0),
-                    child: Text('${customer.customerType} | 📞 ${customer.mobile ?? "N/A"}'),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          const Text('Bal:', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                          const SizedBox(height: 4),
-                          Text(
-                            '₹ ${customer.currentBalance.toStringAsFixed(2)}', 
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold, 
-                              fontSize: 15,
-                              color: customer.currentBalance > 0 ? Colors.red.shade700 : Colors.green.shade700
-                            )
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 8),
-                      PopupMenuButton<String>(
-                        onSelected: (value) {
-                          if (value == 'edit') {
-                            _showCustomerDialog(context, existingCustomer: customer);
-                          } else if (value == 'delete') {
-                            _confirmDelete(context, ref, customer);
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          const PopupMenuItem(
-                            value: 'edit',
-                            child: Row(children: [Icon(Icons.edit, size: 20), SizedBox(width: 8), Text('Edit')]),
-                          ),
-                          const PopupMenuItem(
-                            value: 'delete',
-                            child: Row(children: [Icon(Icons.delete, color: Colors.red, size: 20), SizedBox(width: 8), Text('Delete', style: TextStyle(color: Colors.red))]),
-                          ),
-                        ],
-                      ),
-                    ],
+                    child: IntrinsicWidth(child: tile),
                   ),
                 ),
-                      ),
-                    ),
-                  ),
               );
             },
           );
@@ -247,15 +253,15 @@ class _CustomerDialogState extends ConsumerState<CustomerDialog> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
     final isEditing = widget.customer != null;
 
     return AlertDialog(
-      title: Text(isEditing ? 'Edit Customer' : 'Add New Customer', style: const TextStyle(fontWeight: FontWeight.bold)),
+      title: Text(isEditing ? 'Edit Customer'.tr : 'Add New Customer'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       content: SingleChildScrollView(
         child: ConstrainedBox(
-constraints: const BoxConstraints(maxWidth: 400),
-
+          constraints: const BoxConstraints(maxWidth: 400),
           child: Form(
             key: _formKey,
             child: Column(
@@ -264,17 +270,17 @@ constraints: const BoxConstraints(maxWidth: 400),
                 TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(
-                    labelText: 'Shop / Customer Name *', 
+                    labelText: 'Shop / Customer Name *'.tr, 
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     prefixIcon: const Icon(Icons.storefront)
                   ),
-                  validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
+                  validator: (val) => val == null || val.trim().isEmpty ? 'Required'.tr : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _mobileController,
                   decoration: InputDecoration(
-                    labelText: 'Mobile Number', 
+                    labelText: 'Mobile Number'.tr, 
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     prefixIcon: const Icon(Icons.phone)
                   ),
@@ -284,18 +290,18 @@ constraints: const BoxConstraints(maxWidth: 400),
                 DropdownButtonFormField<String>(
                   value: _selectedType,
                   decoration: InputDecoration(
-                    labelText: 'Customer Type',
+                    labelText: 'Customer Type'.tr,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     prefixIcon: const Icon(Icons.category),
                   ),
-                  items: _customerTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
+                  items: _customerTypes.map((type) => DropdownMenuItem(value: type, child: Text(type.tr))).toList(),
                   onChanged: (val) => setState(() => _selectedType = val!),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _creditLimitController,
                   decoration: InputDecoration(
-                    labelText: 'Credit Limit (₹)', 
+                    labelText: 'Credit Limit (₹)'.tr, 
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     prefixIcon: const Icon(Icons.account_balance_wallet)
                   ),
@@ -305,7 +311,7 @@ constraints: const BoxConstraints(maxWidth: 400),
                 TextFormField(
                   controller: _addressController,
                   decoration: InputDecoration(
-                    labelText: 'Full Address', 
+                    labelText: 'Full Address'.tr, 
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     prefixIcon: const Icon(Icons.location_on)
                   ),
@@ -318,7 +324,7 @@ constraints: const BoxConstraints(maxWidth: 400),
       ),
       actionsPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text('CANCEL'.tr)),
         ElevatedButton(
           onPressed: _isSaving ? null : _submit,
           style: ElevatedButton.styleFrom(
@@ -326,7 +332,7 @@ constraints: const BoxConstraints(maxWidth: 400),
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           ),
-          child: _isSaving ? const CircularProgressIndicator() : Text(isEditing ? 'UPDATE' : 'SAVE CUSTOMER'),
+          child: _isSaving ? const CircularProgressIndicator() : Text(isEditing ? 'UPDATE'.tr : 'SAVE CUSTOMER'.tr),
         ),
       ],
     );

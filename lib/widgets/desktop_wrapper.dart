@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/display_mode_provider.dart';
 
-class DesktopWrapper extends StatefulWidget {
+class DesktopWrapper extends ConsumerStatefulWidget {
   final Widget child;
   final double minWidth;
 
@@ -12,10 +14,10 @@ class DesktopWrapper extends StatefulWidget {
   });
 
   @override
-  State<DesktopWrapper> createState() => _DesktopWrapperState();
+  ConsumerState<DesktopWrapper> createState() => _DesktopWrapperState();
 }
 
-class _DesktopWrapperState extends State<DesktopWrapper> {
+class _DesktopWrapperState extends ConsumerState<DesktopWrapper> {
   late final TransformationController _transformationController;
   double _currentScale = 1.0;
   bool _isCollapsed = false;
@@ -78,6 +80,16 @@ class _DesktopWrapperState extends State<DesktopWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    final displayMode = ref.watch(displayModeProvider);
+
+    // In Mobile Mode: bypass the 1000px Desktop canvas and InteractiveViewer zoom wrapper!
+    // The child widgets adapt natively and responsively to the mobile viewport.
+    if (displayMode == DisplayMode.mobile) {
+      return widget.child;
+    }
+
+    // In Previous / Desktop Mode:
+    // Exactly preserves existing zooming logic, pinch-to-zoom, floating toolbar (+, -, %, Fit, 100%), and 1000px canvas!
     final mediaQuery = MediaQuery.of(context);
     final screenWidth = mediaQuery.size.width;
 

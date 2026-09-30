@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/product_provider.dart';
 import '../models/flutter_models.dart';
+import '../providers/language_provider.dart';
+import '../providers/display_mode_provider.dart';
+import '../services/translations.dart';
 
 class ProductScreen extends ConsumerWidget {
   const ProductScreen({super.key});
@@ -17,21 +20,21 @@ class ProductScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Product'),
-        content: Text('Are you sure you want to delete ${product.name}?'),
+        title: Text('Delete Product'.tr),
+        content: Text('${'Are you sure you want to delete'.tr} ${product.name}?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCEL')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('CANCEL'.tr)),
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
               try {
                 await ref.read(productsProvider.notifier).deleteProduct(product.id);
-                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Product deleted successfully')));
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Product deleted successfully'.tr)));
               } catch (e) {
                 if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
               }
             },
-            child: const Text('DELETE', style: TextStyle(color: Colors.red)),
+            child: Text('DELETE'.tr, style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -40,6 +43,9 @@ class ProductScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(languageProvider);
+    final displayMode = ref.watch(displayModeProvider);
+    final isMobile = displayMode == DisplayMode.mobile || MediaQuery.of(context).size.width < 700;
     final productsAsync = ref.watch(productsProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
 
@@ -47,7 +53,7 @@ class ProductScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showProductDialog(context),
         icon: const Icon(Icons.add),
-        label: const Text('Add Product'),
+        label: Text('Add Product'.tr),
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
       ),
@@ -62,12 +68,12 @@ class ProductScreen extends ConsumerWidget {
                 children: [
                   Icon(Icons.inventory_2_outlined, size: 80, color: Colors.grey.shade400),
                   const SizedBox(height: 16),
-                  const Text('No products in inventory yet.', style: TextStyle(fontSize: 18, color: Colors.grey)),
+                  Text('No products in inventory yet.'.tr, style: const TextStyle(fontSize: 18, color: Colors.grey)),
                   const SizedBox(height: 8),
                   TextButton.icon(
                     onPressed: () => _showProductDialog(context),
                     icon: const Icon(Icons.add),
-                    label: const Text('Add your first Product'),
+                    label: Text('Add your first Product'.tr),
                   )
                 ],
               ),
@@ -80,68 +86,76 @@ class ProductScreen extends ConsumerWidget {
               final product = products[index];
               final bool isLowStock = product.currentStock <= 5;
 
+              final tile = ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                leading: CircleAvatar(
+                  radius: 22,
+                  backgroundColor: Colors.blue.shade50,
+                  child: Icon(
+                    product.category == 'Feed' ? Icons.agriculture : Icons.inventory_2, 
+                    color: Colors.blue
+                  ),
+                ),
+                title: Text(
+                  product.name, 
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
+                ),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 4.0),
+                  child: Text('${(product.category ?? '').tr} | ${'Buy:'.tr} ₹${product.purchaseRate} / ${'Sell:'.tr} ₹${product.sellingRate}'),
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text('In Stock'.tr, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${product.currentStock.toStringAsFixed(1)} ${product.unit.tr}', 
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold, 
+                            fontSize: 14,
+                            color: isLowStock ? Colors.red.shade700 : Colors.green.shade700
+                          )
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 4),
+                    PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          _showProductDialog(context, product: product);
+                        } else if (value == 'delete') {
+                          _confirmDelete(context, ref, product);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Row(children: [const Icon(Icons.edit, size: 20), const SizedBox(width: 8), Text('Edit'.tr)]),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Row(children: [const Icon(Icons.delete, color: Colors.red, size: 20), const SizedBox(width: 8), Text('Delete'.tr, style: const TextStyle(color: Colors.red))]),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+
               return Card(
                 elevation: 2,
                 margin: const EdgeInsets.only(bottom: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  leading: CircleAvatar(
-                    radius: 25,
-                    backgroundColor: Colors.blue.shade50,
-                    child: Icon(
-                      product.category == 'Feed' ? Icons.agriculture : Icons.inventory_2, 
-                      color: Colors.blue
-                    ),
-                  ),
-                  title: Text(
-                    product.name, 
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
-                  ),
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 4.0),
-                    child: Text('${product.category} | Buy: ₹${product.purchaseRate} / Sell: ₹${product.sellingRate}'),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          const Text('In Stock', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${product.currentStock.toStringAsFixed(1)} ${product.unit}', 
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold, 
-                              fontSize: 15,
-                              color: isLowStock ? Colors.red.shade700 : Colors.green.shade700
-                            )
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 8),
-                      PopupMenuButton<String>(
-                        onSelected: (value) {
-                          if (value == 'edit') {
-                            _showProductDialog(context, product: product);
-                          } else if (value == 'delete') {
-                            _confirmDelete(context, ref, product);
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          const PopupMenuItem(
-                            value: 'edit',
-                            child: Row(children: [Icon(Icons.edit, size: 20), SizedBox(width: 8), Text('Edit')]),
-                          ),
-                          const PopupMenuItem(
-                            value: 'delete',
-                            child: Row(children: [Icon(Icons.delete, color: Colors.red, size: 20), SizedBox(width: 8), Text('Delete', style: TextStyle(color: Colors.red))]),
-                          ),
-                        ],
-                      ),
-                    ],
+                child: isMobile ? tile : SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minWidth: MediaQuery.of(context).size.width - 24),
+                    child: IntrinsicWidth(child: tile),
                   ),
                 ),
               );
@@ -220,7 +234,7 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.product == null ? 'Product added successfully!' : 'Product updated!'), 
+            content: Text(widget.product == null ? 'Product added successfully!'.tr : 'Product updated!'.tr), 
             backgroundColor: Colors.green
           )
         );
@@ -245,15 +259,57 @@ class _ProductDialogState extends ConsumerState<ProductDialog> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
+    final displayMode = ref.watch(displayModeProvider);
+    final isMobile = displayMode == DisplayMode.mobile || MediaQuery.of(context).size.width < 500;
     final isEditing = widget.product != null;
 
+    final categoryField = DropdownButtonFormField<String>(
+      value: _selectedCategory,
+      decoration: InputDecoration(
+        labelText: 'Category'.tr,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c.tr))).toList(),
+      onChanged: (val) => setState(() => _selectedCategory = val!),
+    );
+
+    final unitField = DropdownButtonFormField<String>(
+      value: _selectedUnit,
+      decoration: InputDecoration(
+        labelText: 'Unit'.tr,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      items: _units.map((u) => DropdownMenuItem(value: u, child: Text(u.tr))).toList(),
+      onChanged: (val) => setState(() => _selectedUnit = val!),
+    );
+
+    final purchaseField = TextFormField(
+      controller: _purchaseController,
+      decoration: InputDecoration(
+        labelText: 'Purchase Rate (₹) *'.tr, 
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      validator: (val) => val == null || val.trim().isEmpty ? 'Required'.tr : null,
+    );
+
+    final sellField = TextFormField(
+      controller: _sellController,
+      decoration: InputDecoration(
+        labelText: 'Sale Rate (₹) *'.tr, 
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      validator: (val) => val == null || val.trim().isEmpty ? 'Required'.tr : null,
+    );
+
     return AlertDialog(
-      title: Text(isEditing ? 'Edit Product' : 'Add New Product', style: const TextStyle(fontWeight: FontWeight.bold)),
+      title: Text(isEditing ? 'Edit Product'.tr : 'Add New Product'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       content: SingleChildScrollView(
         child: ConstrainedBox(
-constraints: const BoxConstraints(maxWidth: 400),
-
+          constraints: const BoxConstraints(maxWidth: 400),
           child: Form(
             key: _formKey,
             child: Column(
@@ -262,74 +318,44 @@ constraints: const BoxConstraints(maxWidth: 400),
                 TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(
-                    labelText: 'Product Name *', 
+                    labelText: 'Product Name *'.tr, 
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     prefixIcon: const Icon(Icons.inventory)
                   ),
-                  validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
+                  validator: (val) => val == null || val.trim().isEmpty ? 'Required'.tr : null,
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _selectedCategory,
-                        decoration: InputDecoration(
-                          labelText: 'Category',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                        onChanged: (val) => setState(() => _selectedCategory = val!),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _selectedUnit,
-                        decoration: InputDecoration(
-                          labelText: 'Unit',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        items: _units.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
-                        onChanged: (val) => setState(() => _selectedUnit = val!),
-                      ),
-                    ),
-                  ],
-                ),
+                if (isMobile) ...[
+                  categoryField,
+                  const SizedBox(height: 16),
+                  unitField,
+                ] else
+                  Row(
+                    children: [
+                      Expanded(child: categoryField),
+                      const SizedBox(width: 16),
+                      Expanded(child: unitField),
+                    ],
+                  ),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _purchaseController,
-                        decoration: InputDecoration(
-                          labelText: 'Purchase Rate (₹) *', 
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _sellController,
-                        decoration: InputDecoration(
-                          labelText: 'Sale Rate (₹) *', 
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
-                      ),
-                    ),
-                  ],
-                ),
+                if (isMobile) ...[
+                  purchaseField,
+                  const SizedBox(height: 16),
+                  sellField,
+                ] else
+                  Row(
+                    children: [
+                      Expanded(child: purchaseField),
+                      const SizedBox(width: 16),
+                      Expanded(child: sellField),
+                    ],
+                  ),
                 if (!isEditing) const SizedBox(height: 16),
                 if (!isEditing)
                   TextFormField(
                     controller: _stockController,
                     decoration: InputDecoration(
-                      labelText: 'Opening Stock', 
+                      labelText: 'Opening Stock'.tr, 
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                       prefixIcon: const Icon(Icons.layers)
                     ),
@@ -347,7 +373,7 @@ constraints: const BoxConstraints(maxWidth: 400),
       ),
       actionsPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text('CANCEL'.tr)),
         ElevatedButton(
           onPressed: _isSaving ? null : _submit,
           style: ElevatedButton.styleFrom(
@@ -355,7 +381,7 @@ constraints: const BoxConstraints(maxWidth: 400),
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           ),
-          child: _isSaving ? const CircularProgressIndicator() : Text(isEditing ? 'UPDATE' : 'SAVE PRODUCT'),
+          child: _isSaving ? const CircularProgressIndicator() : Text(isEditing ? 'UPDATE'.tr : 'SAVE PRODUCT'.tr),
         ),
       ],
     );

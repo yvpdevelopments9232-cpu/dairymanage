@@ -3,6 +3,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/flutter_models.dart';
 import 'auth_provider.dart';
 
+import '../services/app_db.dart';
+import '../services/offline_db_helper.dart';
+
 class MainDairyNotifier extends AsyncNotifier<List<MainDairy>> {
   @override
   Future<List<MainDairy>> build() async {
@@ -10,17 +13,25 @@ class MainDairyNotifier extends AsyncNotifier<List<MainDairy>> {
   }
 
   Future<List<MainDairy>> _fetchDairies() async {
-    final supabase = ref.read(supabaseClientProvider);
     try {
-      final response = await supabase.from('main_dairies').select().order('dairy_no', ascending: true);
-      return (response as List).map((json) => MainDairy.fromJson(json)).toList();
+      final response = await AppDb.from('main_dairies').select().order('dairy_no', ascending: true);
+      final list = (response as List).map((json) => MainDairy.fromJson(json)).toList();
+      if (list.isNotEmpty) return list;
+    } catch (_) {}
+
+    try {
+      final response = await AppDb.from('main_dairies').select().order('name');
+      final list = (response as List).map((json) => MainDairy.fromJson(json)).toList();
+      if (list.isNotEmpty) return list;
+    } catch (_) {}
+
+    // Fallback to local SQLite if cloud query was empty or offline
+    try {
+      final db = await OfflineDbHelper.instance.database;
+      final localRows = await db.query('main_dairies', orderBy: 'dairy_no ASC');
+      return localRows.map((json) => MainDairy.fromJson(json)).toList();
     } catch (_) {
-      try {
-        final response = await supabase.from('main_dairies').select().order('name');
-        return (response as List).map((json) => MainDairy.fromJson(json)).toList();
-      } catch (_) {
-        return [];
-      }
+      return [];
     }
   }
 

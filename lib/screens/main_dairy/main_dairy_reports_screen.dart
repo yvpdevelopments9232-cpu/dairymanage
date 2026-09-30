@@ -8,6 +8,8 @@ import '../../providers/settings_provider.dart';
 import '../../providers/main_dairy_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/app_db.dart';
+import '../../services/translations.dart';
+import '../../providers/language_provider.dart';
 
 class MainDairyReportsScreen extends ConsumerStatefulWidget {
   const MainDairyReportsScreen({super.key});
@@ -283,12 +285,13 @@ class _MainDairyReportsScreenState extends ConsumerState<MainDairyReportsScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
     final dairiesAsync = ref.watch(mainDairyProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Main Dairy Reports', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text('Main Dairy Reports'.tr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
@@ -296,9 +299,9 @@ class _MainDairyReportsScreenState extends ConsumerState<MainDairyReportsScreen>
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
           indicatorColor: Colors.white,
-          tabs: const [
-            Tab(icon: Icon(Icons.receipt_long), text: 'Dairy Ledger Statement'),
-            Tab(icon: Icon(Icons.calendar_today), text: 'Annual Dispatch Summary'),
+          tabs: [
+            Tab(icon: const Icon(Icons.receipt_long), text: 'Dairy Ledger Statement'.tr),
+            Tab(icon: const Icon(Icons.calendar_today), text: 'Annual Dispatch Summary'.tr),
           ],
         ),
       ),
@@ -320,7 +323,7 @@ class _MainDairyReportsScreenState extends ConsumerState<MainDairyReportsScreen>
                         error: (e, _) => const Text('Error'),
                         data: (list) => DropdownButtonFormField<String>(
                           value: _selectedDairyId,
-                          decoration: const InputDecoration(labelText: 'Select Main Dairy', border: OutlineInputBorder()),
+                          decoration: InputDecoration(labelText: 'Select Main Dairy'.tr, border: const OutlineInputBorder()),
                           items: list.map((d) => DropdownMenuItem(value: d.id, child: Text(d.name))).toList(),
                           onChanged: (v) {
                             setState(() => _selectedDairyId = v);
@@ -349,7 +352,7 @@ class _MainDairyReportsScreenState extends ConsumerState<MainDairyReportsScreen>
                           }
                         },
                         child: InputDecorator(
-                          decoration: const InputDecoration(labelText: 'Date Range', border: OutlineInputBorder()),
+                          decoration: InputDecoration(labelText: 'Date Range'.tr, border: const OutlineInputBorder()),
                           child: Text('${DateFormat('dd MMM yy').format(_startDate)} - ${DateFormat('dd MMM yy').format(_endDate)}'),
                         ),
                       ),
@@ -358,7 +361,7 @@ class _MainDairyReportsScreenState extends ConsumerState<MainDairyReportsScreen>
                     ElevatedButton.icon(
                       onPressed: _fetchLedger,
                       icon: const Icon(Icons.search),
-                      label: const Text('GENERATE'),
+                      label: Text('GENERATE'.tr),
                       style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20)),
                     ),
                     const SizedBox(width: 12),
@@ -369,7 +372,7 @@ class _MainDairyReportsScreenState extends ConsumerState<MainDairyReportsScreen>
                         _printLedgerPdf(dairy?.name ?? 'Main Dairy');
                       },
                       icon: const Icon(Icons.print),
-                      label: const Text('PRINT PDF'),
+                      label: Text('PRINT PDF'.tr),
                       style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20)),
                     ),
                   ],
@@ -379,7 +382,7 @@ class _MainDairyReportsScreenState extends ConsumerState<MainDairyReportsScreen>
                 child: _isLoadingLedger
                     ? const Center(child: CircularProgressIndicator())
                     : (_dispatchEntries.isEmpty && _paymentEntries.isEmpty)
-                        ? const Center(child: Text('Select a Main Dairy and date range to view ledger reports.'))
+                        ? Center(child: Text('Select a Main Dairy and date range to view ledger reports.'.tr))
                         : SingleChildScrollView(
                             padding: const EdgeInsets.all(20),
                             child: Column(
@@ -394,20 +397,20 @@ class _MainDairyReportsScreenState extends ConsumerState<MainDairyReportsScreen>
                                         width: double.infinity,
                                         color: primaryColor.withOpacity(0.1),
                                         padding: const EdgeInsets.all(16),
-                                        child: const Text('1. Dispatched Milk Records', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                        child: Text('1. Dispatched Milk Details'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                                       ),
                                       SingleChildScrollView(
                                         scrollDirection: Axis.horizontal,
                                         child: DataTable(
-                                          columns: const [
-                                            DataColumn(label: Text('Date', style: TextStyle(fontWeight: FontWeight.bold))),
-                                            DataColumn(label: Text('Shift', style: TextStyle(fontWeight: FontWeight.bold))),
-                                            DataColumn(label: Text('Milk Type', style: TextStyle(fontWeight: FontWeight.bold))),
-                                            DataColumn(label: Text('Quantity (Ltr)', style: TextStyle(fontWeight: FontWeight.bold))),
-                                            DataColumn(label: Text('Fat %', style: TextStyle(fontWeight: FontWeight.bold))),
-                                            DataColumn(label: Text('SNF %', style: TextStyle(fontWeight: FontWeight.bold))),
-                                            DataColumn(label: Text('Rate (₹)', style: TextStyle(fontWeight: FontWeight.bold))),
-                                            DataColumn(label: Text('Total (₹)', style: TextStyle(fontWeight: FontWeight.bold))),
+                                          columns: [
+                                            DataColumn(label: Text('Date'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                            DataColumn(label: Text('Shift'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                            DataColumn(label: Text('Milk Type'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                            DataColumn(label: Text('Quantity (Ltr)'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                            DataColumn(label: Text('Fat %'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                            DataColumn(label: Text('SNF %'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                            DataColumn(label: Text('Rate (₹)'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                            DataColumn(label: Text('Total (₹)'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
                                           ],
                                           rows: _dispatchEntries.map((e) => DataRow(cells: [
                                             DataCell(Text(e['collection_date'])),
@@ -427,7 +430,7 @@ class _MainDairyReportsScreenState extends ConsumerState<MainDairyReportsScreen>
                                         child: Row(
                                           mainAxisAlignment: MainAxisAlignment.end,
                                           children: [
-                                            const Text('Total Billing: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                                            Text('Total Billing: '.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
                                             Text('₹${_totalBilling.toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: primaryColor)),
                                           ],
                                         ),
@@ -446,17 +449,17 @@ class _MainDairyReportsScreenState extends ConsumerState<MainDairyReportsScreen>
                                         width: double.infinity,
                                         color: Colors.green.withOpacity(0.1),
                                         padding: const EdgeInsets.all(16),
-                                        child: const Text('2. Payments Received from Main Dairy', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green)),
+                                        child: Text('2. Payments Received from Main Dairy'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green)),
                                       ),
                                       SingleChildScrollView(
                                         scrollDirection: Axis.horizontal,
                                         child: DataTable(
-                                          columns: const [
-                                            DataColumn(label: Text('Date', style: TextStyle(fontWeight: FontWeight.bold))),
-                                            DataColumn(label: Text('Payment Mode', style: TextStyle(fontWeight: FontWeight.bold))),
-                                            DataColumn(label: Text('Reference No', style: TextStyle(fontWeight: FontWeight.bold))),
-                                            DataColumn(label: Text('Remarks', style: TextStyle(fontWeight: FontWeight.bold))),
-                                            DataColumn(label: Text('Amount (₹)', style: TextStyle(fontWeight: FontWeight.bold))),
+                                          columns: [
+                                            DataColumn(label: Text('Date'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                            DataColumn(label: Text('Payment Mode'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                            DataColumn(label: Text('Reference No'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                            DataColumn(label: Text('Remarks'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                            DataColumn(label: Text('Amount (₹)'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
                                           ],
                                           rows: _paymentEntries.map((p) => DataRow(cells: [
                                             DataCell(Text(p['payment_date'])),
@@ -473,7 +476,7 @@ class _MainDairyReportsScreenState extends ConsumerState<MainDairyReportsScreen>
                                         child: Row(
                                           mainAxisAlignment: MainAxisAlignment.end,
                                           children: [
-                                            const Text('Total Paid: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                                            Text('Total Paid: '.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
                                             Text('₹${_totalPaid.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green)),
                                           ],
                                         ),
@@ -491,9 +494,9 @@ class _MainDairyReportsScreenState extends ConsumerState<MainDairyReportsScreen>
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                                       children: [
-                                        Text('Total Billing: ₹${_totalBilling.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                        Text('Total Paid: ₹${_totalPaid.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green)),
-                                        Text('Receivable Balance: ₹${_totalRemaining.toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: _totalRemaining > 0 ? Colors.red : Colors.green)),
+                                        Text('${'Total Billing: '.tr}₹${_totalBilling.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                        Text('${'Total Paid: '.tr}₹${_totalPaid.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green)),
+                                        Text('${'Receivable Balance: '.tr}₹${_totalRemaining.toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: _totalRemaining > 0 ? Colors.red : Colors.green)),
                                       ],
                                     ),
                                   ),
@@ -513,7 +516,7 @@ class _MainDairyReportsScreenState extends ConsumerState<MainDairyReportsScreen>
                 color: Colors.grey.shade50,
                 child: Row(
                   children: [
-                    const Text('Select Year: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text('Select Year: '.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     const SizedBox(width: 8),
                     DropdownButton<int>(
                       value: _selectedYear,
@@ -527,7 +530,7 @@ class _MainDairyReportsScreenState extends ConsumerState<MainDairyReportsScreen>
                     ElevatedButton.icon(
                       onPressed: _fetchAnnualReport,
                       icon: const Icon(Icons.refresh),
-                      label: const Text('LOAD ANNUAL REPORT'),
+                      label: Text('LOAD ANNUAL REPORT'.tr),
                       style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white),
                     ),
                   ],
@@ -540,7 +543,7 @@ class _MainDairyReportsScreenState extends ConsumerState<MainDairyReportsScreen>
                         ? Center(
                             child: ElevatedButton(
                               onPressed: _fetchAnnualReport,
-                              child: const Text('Click to Load Annual Report'),
+                              child: Text('Click to Load Annual Report'.tr),
                             ),
                           )
                         : SingleChildScrollView(
@@ -548,12 +551,12 @@ class _MainDairyReportsScreenState extends ConsumerState<MainDairyReportsScreen>
                             child: Card(
                               elevation: 2,
                               child: DataTable(
-                                columns: const [
-                                  DataColumn(label: Text('Month', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('Dispatched Milk (Ltr)', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('Total Billing (₹)', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('Payments Received (₹)', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('Net Balance (₹)', style: TextStyle(fontWeight: FontWeight.bold))),
+                                columns: [
+                                  DataColumn(label: Text('Month'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Dispatched Milk (Ltr)'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Total Billing (₹)'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Payments Received (₹)'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Net Balance (₹)'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
                                 ],
                                 rows: _monthlySummary.map((m) => DataRow(cells: [
                                   DataCell(Text(m['month_name'], style: const TextStyle(fontWeight: FontWeight.bold))),

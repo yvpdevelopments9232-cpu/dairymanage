@@ -5,6 +5,9 @@ import '../providers/staff_provider.dart';
 import '../providers/farmer_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/app_db.dart';
+import '../providers/language_provider.dart';
+import '../providers/display_mode_provider.dart';
+import '../services/translations.dart';
 
 class AdvanceScreen extends ConsumerStatefulWidget {
   const AdvanceScreen({super.key});
@@ -206,11 +209,11 @@ class _AdvanceScreenState extends ConsumerState<AdvanceScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Advance'),
-        content: const Text('Are you sure you want to delete this advance?'),
+        title: Text('Delete Advance'.tr),
+        content: Text('Are you sure you want to delete this advance?'.tr),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('DELETE', style: TextStyle(color: Colors.red))),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Cancel'.tr)),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: Text('Delete'.tr, style: const TextStyle(color: Colors.red))),
         ],
       ),
     );
@@ -225,10 +228,10 @@ class _AdvanceScreenState extends ConsumerState<AdvanceScreen> {
           await supabase.from('staff_transactions').delete().eq('id', record['id']);
           ref.invalidate(staffProvider);
         }
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Advance deleted')));
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Advance deleted'.tr)));
         _fetchHistory();
       } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${'Error'.tr}: $e')));
       }
     }
   }
@@ -236,15 +239,16 @@ class _AdvanceScreenState extends ConsumerState<AdvanceScreen> {
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
+    final lang = ref.watch(languageProvider);
+    final displayMode = ref.watch(displayModeProvider);
+    final isMobile = displayMode == DisplayMode.mobile || MediaQuery.of(context).size.width < 700;
     
     final farmersAsync = ref.watch(farmersProvider);
     final staffAsync = ref.watch(staffProvider);
-    
-    final isMobile = false; // Forced desktop layout as per user request
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Issue Advances', style: TextStyle(color: Colors.black87)),
+        title: Text('Issue Advances'.tr, style: const TextStyle(color: Colors.black87)),
         backgroundColor: Colors.white,
         elevation: 1,
       ),
@@ -254,14 +258,14 @@ class _AdvanceScreenState extends ConsumerState<AdvanceScreen> {
         children: [
           // LEFT SIDE: Form
           Expanded(
-            flex: isMobile ? 0 : 1,
+            flex: 1,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(isMobile ? 16 : 24),
               child: Card(
                 elevation: 3,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: EdgeInsets.all(isMobile ? 16 : 24),
                   child: Form(
                     key: _formKey,
                     child: Column(
@@ -270,7 +274,10 @@ class _AdvanceScreenState extends ConsumerState<AdvanceScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(_editingId == null ? 'Record New Advance' : 'Edit Advance', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
+                            Text(
+                              _editingId == null ? 'Record New Advance'.tr : 'Edit Advance'.tr, 
+                              style: TextStyle(fontSize: isMobile ? 18 : 20, fontWeight: FontWeight.bold, color: primaryColor)
+                            ),
                             if (_editingId != null)
                               TextButton(
                                 onPressed: () {
@@ -280,19 +287,20 @@ class _AdvanceScreenState extends ConsumerState<AdvanceScreen> {
                                     _remarksCtrl.clear();
                                   });
                                 },
-                                child: const Text('Cancel Edit'),
+                                child: Text('Cancel Edit'.tr),
                               )
                           ],
                         ),
                         const SizedBox(height: 8),
-                        const Text('Easily issue advances to farmers or staff.', style: TextStyle(color: Colors.grey)),
+                        Text('Easily issue advances to farmers or staff.'.tr, style: const TextStyle(color: Colors.grey)),
                         const Divider(height: 32),
                         
                         Row(
                           children: [
                             Expanded(
                               child: RadioListTile<String>(
-                                title: const Text('To Farmer'),
+                                contentPadding: EdgeInsets.zero,
+                                title: Text('To Farmer'.tr, style: const TextStyle(fontSize: 14)),
                                 value: 'Farmer',
                                 groupValue: _personType,
                                 onChanged: _editingId == null ? (v) {
@@ -305,7 +313,8 @@ class _AdvanceScreenState extends ConsumerState<AdvanceScreen> {
                             ),
                             Expanded(
                               child: RadioListTile<String>(
-                                title: const Text('To Staff'),
+                                contentPadding: EdgeInsets.zero,
+                                title: Text('To Staff'.tr, style: const TextStyle(fontSize: 14)),
                                 value: 'Staff',
                                 groupValue: _personType,
                                 onChanged: _editingId == null ? (v) {
@@ -323,30 +332,36 @@ class _AdvanceScreenState extends ConsumerState<AdvanceScreen> {
                         if (_personType == 'Farmer')
                           farmersAsync.when(
                             loading: () => const CircularProgressIndicator(),
-                            error: (e, s) => Text('Error: $e'),
+                            error: (e, s) => Text('${'Error'.tr}: $e'),
                             data: (farmers) {
                               return DropdownButtonFormField<String>(
                                 isExpanded: true,
-                                decoration: InputDecoration(labelText: 'Select Farmer *', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                                decoration: InputDecoration(
+                                  labelText: '${'Select Farmer'.tr} *', 
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))
+                                ),
                                 value: _selectedPersonId,
-                                items: farmers.map((f) => DropdownMenuItem(value: f.id, child: Text('${f.name} (Bal: ₹${f.currentBalance.toStringAsFixed(2)})'))).toList(),
+                                items: farmers.map((f) => DropdownMenuItem(value: f.id, child: Text('${f.name} (${'Bal'.tr}: ₹${f.currentBalance.toStringAsFixed(2)})'))).toList(),
                                 onChanged: _editingId == null ? (v) => setState(() => _selectedPersonId = v) : null,
-                                validator: (v) => v == null ? 'Please select a farmer' : null,
+                                validator: (v) => v == null ? 'Please select a farmer'.tr : null,
                               );
                             }
                           )
                         else
                           staffAsync.when(
                             loading: () => const CircularProgressIndicator(),
-                            error: (e, s) => Text('Error: $e'),
+                            error: (e, s) => Text('${'Error'.tr}: $e'),
                             data: (staffs) {
                               return DropdownButtonFormField<String>(
                                 isExpanded: true,
-                                decoration: InputDecoration(labelText: 'Select Staff *', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                                decoration: InputDecoration(
+                                  labelText: '${'Select Staff'.tr} *', 
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))
+                                ),
                                 value: _selectedPersonId,
-                                items: staffs.where((s) => s.isActive).map((s) => DropdownMenuItem(value: s.id, child: Text('${s.name} (Bal: ₹${s.balance.toStringAsFixed(2)})'))).toList(),
+                                items: staffs.where((s) => s.isActive).map((s) => DropdownMenuItem(value: s.id, child: Text('${s.name} (${'Bal'.tr}: ₹${s.balance.toStringAsFixed(2)})'))).toList(),
                                 onChanged: _editingId == null ? (v) => setState(() => _selectedPersonId = v) : null,
-                                validator: (v) => v == null ? 'Please select staff' : null,
+                                validator: (v) => v == null ? 'Please select staff'.tr : null,
                               );
                             }
                           ),
@@ -359,7 +374,7 @@ class _AdvanceScreenState extends ConsumerState<AdvanceScreen> {
                                 onTap: _pickDate,
                                 child: InputDecorator(
                                   decoration: InputDecoration(
-                                    labelText: 'Date',
+                                    labelText: 'Date'.tr,
                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                                     prefixIcon: const Icon(Icons.calendar_today),
                                   ),
@@ -373,18 +388,18 @@ class _AdvanceScreenState extends ConsumerState<AdvanceScreen> {
                         TextFormField(
                           controller: _amountCtrl,
                           decoration: InputDecoration(
-                            labelText: 'Advance Amount (₹) *', 
+                            labelText: '${'Advance Amount (₹)'.tr} *', 
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                             prefixIcon: const Icon(Icons.currency_rupee),
                           ),
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          validator: (v) => v!.isEmpty ? 'Required' : null,
+                          validator: (v) => v!.isEmpty ? 'Required'.tr : null,
                         ),
                         const SizedBox(height: 24),
                         TextFormField(
                           controller: _remarksCtrl,
                           decoration: InputDecoration(
-                            labelText: 'Remarks / Notes', 
+                            labelText: 'Remarks / Notes'.tr, 
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                             prefixIcon: const Icon(Icons.note),
                           ),
@@ -401,7 +416,10 @@ class _AdvanceScreenState extends ConsumerState<AdvanceScreen> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
                             ),
                             icon: _isSaving ? const CircularProgressIndicator(color: Colors.white) : const Icon(Icons.payment),
-                            label: Text(_isSaving ? 'PROCESSING...' : (_editingId != null ? 'UPDATE ADVANCE' : 'ISSUE ADVANCE'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            label: Text(
+                              _isSaving ? 'PROCESSING...'.tr : (_editingId != null ? 'UPDATE ADVANCE'.tr : 'ISSUE ADVANCE'.tr), 
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
+                            ),
                           ),
                         ),
                       ],
@@ -421,7 +439,7 @@ class _AdvanceScreenState extends ConsumerState<AdvanceScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Padding(padding: EdgeInsets.all(16.0), child: Text('Advance History', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+                  Padding(padding: const EdgeInsets.all(16.0), child: Text('Advance History'.tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Row(
@@ -430,7 +448,7 @@ class _AdvanceScreenState extends ConsumerState<AdvanceScreen> {
                           child: TextField(
                             controller: _searchHistoryCtrl,
                             decoration: InputDecoration(
-                              labelText: 'Search History by Name',
+                              labelText: 'Search History by Name'.tr,
                               prefixIcon: const Icon(Icons.search),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                             ),
@@ -489,7 +507,7 @@ class _AdvanceScreenState extends ConsumerState<AdvanceScreen> {
                                 return matchesName && matchesDate;
                               }).toList();
 
-                              if (filtered.isEmpty) return const Center(child: Text('No advance history found.'));
+                              if (filtered.isEmpty) return Center(child: Text('No advance history found.'.tr));
                               
                               return ListView.builder(
                                 itemCount: filtered.length,
@@ -503,7 +521,7 @@ class _AdvanceScreenState extends ConsumerState<AdvanceScreen> {
                                       backgroundColor: color.withOpacity(0.1),
                                       child: Icon(isFarmer ? Icons.agriculture : Icons.badge, color: color),
                                     ),
-                                    title: Text('${record['name']} (${record['type']})', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    title: Text('${record['name']} (${(record['type'] as String).tr})', style: const TextStyle(fontWeight: FontWeight.bold)),
                                     subtitle: Text('${record['date']} | ${record['remarks']}'),
                                     trailing: Row(
                                       mainAxisSize: MainAxisSize.min,

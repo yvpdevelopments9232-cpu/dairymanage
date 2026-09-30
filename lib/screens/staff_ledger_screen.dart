@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/flutter_models.dart';
 import '../providers/staff_provider.dart';
+import '../services/translations.dart';
+import '../providers/language_provider.dart';
+import '../providers/display_mode_provider.dart';
 
 class StaffLedgerScreen extends ConsumerStatefulWidget {
   final Staff staff;
@@ -68,27 +71,31 @@ class _StaffLedgerScreenState extends ConsumerState<StaffLedgerScreen> {
             return Padding(
               padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 24, right: 24, top: 24),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
+                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('New Transaction', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  Text('New Transaction'.tr, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    decoration: InputDecoration(labelText: 'Type', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                    decoration: InputDecoration(labelText: 'Type'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                     value: _transactionType,
-                    items: ['Salary Credit', 'Advance', 'Payment'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                    items: [
+                      DropdownMenuItem(value: 'Salary Credit', child: Text('Salary Credit'.tr)),
+                      DropdownMenuItem(value: 'Advance', child: Text('Advance'.tr)),
+                      DropdownMenuItem(value: 'Payment', child: Text('Payment'.tr)),
+                    ],
                     onChanged: (v) => setModalState(() => _transactionType = v!),
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _amountCtrl,
-                    decoration: InputDecoration(labelText: 'Amount (₹) *', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                    decoration: InputDecoration(labelText: 'Amount (₹) *'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _remarksCtrl,
-                    decoration: InputDecoration(labelText: 'Remarks', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                    decoration: InputDecoration(labelText: 'Remarks'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                   ),
                   const SizedBox(height: 24),
                   SizedBox(
@@ -97,7 +104,7 @@ class _StaffLedgerScreenState extends ConsumerState<StaffLedgerScreen> {
                     child: ElevatedButton(
                       onPressed: _isSaving ? null : _submitTransaction,
                       style: ElevatedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-                      child: Text(_isSaving ? 'SAVING...' : 'RECORD', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      child: Text(_isSaving ? 'SAVING...'.tr : 'RECORD'.tr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -112,6 +119,9 @@ class _StaffLedgerScreenState extends ConsumerState<StaffLedgerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
+    final displayMode = ref.watch(displayModeProvider);
+    final isMobile = displayMode == DisplayMode.mobile;
     final txAsync = ref.watch(staffTransactionProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
 
@@ -121,20 +131,20 @@ class _StaffLedgerScreenState extends ConsumerState<StaffLedgerScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${updatedStaff.name} - Ledger'),
+        title: Text('${updatedStaff.name} - ${"Staff Ledger".tr}'),
         backgroundColor: Colors.white,
         elevation: 1,
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddTransactionModal,
         icon: const Icon(Icons.add),
-        label: const Text('Add Entry'),
+        label: Text('Add Entry'.tr),
       ),
       body: Column(
         children: [
           // Header Stats
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(isMobile ? 16 : 24),
             color: primaryColor.withOpacity(0.05),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -142,17 +152,17 @@ class _StaffLedgerScreenState extends ConsumerState<StaffLedgerScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(updatedStaff.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                    Text(updatedStaff.name, style: TextStyle(fontSize: isMobile ? 18 : 24, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
-                    Text('${updatedStaff.role ?? 'Staff'} | ${updatedStaff.salaryType}', style: const TextStyle(color: Colors.grey)),
+                    Text('${updatedStaff.role ?? "Staff".tr} | ${updatedStaff.salaryType}', style: const TextStyle(color: Colors.grey)),
                   ],
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text('Current Balance', style: TextStyle(color: Colors.grey)),
+                    Text('Current Balance'.tr, style: const TextStyle(color: Colors.grey)),
                     const SizedBox(height: 4),
-                    Text('₹${updatedStaff.balance.toStringAsFixed(2)}', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: updatedStaff.balance < 0 ? Colors.red : Colors.green)),
+                    Text('₹${updatedStaff.balance.toStringAsFixed(2)}', style: TextStyle(fontSize: isMobile ? 18 : 24, fontWeight: FontWeight.bold, color: updatedStaff.balance < 0 ? Colors.red : Colors.green)),
                   ],
                 ),
               ],
@@ -165,9 +175,9 @@ class _StaffLedgerScreenState extends ConsumerState<StaffLedgerScreen> {
           Expanded(
             child: txAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, s) => Center(child: Text('Error: $e')),
+              error: (e, s) => Center(child: Text('${"Error".tr}: $e')),
               data: (transactions) {
-                if (transactions.isEmpty) return const Center(child: Text('No transactions found.'));
+                if (transactions.isEmpty) return Center(child: Text('No transactions found.'.tr));
                 return ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: transactions.length,

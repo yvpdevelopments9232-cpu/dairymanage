@@ -9,6 +9,8 @@ import '../providers/dashboard_provider.dart';
 import '../providers/farmer_provider.dart';
 import '../providers/milk_collection_provider.dart';
 import '../providers/product_provider.dart';
+import '../services/translations.dart';
+import '../providers/language_provider.dart';
 
 class BackupRestoreScreen extends ConsumerStatefulWidget {
   const BackupRestoreScreen({super.key});
@@ -324,6 +326,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
     final editionName = AppConfig.isHybridMode
         ? 'Hybrid Auto-Sync Edition'
         : (AppConfig.isOfflineMode ? 'Offline Standalone Edition' : 'Online Cloud Edition');
@@ -334,7 +337,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Backup & Restore Database', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        title: Text('Backup & Restore Database'.tr, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         backgroundColor: editionColor,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -371,9 +374,9 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: editionColor),
                                 ),
                                 const SizedBox(height: 4),
-                                const Text(
-                                  'Universal .db Database File Compatibility across Offline, Hybrid, and Online editions on Windows & Android.',
-                                  style: TextStyle(fontSize: 13, color: Colors.black87),
+                                Text(
+                                  'Universal .db Database File Compatibility across Offline, Hybrid, and Online editions on Windows & Android.'.tr,
+                                  style: const TextStyle(fontSize: 13, color: Colors.black87),
                                 ),
                               ],
                             ),
@@ -462,7 +465,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text('Export Database Backup', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                    Text('Export Database Backup'.tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                                     Text(
                                       AppConfig.isOfflineMode
                                           ? 'Exports all local records into a standard .db file.'
@@ -496,9 +499,9 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                                 elevation: 2,
                               ),
                               icon: const Icon(Icons.download),
-                              label: const Text(
-                                'EXPORT BACKUP (.db)',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, letterSpacing: 0.8),
+                              label: Text(
+                                'EXPORT BACKUP (.db)'.tr,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, letterSpacing: 0.8),
                               ),
                             ),
                           ),
@@ -533,7 +536,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text('Import & Restore Backup', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                    Text('Import & Restore Backup'.tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                                     Text(
                                       AppConfig.isOfflineMode
                                           ? 'Safely restores local SQLite data from a selected .db backup file.'
@@ -571,9 +574,9 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                                 elevation: 2,
                               ),
                               icon: const Icon(Icons.upload_file),
-                              label: const Text(
-                                'IMPORT BACKUP (.db)',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, letterSpacing: 0.8),
+                              label: Text(
+                                'IMPORT BACKUP (.db)'.tr,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, letterSpacing: 0.8),
                               ),
                             ),
                           ),
@@ -607,12 +610,12 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const Text(
-                                        'Database Storage & Lossless Compaction',
-                                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                      Text(
+                                        'Database Storage & Lossless Compaction'.tr,
+                                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                                       ),
                                       Text(
-                                        'Stored in Milkdatabase folder with zero-loss SQLite page compaction.',
+                                        'Stored in Milkdatabase folder with zero-loss SQLite page compaction.'.tr,
                                         style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
                                       ),
                                     ],
@@ -637,7 +640,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                                     children: [
                                       const Icon(Icons.inventory_2_outlined, size: 18, color: Colors.black87),
                                       const SizedBox(width: 8),
-                                      const Text('Storage Folder: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                      Text('Storage Folder: '.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                                       Text('Documents/Milkdatabase', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.teal.shade800, fontSize: 13)),
                                     ],
                                   ),
@@ -653,7 +656,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                                     children: [
                                       const Icon(Icons.data_usage, size: 18, color: Colors.black87),
                                       const SizedBox(width: 8),
-                                      const Text('Current DB File Size: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                      Text('Current DB File Size: '.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                                       Text(
                                         _dbSizeBytes > 0 ? '${(_dbSizeBytes / 1024).toStringAsFixed(1)} KB' : 'Checking...',
                                         style: TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo.shade800, fontSize: 13),
@@ -686,7 +689,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                                     ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                                     : const Icon(Icons.compress),
                                 label: Text(
-                                  _isCompacting ? 'COMPACTING DATABASE...' : 'COMPRESS & OPTIMIZE DATABASE (VACUUM)',
+                                  _isCompacting ? 'COMPACTING DATABASE...'.tr : 'COMPRESS & OPTIMIZE DATABASE (VACUUM)'.tr,
                                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 0.8),
                                 ),
                               ),
@@ -706,15 +709,15 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.blueGrey.shade200),
                     ),
-                    child: const Row(
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.shield_outlined, color: Colors.blueGrey, size: 22),
-                        SizedBox(width: 10),
+                        const Icon(Icons.shield_outlined, color: Colors.blueGrey, size: 22),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'Data Safety Guarantee: The import engine uses transaction batching, foreign key dependency ordering, and atomic rollback to ensure that your database records are never corrupted during export or import.',
-                            style: TextStyle(fontSize: 12, color: Colors.blueGrey, height: 1.3),
+                            'Data Safety Guarantee: The import engine uses transaction batching, foreign key dependency ordering, and atomic rollback to ensure that your database records are never corrupted during export or import.'.tr,
+                            style: const TextStyle(fontSize: 12, color: Colors.blueGrey, height: 1.3),
                           ),
                         ),
                       ],

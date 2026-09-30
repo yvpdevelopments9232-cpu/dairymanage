@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/bonus_provider.dart';
+import '../../../providers/language_provider.dart';
+import '../../../services/translations.dart';
 
 class BonusSettingsScreen extends ConsumerStatefulWidget {
   const BonusSettingsScreen({super.key});
@@ -48,22 +50,22 @@ class _BonusSettingsScreenState extends ConsumerState<BonusSettingsScreen> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 8),
-                Text('Bonus rates updated successfully!'),
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                Text('Bonus rates updated successfully!'.tr),
               ],
             ),
-            backgroundColor: Color(0xFF16A34A),
+            backgroundColor: const Color(0xFF16A34A),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save settings: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('${"Failed to save settings".tr}: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -73,6 +75,7 @@ class _BonusSettingsScreenState extends ConsumerState<BonusSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
     ref.listen(bonusSettingsProvider, (prev, next) {
       if (next.value != null && !_isSaving) {
         if (_cowRateController.text.isEmpty) {
@@ -97,22 +100,22 @@ class _BonusSettingsScreenState extends ConsumerState<BonusSettingsScreen> {
                 const Icon(Icons.workspace_premium, size: 20, color: Color(0xFF2563EB)),
                 const SizedBox(width: 8),
                 Text(
-                  'Bonus',
+                  'Bonus'.tr,
                   style: TextStyle(fontSize: 14, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(width: 6),
                 const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
                 const SizedBox(width: 6),
-                const Text(
-                  'Bonus Settings',
-                  style: TextStyle(fontSize: 14, color: Color(0xFF1E293B), fontWeight: FontWeight.bold),
+                Text(
+                  'Bonus Settings'.tr,
+                  style: const TextStyle(fontSize: 14, color: Color(0xFF1E293B), fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Bonus Settings',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+            Text(
+              'Bonus Settings'.tr,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
             ),
             const SizedBox(height: 24),
 
@@ -135,9 +138,9 @@ class _BonusSettingsScreenState extends ConsumerState<BonusSettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Bonus Rate Configuration',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                    Text(
+                      'Bonus Rate Configuration'.tr,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                     ),
                     const SizedBox(height: 20),
 
@@ -149,12 +152,12 @@ class _BonusSettingsScreenState extends ConsumerState<BonusSettingsScreen> {
                           return Column(
                             children: [
                               _buildRateInput(
-                                label: 'Cow Milk Bonus Rate',
+                                label: 'Cow Milk Bonus Rate'.tr,
                                 controller: _cowRateController,
                               ),
                               const SizedBox(height: 16),
                               _buildRateInput(
-                                label: 'Buffalo Milk Bonus Rate',
+                                label: 'Buffalo Milk Bonus Rate'.tr,
                                 controller: _buffaloRateController,
                               ),
                             ],
@@ -164,14 +167,14 @@ class _BonusSettingsScreenState extends ConsumerState<BonusSettingsScreen> {
                           children: [
                             Expanded(
                               child: _buildRateInput(
-                                label: 'Cow Milk Bonus Rate',
+                                label: 'Cow Milk Bonus Rate'.tr,
                                 controller: _cowRateController,
                               ),
                             ),
                             const SizedBox(width: 24),
                             Expanded(
                               child: _buildRateInput(
-                                label: 'Buffalo Milk Bonus Rate',
+                                label: 'Buffalo Milk Bonus Rate'.tr,
                                 controller: _buffaloRateController,
                               ),
                             ),
@@ -198,7 +201,7 @@ class _BonusSettingsScreenState extends ConsumerState<BonusSettingsScreen> {
                               height: 20,
                               child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                             )
-                          : const Text('Save Settings', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                          : Text('Save Settings'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                     ),
 
                     const SizedBox(height: 24),
@@ -211,14 +214,14 @@ class _BonusSettingsScreenState extends ConsumerState<BonusSettingsScreen> {
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: const Color(0xFFBFDBFE)),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Icon(Icons.info_outline, color: Color(0xFF2563EB), size: 20),
+                          const Icon(Icons.info_outline, color: Color(0xFF2563EB), size: 20),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'These rates will be used automatically for bonus calculation based on the animal type (Cow / Buffalo) from milk collection data.',
-                              style: TextStyle(fontSize: 13, color: Color(0xFF1E40AF), height: 1.4),
+                              'These rates will be used automatically for bonus calculation based on the animal type (Cow / Buffalo) from milk collection data.'.tr,
+                              style: const TextStyle(fontSize: 13, color: Color(0xFF1E40AF), height: 1.4),
                             ),
                           ),
                         ],
@@ -276,9 +279,9 @@ class _BonusSettingsScreenState extends ConsumerState<BonusSettingsScreen> {
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           ),
           validator: (val) {
-            if (val == null || val.trim().isEmpty) return 'Rate is required';
+            if (val == null || val.trim().isEmpty) return 'Rate is required'.tr;
             final d = double.tryParse(val.trim());
-            if (d == null || d < 0) return 'Enter a valid positive rate';
+            if (d == null || d < 0) return 'Enter a valid positive rate'.tr;
             return null;
           },
         ),

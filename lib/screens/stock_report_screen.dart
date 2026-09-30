@@ -7,6 +7,9 @@ import 'package:printing/printing.dart';
 
 import '../providers/stock_report_provider.dart';
 import '../providers/settings_provider.dart';
+import '../services/translations.dart';
+import '../providers/language_provider.dart';
+import '../providers/display_mode_provider.dart';
 
 class StockReportScreen extends ConsumerWidget {
   const StockReportScreen({super.key});
@@ -119,10 +122,13 @@ class StockReportScreen extends ConsumerWidget {
     final reportAsync = ref.watch(stockReportProvider);
     final notifier = ref.watch(stockReportProvider.notifier);
     final settingsAsync = ref.watch(settingsProvider);
+    ref.watch(languageProvider);
+    final displayMode = ref.watch(displayModeProvider);
+    final isMobile = displayMode == DisplayMode.mobile || MediaQuery.of(context).size.width < 700;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Stock Report', style: TextStyle(color: Colors.black87)),
+        title: Text('Stock Report'.tr, style: const TextStyle(color: Colors.black87)),
         backgroundColor: Colors.white,
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black87),
@@ -133,74 +139,134 @@ class StockReportScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.white,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                InkWell(
-                  onTap: () async {
-                    final picked = await showDateRangePicker(
-                      context: context,
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime.now(),
-                      initialDateRange: DateTimeRange(start: notifier.startDate, end: notifier.endDate),
-                    );
-                    if (picked != null) {
-                      notifier.setDateRange(picked.start, picked.end);
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    decoration: BoxDecoration(border: Border.all(color: Colors.grey), borderRadius: BorderRadius.circular(8)),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.calendar_month, color: Colors.blue),
-                        const SizedBox(width: 12),
-                        Text(
-                          '${DateFormat('dd/MM/yyyy').format(notifier.startDate)}  →  ${DateFormat('dd/MM/yyyy').format(notifier.endDate)}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            child: isMobile
+                ? Column(
+                    children: [
+                      InkWell(
+                        onTap: () async {
+                          final picked = await showDateRangePicker(
+                            context: context,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime.now(),
+                            initialDateRange: DateTimeRange(start: notifier.startDate, end: notifier.endDate),
+                          );
+                          if (picked != null) {
+                            notifier.setDateRange(picked.start, picked.end);
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(border: Border.all(color: Colors.grey), borderRadius: BorderRadius.circular(8)),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.calendar_month, color: Colors.blue),
+                              const SizedBox(width: 12),
+                              Text(
+                                '${DateFormat('dd/MM/yyyy').format(notifier.startDate)}  →  ${DateFormat('dd/MM/yyyy').format(notifier.endDate)}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.picture_as_pdf),
+                          label: Text('GENERATE PDF / PRINT'.tr),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.black87, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14)),
+                          onPressed: () {
+                            if (reportAsync.hasValue) {
+                              _generatePdf(context, reportAsync.value!, notifier.startDate, notifier.endDate, settingsAsync.value);
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      InkWell(
+                        onTap: () async {
+                          final picked = await showDateRangePicker(
+                            context: context,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime.now(),
+                            initialDateRange: DateTimeRange(start: notifier.startDate, end: notifier.endDate),
+                          );
+                          if (picked != null) {
+                            notifier.setDateRange(picked.start, picked.end);
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          decoration: BoxDecoration(border: Border.all(color: Colors.grey), borderRadius: BorderRadius.circular(8)),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.calendar_month, color: Colors.blue),
+                              const SizedBox(width: 12),
+                              Text(
+                                '${DateFormat('dd/MM/yyyy').format(notifier.startDate)}  →  ${DateFormat('dd/MM/yyyy').format(notifier.endDate)}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.picture_as_pdf),
+                        label: Text('GENERATE PDF / PRINT'.tr),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.black87, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16)),
+                        onPressed: () {
+                          if (reportAsync.hasValue) {
+                            _generatePdf(context, reportAsync.value!, notifier.startDate, notifier.endDate, settingsAsync.value);
+                          }
+                        },
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 24),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.picture_as_pdf),
-                  label: const Text('GENERATE PDF / PRINT'),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.black87, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16)),
-                  onPressed: () {
-                    if (reportAsync.hasValue) {
-                      _generatePdf(context, reportAsync.value!, notifier.startDate, notifier.endDate, settingsAsync.value);
-                    }
-                  },
-                ),
-              ],
-            ),
           ),
           
           Expanded(
             child: reportAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, st) => Center(child: Text('Error: $e')),
+              error: (e, st) => Center(child: Text('${'Error'.tr}: $e')),
               data: (data) {
-                if (data.entries.isEmpty) return const Center(child: Text('No active products found.'));
+                if (data.entries.isEmpty) return Center(child: Text('No active products found.'.tr));
 
                 return Padding(
-                  padding: const EdgeInsets.all(24.0),
+                  padding: EdgeInsets.all(isMobile ? 12.0 : 24.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Current Stock Valuation', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8)),
-                            child: Text('TOTAL VALUE: ₹${data.grandTotalValue.toStringAsFixed(2)}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green.shade900)),
-                          ),
-                        ],
-                      ),
+                      isMobile
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text('Current Stock Valuation'.tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8)),
+                                  child: Text('${"TOTAL VALUE".tr}: ₹${data.grandTotalValue.toStringAsFixed(2)}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green.shade900)),
+                                ),
+                              ],
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('Current Stock Valuation'.tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8)),
+                                  child: Text('${"TOTAL VALUE".tr}: ₹${data.grandTotalValue.toStringAsFixed(2)}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green.shade900)),
+                                ),
+                              ],
+                            ),
                       const SizedBox(height: 16),
                       Expanded(
                         child: Card(
@@ -210,12 +276,12 @@ class StockReportScreen extends ConsumerWidget {
                               scrollDirection: Axis.horizontal,
                               child: DataTable(
                                 headingRowColor: MaterialStateProperty.all(Colors.grey.shade100),
-                                columns: const [
-                                  DataColumn(label: Text('Product', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('Total IN', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('Total OUT', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('Current Stock', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('Value (₹)', style: TextStyle(fontWeight: FontWeight.bold))),
+                                columns: [
+                                  DataColumn(label: Text('Product'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Total IN'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Total OUT'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Current Stock'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Value (₹)'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
                                 ],
                                 rows: data.entries.map((e) => DataRow(
                                   cells: [

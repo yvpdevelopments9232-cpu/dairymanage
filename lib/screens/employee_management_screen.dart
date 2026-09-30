@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/auth_provider.dart';
 import '../providers/session_provider.dart';
+import '../services/translations.dart';
+import '../providers/language_provider.dart';
 
 class EmployeeManagementScreen extends ConsumerStatefulWidget {
   const EmployeeManagementScreen({super.key});
@@ -18,11 +20,11 @@ class _EmployeeManagementScreenState extends ConsumerState<EmployeeManagementScr
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Employee'),
-        content: Text('Are you sure you want to delete ${emp.name}?'),
+        title: Text('Delete Employee'.tr),
+        content: Text('${'Are you sure you want to delete'.tr} ${emp.name}?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('CANCEL')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('DELETE', style: TextStyle(color: Colors.red))),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('CANCEL'.tr)),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text('DELETE'.tr, style: const TextStyle(color: Colors.red))),
         ],
       ),
     );
@@ -33,7 +35,7 @@ class _EmployeeManagementScreenState extends ConsumerState<EmployeeManagementScr
         final supabase = ref.read(supabaseClientProvider);
         await supabase.from('employees').delete().eq('id', emp.id);
         ref.invalidate(employeesListProvider);
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Employee deleted.')));
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Employee deleted.'.tr)));
       } catch (e) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
       } finally {
@@ -55,12 +57,13 @@ class _EmployeeManagementScreenState extends ConsumerState<EmployeeManagementScr
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
     final employeesAsync = ref.watch(employeesListProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Employee Management'),
+        title: Text('Employee Management'.tr),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -75,7 +78,7 @@ class _EmployeeManagementScreenState extends ConsumerState<EmployeeManagementScr
             error: (e, st) => Center(child: Text('Error: $e')),
             data: (employees) {
               if (employees.isEmpty) {
-                return const Center(child: Text('No employees found. Click + to add.'));
+                return Center(child: Text('No employees found. Click + to add.'.tr));
               }
               return ListView.builder(
                 padding: const EdgeInsets.all(16),
@@ -87,10 +90,10 @@ class _EmployeeManagementScreenState extends ConsumerState<EmployeeManagementScr
                     child: ListTile(
                       leading: CircleAvatar(
                         backgroundColor: emp.isActive ? Colors.green.shade100 : Colors.red.shade100,
-                        child: Text(emp.name[0].toUpperCase(), style: TextStyle(color: emp.isActive ? Colors.green.shade900 : Colors.red.shade900)),
+                        child: Text(emp.name.isNotEmpty ? emp.name[0].toUpperCase() : '?', style: TextStyle(color: emp.isActive ? Colors.green.shade900 : Colors.red.shade900)),
                       ),
                       title: Text(emp.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text('${emp.roleName ?? "No Role"} | PIN: ${emp.pin}'),
+                      subtitle: Text('${emp.roleName ?? "No Role".tr} | PIN: ${emp.pin}'),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -110,7 +113,7 @@ class _EmployeeManagementScreenState extends ConsumerState<EmployeeManagementScr
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showEmployeeForm(),
         icon: const Icon(Icons.person_add),
-        label: const Text("Add Employee"),
+        label: Text("Add Employee".tr),
       ),
     );
   }
@@ -205,8 +208,9 @@ class _EmployeeFormDialogState extends ConsumerState<EmployeeFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
     return AlertDialog(
-      title: Text(widget.employee == null ? 'Add Employee' : 'Edit Employee'),
+      title: Text(widget.employee == null ? 'Add Employee'.tr : 'Edit Employee'.tr),
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -215,36 +219,36 @@ class _EmployeeFormDialogState extends ConsumerState<EmployeeFormDialog> {
             children: [
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Full Name'),
-                validator: (v) => v!.isEmpty ? 'Required' : null,
+                decoration: InputDecoration(labelText: 'Full Name'.tr),
+                validator: (v) => v!.isEmpty ? 'Required'.tr : null,
               ),
               TextFormField(
                 controller: _mobileController,
-                decoration: const InputDecoration(labelText: 'Mobile Number'),
+                decoration: InputDecoration(labelText: 'Mobile Number'.tr),
                 keyboardType: TextInputType.phone,
               ),
               TextFormField(
                 controller: _usernameController,
-                decoration: const InputDecoration(labelText: 'Username'),
-                validator: (v) => v!.isEmpty ? 'Required' : null,
+                decoration: InputDecoration(labelText: 'Username'.tr),
+                validator: (v) => v!.isEmpty ? 'Required'.tr : null,
               ),
               TextFormField(
                 controller: _pinController,
-                decoration: const InputDecoration(labelText: 'PIN / Password'),
-                validator: (v) => v!.isEmpty ? 'Required' : null,
+                decoration: InputDecoration(labelText: 'PIN / Password'.tr),
+                validator: (v) => v!.isEmpty ? 'Required'.tr : null,
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _roles.any((r) => r['id'].toString() == _selectedRoleId)
                     ? _selectedRoleId
                     : (_roles.isNotEmpty ? _roles.first['id'].toString() : null),
-                decoration: const InputDecoration(labelText: 'Role'),
+                decoration: InputDecoration(labelText: 'Role'.tr),
                 items: _roles.map((r) => DropdownMenuItem<String>(value: r['id'].toString(), child: Text(r['name'].toString()))).toList(),
                 onChanged: (val) => setState(() => _selectedRoleId = val),
               ),
               const SizedBox(height: 16),
               SwitchListTile(
-                title: const Text('Active Account'),
+                title: Text('Active Account'.tr),
                 value: _isActive,
                 onChanged: (val) => setState(() => _isActive = val),
               ),
@@ -253,10 +257,10 @@ class _EmployeeFormDialogState extends ConsumerState<EmployeeFormDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
+        TextButton(onPressed: () => Navigator.pop(context, false), child: Text('CANCEL'.tr)),
         ElevatedButton(
           onPressed: _isLoading ? null : _save,
-          child: _isLoading ? const CircularProgressIndicator() : const Text('SAVE'),
+          child: _isLoading ? const CircularProgressIndicator() : Text('SAVE'.tr),
         ),
       ],
     );

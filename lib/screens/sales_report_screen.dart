@@ -7,6 +7,9 @@ import 'package:printing/printing.dart';
 
 import '../providers/sales_report_provider.dart';
 import '../providers/settings_provider.dart';
+import '../services/translations.dart';
+import '../providers/language_provider.dart';
+import '../providers/display_mode_provider.dart';
 
 class SalesReportScreen extends ConsumerWidget {
   const SalesReportScreen({super.key});
@@ -138,13 +141,16 @@ class SalesReportScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(languageProvider);
+    final displayMode = ref.watch(displayModeProvider);
+    final isMobile = displayMode == DisplayMode.mobile;
     final reportAsync = ref.watch(salesReportProvider);
     final notifier = ref.watch(salesReportProvider.notifier);
     final settingsAsync = ref.watch(settingsProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sales Report', style: TextStyle(color: Colors.black87)),
+        title: Text('Sales Report'.tr, style: const TextStyle(color: Colors.black87)),
         backgroundColor: Colors.white,
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black87),
@@ -155,74 +161,134 @@ class SalesReportScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.white,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                InkWell(
-                  onTap: () async {
-                    final picked = await showDateRangePicker(
-                      context: context,
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime.now(),
-                      initialDateRange: DateTimeRange(start: notifier.startDate, end: notifier.endDate),
-                    );
-                    if (picked != null) {
-                      notifier.setDateRange(picked.start, picked.end);
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    decoration: BoxDecoration(border: Border.all(color: Colors.grey), borderRadius: BorderRadius.circular(8)),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.calendar_month, color: Colors.blue),
-                        const SizedBox(width: 12),
-                        Text(
-                          '${DateFormat('dd/MM/yyyy').format(notifier.startDate)}  →  ${DateFormat('dd/MM/yyyy').format(notifier.endDate)}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            child: isMobile
+                ? Column(
+                    children: [
+                      InkWell(
+                        onTap: () async {
+                          final picked = await showDateRangePicker(
+                            context: context,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime.now(),
+                            initialDateRange: DateTimeRange(start: notifier.startDate, end: notifier.endDate),
+                          );
+                          if (picked != null) {
+                            notifier.setDateRange(picked.start, picked.end);
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(border: Border.all(color: Colors.grey), borderRadius: BorderRadius.circular(8)),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.calendar_month, color: Colors.blue),
+                              const SizedBox(width: 12),
+                              Text(
+                                '${DateFormat('dd/MM/yyyy').format(notifier.startDate)}  →  ${DateFormat('dd/MM/yyyy').format(notifier.endDate)}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.picture_as_pdf),
+                          label: Text('GENERATE PDF / PRINT'.tr),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.black87, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14)),
+                          onPressed: () {
+                            if (reportAsync.hasValue) {
+                              _generatePdf(context, reportAsync.value!, notifier.startDate, notifier.endDate, settingsAsync.value);
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      InkWell(
+                        onTap: () async {
+                          final picked = await showDateRangePicker(
+                            context: context,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime.now(),
+                            initialDateRange: DateTimeRange(start: notifier.startDate, end: notifier.endDate),
+                          );
+                          if (picked != null) {
+                            notifier.setDateRange(picked.start, picked.end);
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          decoration: BoxDecoration(border: Border.all(color: Colors.grey), borderRadius: BorderRadius.circular(8)),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.calendar_month, color: Colors.blue),
+                              const SizedBox(width: 12),
+                              Text(
+                                '${DateFormat('dd/MM/yyyy').format(notifier.startDate)}  →  ${DateFormat('dd/MM/yyyy').format(notifier.endDate)}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.picture_as_pdf),
+                        label: Text('GENERATE PDF / PRINT'.tr),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.black87, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16)),
+                        onPressed: () {
+                          if (reportAsync.hasValue) {
+                            _generatePdf(context, reportAsync.value!, notifier.startDate, notifier.endDate, settingsAsync.value);
+                          }
+                        },
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 24),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.picture_as_pdf),
-                  label: const Text('GENERATE PDF / PRINT'),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.black87, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16)),
-                  onPressed: () {
-                    if (reportAsync.hasValue) {
-                      _generatePdf(context, reportAsync.value!, notifier.startDate, notifier.endDate, settingsAsync.value);
-                    }
-                  },
-                ),
-              ],
-            ),
           ),
           
           Expanded(
             child: reportAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, st) => Center(child: Text('Error: $e')),
+              error: (e, st) => Center(child: Text('${'Error'.tr}: $e')),
               data: (data) {
-                if (data.entries.isEmpty) return const Center(child: Text('No sales found for this date range.'));
+                if (data.entries.isEmpty) return Center(child: Text('No sales found for this date range.'.tr));
 
                 return Padding(
-                  padding: const EdgeInsets.all(24.0),
+                  padding: EdgeInsets.all(isMobile ? 12.0 : 24.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Product-Wise Summary', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
-                            child: Text('GRAND TOTAL: ₹${data.grandTotalAmount.toStringAsFixed(2)}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue.shade900)),
-                          ),
-                        ],
-                      ),
+                      isMobile
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text('Product-Wise Summary'.tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
+                                  child: Text('${"GRAND TOTAL".tr}: ₹${data.grandTotalAmount.toStringAsFixed(2)}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue.shade900)),
+                                ),
+                              ],
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('Product-Wise Summary'.tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(8)),
+                                  child: Text('${"GRAND TOTAL".tr}: ₹${data.grandTotalAmount.toStringAsFixed(2)}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue.shade900)),
+                                ),
+                              ],
+                            ),
                       const SizedBox(height: 16),
                       Expanded(
                         child: Card(
@@ -235,7 +301,7 @@ class SalesReportScreen extends ConsumerWidget {
                               return ListTile(
                                 leading: const CircleAvatar(child: Icon(Icons.shopping_bag)),
                                 title: Text(summary.productName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                subtitle: Text('Total Qty Sold: ${summary.totalQuantity.toStringAsFixed(2)}'),
+                                subtitle: Text('${"Total Qty Sold:".tr} ${summary.totalQuantity.toStringAsFixed(2)}'),
                                 trailing: Text('₹${summary.totalAmount.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                               );
                             },

@@ -11,6 +11,9 @@ import '../providers/auth_provider.dart';
 import '../providers/customer_provider.dart';
 import '../providers/farmer_provider.dart';
 import '../providers/supplier_provider.dart';
+import '../services/translations.dart';
+import '../providers/language_provider.dart';
+import '../providers/display_mode_provider.dart';
 
 class LedgerReportScreen extends ConsumerStatefulWidget {
   final String partyType; // 'Farmer', 'Customer', 'Dealer'
@@ -45,11 +48,18 @@ class _LedgerReportScreenState extends ConsumerState<LedgerReportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
+    final displayMode = ref.watch(displayModeProvider);
+    final isMobile = displayMode == DisplayMode.mobile;
     final primaryColor = Theme.of(context).colorScheme.primary;
+
+    final partyLabel = widget.partyType == 'Farmer'
+        ? 'Farmers'.tr
+        : (widget.partyType == 'Customer' ? 'Customers'.tr : 'Suppliers'.tr);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.partyType} Ledger Report', style: const TextStyle(color: Colors.black87)),
+        title: Text('$partyLabel ${"Ledger Report".tr}', style: const TextStyle(color: Colors.black87)),
         backgroundColor: Colors.white,
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black87),
@@ -58,79 +68,154 @@ class _LedgerReportScreenState extends ConsumerState<LedgerReportScreen> {
         children: [
           // Filter Bar
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(16),
             color: Colors.grey.shade50,
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: _buildPartyDropdown(),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  flex: 2,
-                  child: InkWell(
-                    onTap: () async {
-                      final picked = await showDateRangePicker(
-                        context: context,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime.now(),
-                        initialDateRange: DateTimeRange(start: _startDate!, end: _endDate!),
-                      );
-                      if (picked != null) {
-                        setState(() {
-                          _startDate = picked.start;
-                          _endDate = picked.end;
-                        });
-                        _fetchLedger();
-                      }
-                    },
-                    child: InputDecorator(
-                      decoration: const InputDecoration(labelText: 'Date Range', border: OutlineInputBorder()),
-                      child: Text(
-                        '${DateFormat('dd MMM yy').format(_startDate!)} - ${DateFormat('dd MMM yy').format(_endDate!)}',
+            child: isMobile
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildPartyDropdown(),
+                      const SizedBox(height: 12),
+                      InkWell(
+                        onTap: () async {
+                          final picked = await showDateRangePicker(
+                            context: context,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime.now(),
+                            initialDateRange: DateTimeRange(start: _startDate!, end: _endDate!),
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              _startDate = picked.start;
+                              _endDate = picked.end;
+                            });
+                            _fetchLedger();
+                          }
+                        },
+                        child: InputDecorator(
+                          decoration: InputDecoration(labelText: 'Date Range'.tr, border: const OutlineInputBorder()),
+                          child: Text(
+                            '${DateFormat('dd MMM yy').format(_startDate!)} - ${DateFormat('dd MMM yy').format(_endDate!)}',
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              icon: const Icon(Icons.search),
+                              label: Text('GENERATE'.tr),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primaryColor,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                              ),
+                              onPressed: _fetchLedger,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              icon: const Icon(Icons.print),
+                              label: Text('Print'.tr),
+                              style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+                              onPressed: () {
+                                if (_selectedPartyId == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please select a party first.'.tr)));
+                                  return;
+                                }
+                                dynamic partyObj;
+                                try {
+                                  if (widget.partyType == 'Farmer') {
+                                    partyObj = ref.read(farmersProvider).value?.firstWhere((x) => x.id == _selectedPartyId);
+                                  } else if (widget.partyType == 'Customer') {
+                                    partyObj = ref.read(customersProvider).value?.firstWhere((x) => x.id == _selectedPartyId);
+                                  } else if (widget.partyType == 'Dealer') {
+                                    partyObj = ref.read(supplierProvider).value?.firstWhere((x) => x.id == _selectedPartyId);
+                                  } else if (widget.partyType == 'Staff') {
+                                    partyObj = ref.read(staffProvider).value?.firstWhere((x) => x.id == _selectedPartyId);
+                                  }
+                                } catch (_) {}
+                                _generatePdf(partyObj ?? _selectedPartyId);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: _buildPartyDropdown(),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        flex: 2,
+                        child: InkWell(
+                          onTap: () async {
+                            final picked = await showDateRangePicker(
+                              context: context,
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime.now(),
+                              initialDateRange: DateTimeRange(start: _startDate!, end: _endDate!),
+                            );
+                            if (picked != null) {
+                              setState(() {
+                                _startDate = picked.start;
+                                _endDate = picked.end;
+                              });
+                              _fetchLedger();
+                            }
+                          },
+                          child: InputDecorator(
+                            decoration: InputDecoration(labelText: 'Date Range'.tr, border: const OutlineInputBorder()),
+                            child: Text(
+                              '${DateFormat('dd MMM yy').format(_startDate!)} - ${DateFormat('dd MMM yy').format(_endDate!)}',
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.search),
+                        label: Text('GENERATE'.tr),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                        ),
+                        onPressed: _fetchLedger,
+                      ),
+                      const SizedBox(width: 16),
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.print),
+                        label: Text('Print'.tr),
+                        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20)),
+                        onPressed: () {
+                          if (_selectedPartyId == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please select a party first.'.tr)));
+                            return;
+                          }
+                          dynamic partyObj;
+                          try {
+                            if (widget.partyType == 'Farmer') {
+                              partyObj = ref.read(farmersProvider).value?.firstWhere((x) => x.id == _selectedPartyId);
+                            } else if (widget.partyType == 'Customer') {
+                              partyObj = ref.read(customersProvider).value?.firstWhere((x) => x.id == _selectedPartyId);
+                            } else if (widget.partyType == 'Dealer') {
+                              partyObj = ref.read(supplierProvider).value?.firstWhere((x) => x.id == _selectedPartyId);
+                            } else if (widget.partyType == 'Staff') {
+                              partyObj = ref.read(staffProvider).value?.firstWhere((x) => x.id == _selectedPartyId);
+                            }
+                          } catch (_) {}
+                          _generatePdf(partyObj ?? _selectedPartyId);
+                        },
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 16),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.search),
-                  label: const Text('GENERATE'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                  ),
-                  onPressed: _fetchLedger,
-                ),
-                const SizedBox(width: 16),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.print),
-                  label: const Text('PRINT'),
-                  style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20)),
-                  onPressed: () {
-                    if (_selectedPartyId == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a party first.')));
-                      return;
-                    }
-                    dynamic partyObj;
-                    try {
-                      if (widget.partyType == 'Farmer') {
-                        partyObj = ref.read(farmersProvider).value?.firstWhere((x) => x.id == _selectedPartyId);
-                      } else if (widget.partyType == 'Customer') {
-                        partyObj = ref.read(customersProvider).value?.firstWhere((x) => x.id == _selectedPartyId);
-                      } else if (widget.partyType == 'Dealer') {
-                        partyObj = ref.read(supplierProvider).value?.firstWhere((x) => x.id == _selectedPartyId);
-                      } else if (widget.partyType == 'Staff') {
-                        partyObj = ref.read(staffProvider).value?.firstWhere((x) => x.id == _selectedPartyId);
-                      }
-                    } catch (_) {}
-                    _generatePdf(partyObj ?? _selectedPartyId);
-                  },
-                ),
-              ],
-            ),
           ),
           
           // Tables View
@@ -138,9 +223,9 @@ class _LedgerReportScreenState extends ConsumerState<LedgerReportScreen> {
             child: _isLoading 
               ? const Center(child: CircularProgressIndicator())
               : (_billingEntries.isEmpty && _paymentEntries.isEmpty)
-                ? const Center(child: Text('No transactions found for this period. Please select a party and date range.'))
+                ? Center(child: Text('No transactions found for this period. Please select a party and date range.'.tr))
                 : SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
+                    padding: EdgeInsets.all(isMobile ? 12 : 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -155,48 +240,58 @@ class _LedgerReportScreenState extends ConsumerState<LedgerReportScreen> {
                                 color: primaryColor.withOpacity(0.1),
                                 padding: const EdgeInsets.all(16),
                                 child: Text(
-                                  '1. Billing Details (${widget.partyType == 'Dealer' ? 'Purchases' : 'Sales'})',
+                                  '${"1. Billing Details".tr} (${widget.partyType == 'Dealer' ? 'Purchases'.tr : 'Sales'.tr})',
                                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: primaryColor),
                                 ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Row(
-                                  children: const [
-                                    Expanded(flex: 2, child: Text('Date', style: TextStyle(fontWeight: FontWeight.bold))),
-                                    Expanded(flex: 4, child: Text('Product Name', style: TextStyle(fontWeight: FontWeight.bold))),
-                                    Expanded(flex: 2, child: Text('Quantity', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold))),
-                                    Expanded(flex: 2, child: Text('Price (₹)', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold))),
-                                    Expanded(flex: 2, child: Text('Total (₹)', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold))),
-                                  ],
-                                ),
-                              ),
-                              const Divider(height: 1),
-                              if (_billingEntries.isEmpty)
-                                const Padding(
-                                  padding: EdgeInsets.all(16.0),
-                                  child: Text('No billing records found for this period.'),
-                                )
-                              else
-                                ..._billingEntries.map((entry) => Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                                  child: Row(
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(minWidth: isMobile ? 500 : 700),
+                                  child: Column(
                                     children: [
-                                      Expanded(flex: 2, child: Text(entry['date'])),
-                                      Expanded(flex: 4, child: Text(entry['product_name'])),
-                                      Expanded(flex: 2, child: Text((entry['quantity'] as double).toStringAsFixed(2), textAlign: TextAlign.right)),
-                                      Expanded(flex: 2, child: Text('₹${(entry['price'] as double).toStringAsFixed(2)}', textAlign: TextAlign.right)),
-                                      Expanded(flex: 2, child: Text('₹${(entry['total'] as double).toStringAsFixed(2)}', textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                      Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Row(
+                                          children: [
+                                            Expanded(flex: 2, child: Text('Date'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                            Expanded(flex: 4, child: Text('Product Name'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                            Expanded(flex: 2, child: Text('Quantity'.tr, textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                            Expanded(flex: 2, child: Text('Price (₹)'.tr, textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                            Expanded(flex: 2, child: Text('Total (₹)'.tr, textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                          ],
+                                        ),
+                                      ),
+                                      const Divider(height: 1),
+                                      if (_billingEntries.isEmpty)
+                                        Padding(
+                                          padding: const EdgeInsets.all(16.0),
+                                          child: Text('No billing records found for this period.'.tr),
+                                        )
+                                      else
+                                        ..._billingEntries.map((entry) => Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                                          child: Row(
+                                            children: [
+                                              Expanded(flex: 2, child: Text(entry['date'])),
+                                              Expanded(flex: 4, child: Text(entry['product_name'])),
+                                              Expanded(flex: 2, child: Text((entry['quantity'] as double).toStringAsFixed(2), textAlign: TextAlign.right)),
+                                              Expanded(flex: 2, child: Text('₹${(entry['price'] as double).toStringAsFixed(2)}', textAlign: TextAlign.right)),
+                                              Expanded(flex: 2, child: Text('₹${(entry['total'] as double).toStringAsFixed(2)}', textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                            ],
+                                          ),
+                                        )),
                                     ],
                                   ),
-                                )),
+                                ),
+                              ),
                               Container(
                                 color: Colors.grey.shade100,
                                 padding: const EdgeInsets.all(16),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   children: [
-                                    const Text('Total Billing Value: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                    Text('Total Billing Value: '.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                                     Text('₹${_totalBilling.toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: primaryColor)),
                                   ],
                                 ),
@@ -217,45 +312,55 @@ class _LedgerReportScreenState extends ConsumerState<LedgerReportScreen> {
                                 width: double.infinity,
                                 color: Colors.green.withOpacity(0.1),
                                 padding: const EdgeInsets.all(16),
-                                child: const Text(
-                                  '2. Payment History',
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green),
+                                child: Text(
+                                  '2. Payment History'.tr,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green),
                                 ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Row(
-                                  children: const [
-                                    Expanded(flex: 3, child: Text('Date', style: TextStyle(fontWeight: FontWeight.bold))),
-                                    Expanded(flex: 6, child: Text('Payment Particulars / Mode', style: TextStyle(fontWeight: FontWeight.bold))),
-                                    Expanded(flex: 3, child: Text('Paid Amount (₹)', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold))),
-                                  ],
-                                ),
-                              ),
-                              const Divider(height: 1),
-                              if (_paymentEntries.isEmpty)
-                                const Padding(
-                                  padding: EdgeInsets.all(16.0),
-                                  child: Text('No payment records found for this period.'),
-                                )
-                              else
-                                ..._paymentEntries.map((entry) => Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                                  child: Row(
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(minWidth: isMobile ? 500 : 700),
+                                  child: Column(
                                     children: [
-                                      Expanded(flex: 3, child: Text(entry['date'])),
-                                      Expanded(flex: 6, child: Text(entry['particulars'])),
-                                      Expanded(flex: 3, child: Text('₹${(entry['amount'] as double).toStringAsFixed(2)}', textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green))),
+                                      Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Row(
+                                          children: [
+                                            Expanded(flex: 3, child: Text('Date'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                            Expanded(flex: 6, child: Text('Payment Particulars / Mode'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                            Expanded(flex: 3, child: Text('Paid Amount (₹)'.tr, textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                          ],
+                                        ),
+                                      ),
+                                      const Divider(height: 1),
+                                      if (_paymentEntries.isEmpty)
+                                        Padding(
+                                          padding: const EdgeInsets.all(16.0),
+                                          child: Text('No payment records found for this period.'.tr),
+                                        )
+                                      else
+                                        ..._paymentEntries.map((entry) => Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                                          child: Row(
+                                            children: [
+                                              Expanded(flex: 3, child: Text(entry['date'])),
+                                              Expanded(flex: 6, child: Text(entry['particulars'])),
+                                              Expanded(flex: 3, child: Text('₹${(entry['amount'] as double).toStringAsFixed(2)}', textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green))),
+                                            ],
+                                          ),
+                                        )),
                                     ],
                                   ),
-                                )),
+                                ),
+                              ),
                               Container(
                                 color: Colors.grey.shade100,
                                 padding: const EdgeInsets.all(16),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   children: [
-                                    const Text('Total Paid Value: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                    Text('Total Paid Value: '.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                                     Text('₹${_totalPaid.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green)),
                                   ],
                                 ),
@@ -272,41 +377,64 @@ class _LedgerReportScreenState extends ConsumerState<LedgerReportScreen> {
                           color: Colors.white,
                           child: Padding(
                             padding: const EdgeInsets.all(20),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                Column(
-                                  children: [
-                                    const Text('Total Billing Amount', style: TextStyle(fontSize: 14, color: Colors.grey)),
-                                    const SizedBox(height: 6),
-                                    Text('₹${_totalBilling.toStringAsFixed(2)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                  ],
-                                ),
-                                Container(height: 40, width: 1, color: Colors.grey.shade300),
-                                Column(
-                                  children: [
-                                    const Text('Total Paid Amount', style: TextStyle(fontSize: 14, color: Colors.grey)),
-                                    const SizedBox(height: 6),
-                                    Text('₹${_totalPaid.toStringAsFixed(2)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
-                                  ],
-                                ),
-                                Container(height: 40, width: 1, color: Colors.grey.shade300),
-                                Column(
-                                  children: [
-                                    const Text('Total Remaining Amount', style: TextStyle(fontSize: 14, color: Colors.grey)),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      '₹${_totalRemaining.toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: _totalRemaining > 0 ? Colors.red : Colors.green,
+                            child: isMobile
+                                ? Column(
+                                    children: [
+                                      Text('Total Billing Amount'.tr, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                                      const SizedBox(height: 4),
+                                      Text('₹${_totalBilling.toStringAsFixed(2)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                      const Divider(height: 20),
+                                      Text('Total Paid Amount'.tr, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                                      const SizedBox(height: 4),
+                                      Text('₹${_totalPaid.toStringAsFixed(2)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
+                                      const Divider(height: 20),
+                                      Text('Total Remaining Amount'.tr, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '₹${_totalRemaining.toStringAsFixed(2)}',
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                          color: _totalRemaining > 0 ? Colors.red : Colors.green,
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                                    ],
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                    children: [
+                                      Column(
+                                        children: [
+                                          Text('Total Billing Amount'.tr, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                                          const SizedBox(height: 6),
+                                          Text('₹${_totalBilling.toStringAsFixed(2)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                        ],
+                                      ),
+                                      Container(height: 40, width: 1, color: Colors.grey.shade300),
+                                      Column(
+                                        children: [
+                                          Text('Total Paid Amount'.tr, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                                          const SizedBox(height: 6),
+                                          Text('₹${_totalPaid.toStringAsFixed(2)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
+                                        ],
+                                      ),
+                                      Container(height: 40, width: 1, color: Colors.grey.shade300),
+                                      Column(
+                                        children: [
+                                          Text('Total Remaining Amount'.tr, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            '₹${_totalRemaining.toStringAsFixed(2)}',
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                              color: _totalRemaining > 0 ? Colors.red : Colors.green,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                           ),
                         ),
                       ],
@@ -768,7 +896,7 @@ class _LedgerReportScreenState extends ConsumerState<LedgerReportScreen> {
         loading: () => const CircularProgressIndicator(),
         error: (e, s) => const Text('Error'),
         data: (list) => DropdownButtonFormField<String>(
-          decoration: const InputDecoration(labelText: 'Select Farmer', border: OutlineInputBorder()),
+          decoration: InputDecoration(labelText: 'Select Farmer'.tr, border: const OutlineInputBorder()),
           value: _selectedPartyId,
           items: list.map((e) => DropdownMenuItem(value: e.id, child: Text('#${e.farmerNo} - ${e.name}'))).toList(),
           onChanged: (val) {
@@ -783,7 +911,7 @@ class _LedgerReportScreenState extends ConsumerState<LedgerReportScreen> {
         loading: () => const CircularProgressIndicator(),
         error: (e, s) => const Text('Error'),
         data: (list) => DropdownButtonFormField<String>(
-          decoration: const InputDecoration(labelText: 'Select Customer', border: OutlineInputBorder()),
+          decoration: InputDecoration(labelText: 'Select Customer'.tr, border: const OutlineInputBorder()),
           value: _selectedPartyId,
           items: list.map((e) => DropdownMenuItem(value: e.id, child: Text(e.name))).toList(),
           onChanged: (val) {
@@ -798,7 +926,7 @@ class _LedgerReportScreenState extends ConsumerState<LedgerReportScreen> {
         loading: () => const CircularProgressIndicator(),
         error: (e, s) => const Text('Error'),
         data: (list) => DropdownButtonFormField<String>(
-          decoration: const InputDecoration(labelText: 'Select Dealer', border: OutlineInputBorder()),
+          decoration: InputDecoration(labelText: 'Select Dealer'.tr, border: const OutlineInputBorder()),
           value: _selectedPartyId,
           items: list.map((e) => DropdownMenuItem(value: e.id, child: Text(e.name))).toList(),
           onChanged: (val) {

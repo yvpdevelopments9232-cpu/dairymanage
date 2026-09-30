@@ -9,6 +9,8 @@ import 'dart:convert';
 
 import '../providers/milk_report_provider.dart';
 import '../providers/settings_provider.dart';
+import '../services/translations.dart';
+import '../providers/language_provider.dart';
 
 class MilkReportScreen extends ConsumerWidget {
   const MilkReportScreen({super.key});
@@ -166,13 +168,14 @@ class MilkReportScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageProvider);
     final reportAsync = ref.watch(milkReportProvider);
     final notifier = ref.watch(milkReportProvider.notifier);
     final settingsAsync = ref.watch(settingsProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Milk Collection Report', style: TextStyle(color: Colors.black87)),
+        title: Text('Milk Collection Report'.tr, style: const TextStyle(color: Colors.black87)),
         backgroundColor: Colors.white,
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black87),
@@ -216,7 +219,7 @@ class MilkReportScreen extends ConsumerWidget {
                 const SizedBox(width: 24),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.picture_as_pdf),
-                  label: const Text('GENERATE B&W PDF / PRINT'),
+                  label: Text('GENERATE B&W PDF / PRINT'.tr),
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.black87, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16)),
                   onPressed: () {
                     if (reportAsync.hasValue) {
@@ -231,9 +234,9 @@ class MilkReportScreen extends ConsumerWidget {
           Expanded(
             child: reportAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, st) => Center(child: Text('Error: $e')),
+              error: (e, st) => Center(child: Text('${'Error'.tr}: $e')),
               data: (data) {
-                if (data.rows.isEmpty) return const Center(child: Text('No data for this date range.'));
+                if (data.rows.isEmpty) return Center(child: Text('No data for this date range.'.tr));
 
                 return Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -249,14 +252,14 @@ class MilkReportScreen extends ConsumerWidget {
                               child: DataTable(
                                 headingRowColor: MaterialStateProperty.all(Colors.blue.shade900),
                                 headingTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                columns: const [
-                                  DataColumn(label: Text('Sr.No')),
-                                  DataColumn(label: Text('Farmer Name')),
-                                  DataColumn(label: Text('Animal Type')),
-                                  DataColumn(label: Text('Total Liter (Ltr.)')),
-                                  DataColumn(label: Text('Total Amount (₹)')),
-                                  DataColumn(label: Text('Advance / Purchase (₹)')),
-                                  DataColumn(label: Text('Remaining Amount (₹)')),
+                                columns: [
+                                  DataColumn(label: Text('Sr.No'.tr)),
+                                  DataColumn(label: Text('Farmer Name'.tr)),
+                                  DataColumn(label: Text('Animal Type'.tr)),
+                                  DataColumn(label: Text('Total Liter (Ltr.)'.tr)),
+                                  DataColumn(label: Text('Total Amount (₹)'.tr)),
+                                  DataColumn(label: Text('Advance / Purchase (₹)'.tr)),
+                                  DataColumn(label: Text('Remaining Amount (₹)'.tr)),
                                 ],
                                 rows: data.rows.map((r) => DataRow(
                                   cells: [
@@ -269,7 +272,7 @@ class MilkReportScreen extends ConsumerWidget {
                                           color: r.animalType == 'Cow' ? Colors.green.shade50 : r.animalType == 'Buffalo' ? Colors.blue.shade50 : Colors.orange.shade50,
                                           borderRadius: BorderRadius.circular(4)
                                         ),
-                                        child: Text(r.animalType, style: TextStyle(color: r.animalType == 'Cow' ? Colors.green : r.animalType == 'Buffalo' ? Colors.blue : Colors.orange, fontWeight: FontWeight.bold)),
+                                        child: Text(r.animalType.tr, style: TextStyle(color: r.animalType == 'Cow' ? Colors.green : r.animalType == 'Buffalo' ? Colors.blue : Colors.orange, fontWeight: FontWeight.bold)),
                                       )
                                     ),
                                     DataCell(Text(r.totalLiter.toStringAsFixed(2))),
@@ -282,7 +285,7 @@ class MilkReportScreen extends ConsumerWidget {
                                     color: MaterialStateProperty.all(Colors.green.shade50),
                                     cells: [
                                       const DataCell(Text('')),
-                                      const DataCell(Text('TOTAL', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green))),
+                                      DataCell(Text('TOTAL'.tr, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green))),
                                       const DataCell(Text('')),
                                       DataCell(Text(data.summary.totalMilkLiters.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green))),
                                       DataCell(Text(data.summary.totalAmount.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green))),

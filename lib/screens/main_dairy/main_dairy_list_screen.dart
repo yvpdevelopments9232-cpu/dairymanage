@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../models/flutter_models.dart';
 import '../../providers/main_dairy_provider.dart';
 import '../../providers/main_dairy_payment_provider.dart';
+import '../../services/translations.dart';
 
 class MainDairyListScreen extends ConsumerStatefulWidget {
   const MainDairyListScreen({super.key});
@@ -188,16 +189,16 @@ class _MainDairyListScreenState extends ConsumerState<MainDairyListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Main Dairies / Members',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo),
+        title: Text(
+          'Main Dairies / Members'.tr,
+          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo),
         ),
         backgroundColor: Colors.white,
         elevation: 1,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.indigo),
-            tooltip: 'Refresh',
+            tooltip: 'Refresh'.tr,
             onPressed: () => ref.invalidate(mainDairyProvider),
           ),
         ],
@@ -205,7 +206,7 @@ class _MainDairyListScreenState extends ConsumerState<MainDairyListScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showDairyDialog(context),
         icon: const Icon(Icons.add),
-        label: const Text('Add Main Dairy'),
+        label: Text('Add Main Dairy'.tr),
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
       ),

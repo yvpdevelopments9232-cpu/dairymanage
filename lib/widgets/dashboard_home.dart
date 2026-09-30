@@ -11,6 +11,10 @@ import '../services/subscription_service.dart';
 import '../models/subscription_model.dart';
 import '../screens/subscription/subscription_status_screen.dart';
 
+import '../services/translations.dart';
+import '../providers/language_provider.dart';
+import '../providers/display_mode_provider.dart';
+
 class DashboardHome extends ConsumerWidget {
   final VoidCallback? onNavigateToProducts;
   const DashboardHome({super.key, this.onNavigateToProducts});
@@ -21,7 +25,9 @@ class DashboardHome extends ConsumerWidget {
     final notifier = ref.watch(dashboardStatsProvider.notifier);
     final outOfStockProducts = ref.watch(outOfStockProductsProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
-    final isMobile = MediaQuery.of(context).size.width < 800;
+    final lang = ref.watch(languageProvider);
+    final displayMode = ref.watch(displayModeProvider);
+    final isMobile = displayMode == DisplayMode.mobile || MediaQuery.of(context).size.width < 800;
 
     return Column(
       children: [
@@ -33,7 +39,7 @@ class DashboardHome extends ConsumerWidget {
             alignment: WrapAlignment.spaceBetween,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Text('Daily Overview', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: primaryColor)),
+              Text('Daily Overview'.tr, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: primaryColor)),
               OutlinedButton.icon(
                 icon: const Icon(Icons.calendar_month),
                 label: Text(notifier.currentDate, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -255,22 +261,22 @@ class DashboardHome extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Milk Metrics (Liters & Averages)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('Milk Metrics (Liters & Averages)'.tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const Divider(height: 32),
             _buildListTileWithSubtitle(
-              'Cow Milk Collected', 
-              'Avg Fat: ${stats.cowAvgFat.toStringAsFixed(1)} | Avg SNF: ${stats.cowAvgSnf.toStringAsFixed(1)}',
-              '${stats.cowMilk.toStringAsFixed(1)} Ltr', 
+              'Cow Milk Collected'.tr, 
+              '${'Avg Fat'.tr}: ${stats.cowAvgFat.toStringAsFixed(1)} | ${'Avg SNF'.tr}: ${stats.cowAvgSnf.toStringAsFixed(1)}',
+              '${stats.cowMilk.toStringAsFixed(1)} ${'Qty (L)'.tr}', 
               Icons.pets
             ),
             _buildListTileWithSubtitle(
-              'Buffalo Milk Collected', 
-              'Avg Fat: ${stats.buffaloAvgFat.toStringAsFixed(1)} | Avg SNF: ${stats.buffaloAvgSnf.toStringAsFixed(1)}',
-              '${stats.buffaloMilk.toStringAsFixed(1)} Ltr', 
+              'Buffalo Milk Collected'.tr, 
+              '${'Avg Fat'.tr}: ${stats.buffaloAvgFat.toStringAsFixed(1)} | ${'Avg SNF'.tr}: ${stats.buffaloAvgSnf.toStringAsFixed(1)}',
+              '${stats.buffaloMilk.toStringAsFixed(1)} ${'Qty (L)'.tr}', 
               Icons.pets
             ),
             const Divider(height: 24),
-            _buildListTile('Total Milk Sold', '${stats.milkSoldLtr.toStringAsFixed(1)} Ltr', Icons.shopping_cart),
+            _buildListTile('Total Sales'.tr, '${stats.milkSoldLtr.toStringAsFixed(1)} ${'Qty (L)'.tr}', Icons.shopping_cart),
           ],
         ),
       ),
@@ -314,19 +320,19 @@ class DashboardHome extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Expanded(child: Text('Live Stock Valuation', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+                Expanded(child: Text('Live Stock'.tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(12)),
-                  child: Text('Total Value: ₹${stats.totalStockValue.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 12)),
+                  child: Text('${'Total ₹'.tr}: ₹${stats.totalStockValue.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 12)),
                 ),
               ],
             ),
             const Divider(height: 32),
             if (stats.stockDetails.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text('No products in stock.', style: TextStyle(color: Colors.grey)),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text('No products in stock.'.tr, style: const TextStyle(color: Colors.grey)),
               )
             else
               ListView.separated(
@@ -342,8 +348,8 @@ class DashboardHome extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(flex: 2, child: Text(item['name'], style: const TextStyle(fontWeight: FontWeight.w600))),
-                        Expanded(flex: 1, child: Text('Rate: ₹${item['rate']}', style: const TextStyle(color: Colors.grey, fontSize: 12))),
-                        Expanded(flex: 1, child: Text('Stock: ${item['stock']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                        Expanded(flex: 1, child: Text('${'Rate'.tr}: ₹${item['rate']}', style: const TextStyle(color: Colors.grey, fontSize: 12))),
+                        Expanded(flex: 1, child: Text('${'Stock'.tr}: ${item['stock']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
                         Expanded(flex: 1, child: Text('₹${item['value'].toStringAsFixed(2)}', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor, fontSize: 12))),
                       ],
                     ),
@@ -364,12 +370,12 @@ class DashboardHome extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Outstanding Customer Balances'),
+        title: Text('Remaining Amount'.tr),
         content: SizedBox(
           width: 400,
           height: 300,
           child: oweCustomers.isEmpty
-            ? const Center(child: Text('No customers have outstanding balances.'))
+            ? Center(child: Text('No pending balances!'.tr))
             : ListView.builder(
                 itemCount: oweCustomers.length,
                 itemBuilder: (ctx, idx) {
@@ -377,14 +383,14 @@ class DashboardHome extends ConsumerWidget {
                   return ListTile(
                     leading: const CircleAvatar(backgroundColor: Colors.redAccent, child: Icon(Icons.person, color: Colors.white)),
                     title: Text(c.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text(c.mobile ?? 'No phone'),
-                    trailing: Text('?', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16)),
+                    subtitle: Text(c.mobile ?? 'No phone'.tr),
+                    trailing: Text('₹${c.currentBalance.toStringAsFixed(2)}', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16)),
                   );
                 },
               ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CLOSE')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Close'.tr)),
         ],
       ),
     );
@@ -403,7 +409,7 @@ class DashboardHome extends ConsumerWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.bold)),
+                Text(title.tr, style: const TextStyle(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
               ],

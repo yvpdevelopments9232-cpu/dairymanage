@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../providers/main_dairy_dashboard_provider.dart';
+import '../../services/translations.dart';
+import '../../providers/language_provider.dart';
 
 class MainDairyDashboardScreen extends ConsumerWidget {
   final Function(int)? onNavigate;
@@ -10,6 +12,7 @@ class MainDairyDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(languageProvider);
     final statsAsync = ref.watch(mainDairyDashboardProvider);
     final notifier = ref.watch(mainDairyDashboardProvider.notifier);
     final primaryColor = Colors.indigo.shade800;
@@ -45,12 +48,12 @@ class MainDairyDashboardScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Main Dairy Daily Overview',
+                          'Main Dairy Daily Overview'.tr,
                           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor),
                         ),
-                        const Text(
-                          'Outward milk dispatches and collection tracking',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        Text(
+                          'Outward milk dispatches and collection tracking'.tr,
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
                         ),
                       ],
                     ),
@@ -136,9 +139,9 @@ class MainDairyDashboardScreen extends ConsumerWidget {
                                     Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Text(
-                                          'TOTAL MILK COLLECTION AMOUNT',
-                                          style: TextStyle(
+                                        Text(
+                                          'TOTAL MILK COLLECTION AMOUNT'.tr,
+                                          style: const TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,
                                             letterSpacing: 1.1,
@@ -156,7 +159,7 @@ class MainDairyDashboardScreen extends ConsumerWidget {
                                 if (onNavigate != null)
                                   ElevatedButton.icon(
                                     icon: const Icon(Icons.add, size: 16),
-                                    label: const Text('Add Dispatch'),
+                                    label: Text('Add Dispatch'.tr),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.amber.shade700,
                                       foregroundColor: Colors.white,
@@ -193,7 +196,7 @@ class MainDairyDashboardScreen extends ConsumerWidget {
                         Column(
                           children: [
                             _buildMetricCard(
-                              'Total Litres Dispatched',
+                              'Total Litres Dispatched'.tr,
                               '${stats.totalQuantity.toStringAsFixed(2)} L',
                               Icons.water_drop,
                               Colors.blue,
@@ -201,7 +204,7 @@ class MainDairyDashboardScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: 16),
                             _buildMetricCard(
-                              'Cow Milk',
+                              'Cow Milk'.tr,
                               '${stats.cowQuantity.toStringAsFixed(2)} L (₹${stats.cowAmount.toStringAsFixed(2)})',
                               Icons.pets,
                               Colors.green.shade700,
@@ -209,7 +212,7 @@ class MainDairyDashboardScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: 16),
                             _buildMetricCard(
-                              'Buffalo Milk',
+                              'Buffalo Milk'.tr,
                               '${stats.buffaloQuantity.toStringAsFixed(2)} L (₹${stats.buffaloAmount.toStringAsFixed(2)})',
                               Icons.cruelty_free,
                               Colors.deepOrange.shade700,
@@ -217,7 +220,7 @@ class MainDairyDashboardScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: 16),
                             _buildMetricCard(
-                              'Main Dairies Supplied',
+                              'Main Dairies Supplied'.tr,
                               '${stats.dairiesCount} Dairy Center(s)',
                               Icons.business,
                               Colors.purple,
@@ -229,7 +232,7 @@ class MainDairyDashboardScreen extends ConsumerWidget {
                           children: [
                             Expanded(
                               child: _buildMetricCard(
-                                'Total Litres Dispatched',
+                                'Total Litres Dispatched'.tr,
                                 '${stats.totalQuantity.toStringAsFixed(2)} L',
                                 Icons.water_drop,
                                 Colors.blue,
@@ -239,7 +242,7 @@ class MainDairyDashboardScreen extends ConsumerWidget {
                             const SizedBox(width: 16),
                             Expanded(
                               child: _buildMetricCard(
-                                'Cow Milk',
+                                'Cow Milk'.tr,
                                 '${stats.cowQuantity.toStringAsFixed(2)} L (₹${stats.cowAmount.toStringAsFixed(2)})',
                                 Icons.pets,
                                 Colors.green.shade700,
@@ -249,7 +252,7 @@ class MainDairyDashboardScreen extends ConsumerWidget {
                             const SizedBox(width: 16),
                             Expanded(
                               child: _buildMetricCard(
-                                'Buffalo Milk',
+                                'Buffalo Milk'.tr,
                                 '${stats.buffaloQuantity.toStringAsFixed(2)} L (₹${stats.buffaloAmount.toStringAsFixed(2)})',
                                 Icons.cruelty_free,
                                 Colors.deepOrange.shade700,
@@ -259,7 +262,7 @@ class MainDairyDashboardScreen extends ConsumerWidget {
                             const SizedBox(width: 16),
                             Expanded(
                               child: _buildMetricCard(
-                                'Main Dairies Supplied',
+                                'Main Dairies Supplied'.tr,
                                 '${stats.dairiesCount} Dairy Center(s)',
                                 Icons.business,
                                 Colors.purple,
@@ -274,7 +277,7 @@ class MainDairyDashboardScreen extends ConsumerWidget {
                         children: [
                           Expanded(
                             child: _buildShiftCard(
-                              shiftName: 'Morning Shift',
+                              shiftName: 'Morning Shift'.tr,
                               icon: Icons.wb_sunny,
                               iconColor: Colors.amber.shade700,
                               quantity: stats.morningQuantity,
@@ -284,7 +287,7 @@ class MainDairyDashboardScreen extends ConsumerWidget {
                           const SizedBox(width: 16),
                           Expanded(
                             child: _buildShiftCard(
-                              shiftName: 'Evening Shift',
+                              shiftName: 'Evening Shift'.tr,
                               icon: Icons.nights_stay,
                               iconColor: Colors.indigo.shade600,
                               quantity: stats.eveningQuantity,
@@ -306,7 +309,7 @@ class MainDairyDashboardScreen extends ConsumerWidget {
                           if (onNavigate != null)
                             TextButton.icon(
                               icon: const Icon(Icons.receipt_long, size: 18),
-                              label: const Text('View Full Reports'),
+                              label: Text('View Full Reports'.tr),
                               onPressed: () => onNavigate!(4), // Index 4 is Reports
                             ),
                         ],
@@ -332,7 +335,7 @@ class MainDairyDashboardScreen extends ConsumerWidget {
                                   if (onNavigate != null)
                                     ElevatedButton.icon(
                                       icon: const Icon(Icons.add),
-                                      label: const Text('Record Dispatch Now'),
+                                      label: Text('Record Dispatch Now'.tr),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: primaryColor,
                                         foregroundColor: Colors.white,
@@ -354,15 +357,15 @@ class MainDairyDashboardScreen extends ConsumerWidget {
                               scrollDirection: Axis.horizontal,
                               child: DataTable(
                                 headingRowColor: WidgetStateProperty.all(Colors.indigo.shade50),
-                                columns: const [
-                                  DataColumn(label: Text('D. ID / Dairy Name', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('Shift', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('Milk Type', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('Qty (L)', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('Fat %', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('SNF %', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('Rate (₹)', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  DataColumn(label: Text('Total Amount (₹)', style: TextStyle(fontWeight: FontWeight.bold))),
+                                columns: [
+                                  DataColumn(label: Text('D. ID / Dairy Name'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Shift'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Milk Type'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Qty (L)'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Fat %'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('SNF %'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Rate (₹)'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  DataColumn(label: Text('Total Amount (₹)'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
                                 ],
                                 rows: stats.collections.map((c) {
                                   final dairyNoStr = c.dairyNo != null ? '#${c.dairyNo.toString().padLeft(3, '0')} ' : '';
@@ -478,7 +481,7 @@ class MainDairyDashboardScreen extends ConsumerWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Quantity', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    Text('Quantity'.tr, style: const TextStyle(fontSize: 12, color: Colors.grey)),
                     const SizedBox(height: 2),
                     Text('${quantity.toStringAsFixed(2)} L', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   ],
@@ -486,7 +489,7 @@ class MainDairyDashboardScreen extends ConsumerWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text('Total Amount', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    Text('Total Amount'.tr, style: const TextStyle(fontSize: 12, color: Colors.grey)),
                     const SizedBox(height: 2),
                     Text(
                       '₹ ${amount.toStringAsFixed(2)}',

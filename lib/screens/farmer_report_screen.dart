@@ -9,6 +9,8 @@ import '../models/flutter_models.dart';
 import '../providers/farmer_provider.dart';
 import '../providers/farmer_report_provider.dart';
 import '../providers/settings_provider.dart';
+import '../services/translations.dart';
+import '../providers/language_provider.dart';
 
 class FarmerReportScreen extends ConsumerWidget {
   const FarmerReportScreen({super.key});
@@ -294,6 +296,7 @@ class FarmerReportScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageProvider);
     final reportAsync = ref.watch(farmerReportProvider);
     final notifier = ref.watch(farmerReportProvider.notifier);
     final settingsAsync = ref.watch(settingsProvider);
@@ -301,7 +304,7 @@ class FarmerReportScreen extends ConsumerWidget {
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Farmer Details Report', style: TextStyle(color: Colors.black87)),
+        title: Text('Farmer Details Report'.tr, style: const TextStyle(color: Colors.black87)),
         backgroundColor: Colors.white,
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black87),
@@ -318,7 +321,7 @@ class FarmerReportScreen extends ConsumerWidget {
                   flex: 2,
                   child: farmersAsync.when(
                     loading: () => const CircularProgressIndicator(),
-                    error: (e, s) => Text('Error: $e'),
+                    error: (e, s) => Text('${'Error'.tr}: $e'),
                     data: (farmers) => Autocomplete<Farmer>(
                       optionsBuilder: (TextEditingValue textEditingValue) {
                         if (textEditingValue.text.isEmpty) return const Iterable<Farmer>.empty();
@@ -338,7 +341,7 @@ class FarmerReportScreen extends ConsumerWidget {
                           controller: controller,
                           focusNode: focusNode,
                           decoration: InputDecoration(
-                            labelText: 'Search Farmer by Name/No', 
+                            labelText: 'Search Farmer by Name/No'.tr, 
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), 
                             prefixIcon: const Icon(Icons.search),
                           ),
@@ -376,7 +379,7 @@ class FarmerReportScreen extends ConsumerWidget {
                 const SizedBox(width: 16),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.visibility),
-                  label: const Text('VIEW'),
+                  label: Text('VIEW'.tr),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.teal.shade700,
                     foregroundColor: Colors.white,
@@ -386,27 +389,27 @@ class FarmerReportScreen extends ConsumerWidget {
                     if (reportAsync.hasValue && reportAsync.value != null) {
                       _viewPdf(context, [reportAsync.value!], notifier.startDate, notifier.endDate, settingsAsync.value);
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a farmer first.')));
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please select a farmer first.'.tr)));
                     }
                   },
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.print),
-                  label: const Text('GENERATE PDF'),
+                  label: Text('GENERATE PDF'.tr),
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.blue.shade900, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18)),
                   onPressed: () {
                     if (reportAsync.hasValue && reportAsync.value != null) {
                       _generatePdf(context, [reportAsync.value!], notifier.startDate, notifier.endDate, settingsAsync.value);
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a farmer first.')));
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please select a farmer first.'.tr)));
                     }
                   },
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.picture_as_pdf),
-                  label: const Text('GENERATE ALL PDF'),
+                  label: Text('GENERATE ALL PDF'.tr),
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade700, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18)),
                   onPressed: () async {
                     if (farmersAsync.hasValue) {
@@ -440,9 +443,9 @@ class FarmerReportScreen extends ConsumerWidget {
           Expanded(
             child: reportAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, st) => Center(child: Text('Error: $e')),
+              error: (e, st) => Center(child: Text('${'Error'.tr}: $e')),
               data: (data) {
-                if (data == null) return const Center(child: Text('Search and select a farmer to view the report.'));
+                if (data == null) return Center(child: Text('Search and select a farmer to view the report.'.tr));
                 
                 final totalMilkAmount = data.morningAmount + data.eveningAmount;
                 final totalLiter = data.morningLiter + data.eveningLiter;
@@ -457,14 +460,14 @@ class FarmerReportScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Text('FARMER DETAILS: ${data.farmer.name} (#${data.farmer.farmerNo})', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                          Text('${'Farmer Details'.tr}: ${data.farmer.name} (#${data.farmer.farmerNo})', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                           const Divider(height: 32),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              _statBox('Total Liter', '${totalLiter.toStringAsFixed(2)} Ltr'),
-                              _statBox('Total Milk Amount', '₹${totalMilkAmount.toStringAsFixed(2)}'),
-                              _statBox('Total Product Purchase', '₹${data.totalProductAmount.toStringAsFixed(2)}'),
+                              _statBox('Total Liter'.tr, '${totalLiter.toStringAsFixed(2)} ${'Ltr'.tr}'),
+                              _statBox('Total Milk Amount'.tr, '₹${totalMilkAmount.toStringAsFixed(2)}'),
+                              _statBox('Total Product Purchase'.tr, '₹${data.totalProductAmount.toStringAsFixed(2)}'),
                             ],
                           ),
                           const SizedBox(height: 24),
@@ -474,17 +477,17 @@ class FarmerReportScreen extends ConsumerWidget {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Text('TOTAL REMAINING PAYABLE AMOUNT: ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                Text('${'TOTAL REMAINING PAYABLE AMOUNT'.tr}: ', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                                 Text('₹${remainingAmount.toStringAsFixed(2)}', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.red.shade900)),
                               ],
                             ),
                           ),
                           const SizedBox(height: 24),
-                          const Text('Detailed breakdown is beautifully formatted in the PDF Export.', style: TextStyle(color: Colors.grey)),
+                          Text('Detailed breakdown is beautifully formatted in the PDF Export.'.tr, style: const TextStyle(color: Colors.grey)),
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
                             icon: const Icon(Icons.visibility, size: 20),
-                            label: const Text('VIEW REPORT (PDF PREVIEW)', style: TextStyle(fontWeight: FontWeight.bold)),
+                            label: Text('VIEW REPORT (PDF PREVIEW)'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.teal.shade800,
                               foregroundColor: Colors.white,

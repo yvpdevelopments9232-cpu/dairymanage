@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../providers/expense_provider.dart';
+import '../providers/language_provider.dart';
+import '../providers/display_mode_provider.dart';
+import '../services/translations.dart';
 
 class ExpenseScreen extends ConsumerStatefulWidget {
   const ExpenseScreen({super.key});
@@ -47,7 +50,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
       _amountCtrl.clear();
       _descCtrl.clear();
       _remarksCtrl.clear();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Expense Saved')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Expense Saved'.tr)));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
@@ -57,14 +60,16 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
+    final displayMode = ref.watch(displayModeProvider);
+    final isMobile = displayMode == DisplayMode.mobile || MediaQuery.of(context).size.width < 800;
     final notifier = ref.watch(expenseProvider.notifier);
     final expensesAsync = ref.watch(expenseProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
-    final isMobile = false; // Forced desktop layout as per user request
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Expenses', style: TextStyle(color: Colors.black87)),
+        title: Text('Expenses'.tr, style: const TextStyle(color: Colors.black87)),
         backgroundColor: Colors.white,
         elevation: 1,
         actions: [
@@ -93,18 +98,18 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
           Expanded(
             flex: isMobile ? 0 : 2,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(isMobile ? 16 : 24),
               child: Card(
                 elevation: 3,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 child: Padding(
-                  padding: const EdgeInsets.all(24.0),
+                  padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
                   child: Form(
                     key: _formKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Add Expense', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
+                        Text('Add Expense'.tr, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
                         const Divider(height: 32),
                         Wrap(
                           spacing: 16,
@@ -113,9 +118,9 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                             SizedBox(
                               width: isMobile ? double.infinity : (MediaQuery.of(context).size.width / 2 - 40),
                               child: DropdownButtonFormField<String>(
-                                decoration: InputDecoration(labelText: 'Category *', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                                decoration: InputDecoration(labelText: 'Category *'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                                 value: _category,
-                                items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                                items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c.tr))).toList(),
                                 onChanged: (val) => setState(() => _category = val!),
                               ),
                             ),
@@ -123,9 +128,9 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                               width: isMobile ? double.infinity : (MediaQuery.of(context).size.width / 2 - 60),
                               child: TextFormField(
                                 controller: _amountCtrl,
-                                decoration: InputDecoration(labelText: 'Amount (₹) *', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                                decoration: InputDecoration(labelText: 'Amount (₹) *'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                                 keyboardType: TextInputType.number,
-                                validator: (v) => v!.isEmpty ? 'Required' : null,
+                                validator: (v) => v!.isEmpty ? 'Required'.tr : null,
                               ),
                             ),
                           ],
@@ -133,7 +138,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _descCtrl,
-                          decoration: InputDecoration(labelText: 'Description / Purpose', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                          decoration: InputDecoration(labelText: 'Description / Purpose'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                         ),
                         const SizedBox(height: 16),
                         Wrap(
@@ -143,9 +148,9 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                             SizedBox(
                               width: isMobile ? double.infinity : (MediaQuery.of(context).size.width / 2 - 40),
                               child: DropdownButtonFormField<String>(
-                                decoration: InputDecoration(labelText: 'Payment Mode', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                                decoration: InputDecoration(labelText: 'Payment Mode'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                                 value: _paymentMode,
-                                items: _paymentModes.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                                items: _paymentModes.map((c) => DropdownMenuItem(value: c, child: Text(c.tr))).toList(),
                                 onChanged: (val) => setState(() => _paymentMode = val!),
                               ),
                             ),
@@ -153,7 +158,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                               width: isMobile ? double.infinity : (MediaQuery.of(context).size.width / 2 - 60),
                               child: TextFormField(
                                 controller: _remarksCtrl,
-                                decoration: InputDecoration(labelText: 'Remarks / Ref No.', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                                decoration: InputDecoration(labelText: 'Remarks / Ref No.'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                               ),
                             ),
                           ],
@@ -166,7 +171,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                             onPressed: _isSaving ? null : _submit,
                             style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                             icon: _isSaving ? const CircularProgressIndicator(color: Colors.white) : const Icon(Icons.check_circle),
-                            label: Text(_isSaving ? 'SAVING...' : 'SAVE EXPENSE', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            label: Text(_isSaving ? 'SAVING...'.tr : 'SAVE EXPENSE'.tr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                           ),
                         ),
                       ],
@@ -185,21 +190,21 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Padding(padding: EdgeInsets.all(16.0), child: Text('Today\'s Expenses', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+                  Padding(padding: const EdgeInsets.all(16.0), child: Text('Today\'s Expenses'.tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
                   Expanded(
                     child: expensesAsync.when(
                       loading: () => const Center(child: CircularProgressIndicator()),
                       error: (e, s) => Center(child: Text('Error: $e')),
                       data: (expenses) {
-                        if (expenses.isEmpty) return const Center(child: Text('No expenses recorded today'));
+                        if (expenses.isEmpty) return Center(child: Text('No expenses recorded today'.tr));
                         return ListView.builder(
                           itemCount: expenses.length,
                           itemBuilder: (context, index) {
                             final e = expenses[index];
                             return ListTile(
                               leading: CircleAvatar(backgroundColor: Colors.red.shade50, child: const Icon(Icons.money_off, color: Colors.red)),
-                              title: Text(e.category, style: const TextStyle(fontWeight: FontWeight.bold)),
-                              subtitle: Text(e.description ?? e.paymentMode),
+                              title: Text(e.category.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
+                              subtitle: Text(e.description ?? e.paymentMode.tr),
                               trailing: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 crossAxisAlignment: CrossAxisAlignment.end,

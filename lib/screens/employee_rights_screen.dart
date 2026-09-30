@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/auth_provider.dart';
+import '../services/translations.dart';
+import '../providers/language_provider.dart';
 
 class EmployeeRightsScreen extends ConsumerStatefulWidget {
   const EmployeeRightsScreen({super.key});
@@ -138,7 +140,7 @@ class _EmployeeRightsScreenState extends ConsumerState<EmployeeRightsScreen> {
       }
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Permissions saved successfully!', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Permissions saved successfully!'.tr, style: const TextStyle(color: Colors.white)), backgroundColor: Colors.green));
       }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
@@ -149,16 +151,17 @@ class _EmployeeRightsScreenState extends ConsumerState<EmployeeRightsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Employee Rights'),
+        title: Text('Employee Rights'.tr),
         actions: [
           if (!_isLoading)
             Padding(
               padding: const EdgeInsets.only(right: 16.0),
               child: ElevatedButton.icon(
                 icon: _isSaving ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.save),
-                label: const Text('SAVE PERMISSIONS'),
+                label: Text('SAVE PERMISSIONS'.tr),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
                 onPressed: _isSaving ? null : _savePermissions,
               ),
@@ -174,7 +177,7 @@ class _EmployeeRightsScreenState extends ConsumerState<EmployeeRightsScreen> {
                 color: Colors.blue.shade50,
                 child: Row(
                   children: [
-                    const Text('Select Role: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text('Select Role: '.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     const SizedBox(width: 16),
                     Expanded(
                       child: DropdownButtonFormField<String>(
@@ -201,19 +204,19 @@ class _EmployeeRightsScreenState extends ConsumerState<EmployeeRightsScreen> {
                     scrollDirection: Axis.horizontal,
                     child: DataTable(
                       headingRowColor: MaterialStateProperty.all(Colors.grey.shade200),
-                      columns: const [
-                        DataColumn(label: Text('Module', style: TextStyle(fontWeight: FontWeight.bold))),
-                        DataColumn(label: Text('View', style: TextStyle(fontWeight: FontWeight.bold))),
-                        DataColumn(label: Text('Add', style: TextStyle(fontWeight: FontWeight.bold))),
-                        DataColumn(label: Text('Edit', style: TextStyle(fontWeight: FontWeight.bold))),
-                        DataColumn(label: Text('Delete', style: TextStyle(fontWeight: FontWeight.bold))),
-                        DataColumn(label: Text('Print', style: TextStyle(fontWeight: FontWeight.bold))),
+                      columns: [
+                        DataColumn(label: Text('Module'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(label: Text('View'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(label: Text('Add'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(label: Text('Edit'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(label: Text('Delete'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(label: Text('Print'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
                       ],
                       rows: _modules.map((m) {
                         final p = _permissions[m]!;
                         return DataRow(
                           cells: [
-                            DataCell(Text(m, style: const TextStyle(fontWeight: FontWeight.bold))),
+                            DataCell(Text(m.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
                             DataCell(Checkbox(
                               value: p['can_view'],
                               onChanged: (v) => setState(() => p['can_view'] = v ?? false),

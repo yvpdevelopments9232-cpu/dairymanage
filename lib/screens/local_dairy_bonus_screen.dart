@@ -5,6 +5,8 @@ import '../models/flutter_models.dart';
 import '../providers/bonus_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/bonus_pdf_service.dart';
+import '../services/translations.dart';
+import '../providers/language_provider.dart';
 
 class LocalDairyBonusScreen extends ConsumerStatefulWidget {
   const LocalDairyBonusScreen({super.key});
@@ -100,6 +102,7 @@ class _LocalDairyBonusScreenState extends ConsumerState<LocalDairyBonusScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = ref.watch(languageProvider);
     final summaryAsync = ref.watch(bonusCalculationProvider);
     final settingsAsync = ref.watch(bonusSettingsProvider);
     final rates = settingsAsync.value ?? BonusSettings(id: 'default_settings', cowRate: 0.40, buffaloRate: 0.50);
@@ -127,9 +130,9 @@ class _LocalDairyBonusScreenState extends ConsumerState<LocalDairyBonusScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Main Dairy Synchronized Bonus',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E40AF)),
+                        Text(
+                          'Main Dairy Synchronized Bonus'.tr,
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E40AF)),
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -170,8 +173,8 @@ class _LocalDairyBonusScreenState extends ConsumerState<LocalDairyBonusScreen> {
                     spacing: 10,
                     runSpacing: 8,
                     children: [
-                      _buildDateField('From Date', _fromDateController, () => _selectDate(context, true)),
-                      _buildDateField('To Date', _toDateController, () => _selectDate(context, false)),
+                      _buildDateField('From Date'.tr, _fromDateController, () => _selectDate(context, true)),
+                      _buildDateField('To Date'.tr, _toDateController, () => _selectDate(context, false)),
                       Padding(
                         padding: const EdgeInsets.only(top: 18.0),
                         child: ElevatedButton(
@@ -182,7 +185,7 @@ class _LocalDairyBonusScreenState extends ConsumerState<LocalDairyBonusScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           ),
-                          child: const Text('Apply', style: TextStyle(fontWeight: FontWeight.bold)),
+                          child: Text('Apply'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ),
                     ],
@@ -195,7 +198,7 @@ class _LocalDairyBonusScreenState extends ConsumerState<LocalDairyBonusScreen> {
                         controller: _searchController,
                         onChanged: (val) => setState(() => _searchQuery = val.trim().toLowerCase()),
                         decoration: InputDecoration(
-                          hintText: 'Search Farmer...',
+                          hintText: 'Search Farmer...'.tr,
                           prefixIcon: const Icon(Icons.search, size: 18),
                           isDense: true,
                           filled: true,
@@ -217,7 +220,7 @@ class _LocalDairyBonusScreenState extends ConsumerState<LocalDairyBonusScreen> {
               loading: () => const Center(
                 child: Padding(padding: EdgeInsets.all(40.0), child: CircularProgressIndicator()),
               ),
-              error: (err, st) => Text('Error: $err', style: const TextStyle(color: Colors.red)),
+              error: (err, st) => Text('${'Error'.tr}: $err', style: const TextStyle(color: Colors.red)),
               data: (summary) {
                 var farmers = summary.farmersSummary;
                 if (_searchQuery.isNotEmpty) {
@@ -240,10 +243,10 @@ class _LocalDairyBonusScreenState extends ConsumerState<LocalDairyBonusScreen> {
                           physics: const NeverScrollableScrollPhysics(),
                           childAspectRatio: 2.2,
                           children: [
-                            _buildSummaryPill('Total Milk', '${NumberFormat('#,##0.0').format(summary.totalCollection)} L', const Color(0xFF2563EB)),
-                            _buildSummaryPill('Total Bonus', '₹ ${NumberFormat('#,##0.00').format(summary.totalBonus)}', const Color(0xFF16A34A)),
-                            _buildSummaryPill('Paid Bonus', '₹ ${NumberFormat('#,##0.00').format(summary.paidBonus)}', const Color(0xFF7E22CE)),
-                            _buildSummaryPill('Remaining', '₹ ${NumberFormat('#,##0.00').format(summary.remainingBonus)}', const Color(0xFFEA580C)),
+                            _buildSummaryPill('Total Milk'.tr, '${NumberFormat('#,##0.0').format(summary.totalCollection)} L', const Color(0xFF2563EB)),
+                            _buildSummaryPill('Total Bonus'.tr, '₹ ${NumberFormat('#,##0.00').format(summary.totalBonus)}', const Color(0xFF16A34A)),
+                            _buildSummaryPill('Paid Bonus'.tr, '₹ ${NumberFormat('#,##0.00').format(summary.paidBonus)}', const Color(0xFF7E22CE)),
+                            _buildSummaryPill('Remaining'.tr, '₹ ${NumberFormat('#,##0.00').format(summary.remainingBonus)}', const Color(0xFFEA580C)),
                           ],
                         );
                       },
@@ -273,7 +276,7 @@ class _LocalDairyBonusScreenState extends ConsumerState<LocalDairyBonusScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Farmer Bonus Directory (${farmers.length})',
+                                '${'Farmer Bonus Directory'.tr} (${farmers.length})',
                                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                               ),
                             ],
@@ -283,7 +286,7 @@ class _LocalDairyBonusScreenState extends ConsumerState<LocalDairyBonusScreen> {
                             Container(
                               height: 160,
                               alignment: Alignment.center,
-                              child: const Text('No bonus records found for this period.', style: TextStyle(color: Colors.grey)),
+                              child: Text('No bonus records found for this period.'.tr, style: const TextStyle(color: Colors.grey)),
                             )
                           else
                             SingleChildScrollView(
@@ -294,16 +297,16 @@ class _LocalDairyBonusScreenState extends ConsumerState<LocalDairyBonusScreen> {
                                 horizontalMargin: 12,
                                 headingTextStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF334155)),
                                 dataTextStyle: const TextStyle(fontSize: 12, color: Color(0xFF1E293B)),
-                                columns: const [
-                                  DataColumn(label: Text('Sr.')),
-                                  DataColumn(label: Text('Farmer Name')),
-                                  DataColumn(label: Text('Milk (L)')),
-                                  DataColumn(label: Text('Animal Type')),
-                                  DataColumn(label: Text('Total Bonus')),
-                                  DataColumn(label: Text('Paid')),
-                                  DataColumn(label: Text('Remaining')),
-                                  DataColumn(label: Text('Status')),
-                                  DataColumn(label: Text('Receipt')),
+                                columns: [
+                                  DataColumn(label: Text('Sr.'.tr)),
+                                  DataColumn(label: Text('Farmer Name'.tr)),
+                                  DataColumn(label: Text('Milk (L)'.tr)),
+                                  DataColumn(label: Text('Animal Type'.tr)),
+                                  DataColumn(label: Text('Total Bonus'.tr)),
+                                  DataColumn(label: Text('Paid'.tr)),
+                                  DataColumn(label: Text('Remaining'.tr)),
+                                  DataColumn(label: Text('Status'.tr)),
+                                  DataColumn(label: Text('Receipt'.tr)),
                                 ],
                                 rows: farmers.asMap().entries.map((entry) {
                                   final idx = entry.key + 1;

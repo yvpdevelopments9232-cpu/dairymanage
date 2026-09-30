@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../models/flutter_models.dart';
 import '../../../providers/bonus_provider.dart';
+import '../../../providers/language_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../services/bonus_pdf_service.dart';
+import '../../../services/translations.dart';
 
 class BonusTransactionsScreen extends ConsumerStatefulWidget {
   const BonusTransactionsScreen({super.key});
@@ -73,20 +75,20 @@ class _BonusTransactionsScreenState extends ConsumerState<BonusTransactionsScree
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.delete_forever, color: Colors.red),
-            SizedBox(width: 8),
-            Text('Delete Transaction'),
+            const Icon(Icons.delete_forever, color: Colors.red),
+            const SizedBox(width: 8),
+            Text('Delete Transaction'.tr),
           ],
         ),
-        content: Text('Are you sure you want to delete the payment of ₹ ${txn.paidAmount.toStringAsFixed(2)} for ${txn.farmerName}?\nThis will restore the remaining bonus balance.'),
+        content: Text('${"Are you sure you want to delete the payment of".tr} ₹ ${txn.paidAmount.toStringAsFixed(2)} for ${txn.farmerName}?\nThis will restore the remaining bonus balance.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel'.tr)),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
+            child: Text('Delete'.tr),
           ),
         ],
       ),
@@ -96,7 +98,7 @@ class _BonusTransactionsScreenState extends ConsumerState<BonusTransactionsScree
       await ref.read(bonusTransactionsProvider.notifier).deletePayment(txn.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Bonus transaction deleted.'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Bonus transaction deleted.'.tr), backgroundColor: Colors.red),
         );
       }
     }
@@ -111,23 +113,23 @@ class _BonusTransactionsScreenState extends ConsumerState<BonusTransactionsScree
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: Text('Edit Payment - ${txn.farmerName}'),
+          title: Text('${"Edit".tr} ${"Bonus Payment".tr} - ${txn.farmerName}'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextFormField(
                 controller: amountController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Paid Amount (₹)',
+                decoration: InputDecoration(
+                  labelText: 'Paid Amount (₹)'.tr,
                   prefixText: '₹ ',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: selectedMode,
-                decoration: const InputDecoration(labelText: 'Payment Mode', border: OutlineInputBorder()),
+                decoration: InputDecoration(labelText: 'Payment Mode'.tr, border: const OutlineInputBorder()),
                 items: const [
                   DropdownMenuItem(value: 'Cash', child: Text('Cash')),
                   DropdownMenuItem(value: 'Bank Transfer', child: Text('Bank Transfer')),
@@ -141,19 +143,19 @@ class _BonusTransactionsScreenState extends ConsumerState<BonusTransactionsScree
               const SizedBox(height: 12),
               TextFormField(
                 controller: remarksController,
-                decoration: const InputDecoration(
-                  labelText: 'Remarks',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: 'Remarks'.tr,
+                  border: const OutlineInputBorder(),
                 ),
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel'.tr)),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), foregroundColor: Colors.white),
-              child: const Text('Update'),
+              child: Text('Update'.tr),
             ),
           ],
         ),
@@ -190,7 +192,7 @@ class _BonusTransactionsScreenState extends ConsumerState<BonusTransactionsScree
       await ref.read(bonusTransactionsProvider.notifier).updatePayment(updatedTxn);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Transaction updated!'), backgroundColor: Color(0xFF16A34A)),
+          SnackBar(content: Text('Transaction updated!'.tr), backgroundColor: const Color(0xFF16A34A)),
         );
       }
     }
@@ -198,6 +200,7 @@ class _BonusTransactionsScreenState extends ConsumerState<BonusTransactionsScree
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
     final transactionsAsync = ref.watch(bonusTransactionsProvider);
 
     return Scaffold(
@@ -212,17 +215,17 @@ class _BonusTransactionsScreenState extends ConsumerState<BonusTransactionsScree
               children: [
                 const Icon(Icons.workspace_premium, size: 20, color: Color(0xFF2563EB)),
                 const SizedBox(width: 8),
-                Text('Bonus', style: TextStyle(fontSize: 14, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+                Text('Bonus'.tr, style: TextStyle(fontSize: 14, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
                 const SizedBox(width: 6),
                 const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
                 const SizedBox(width: 6),
-                const Text('Bonus Transactions', style: TextStyle(fontSize: 14, color: Color(0xFF1E293B), fontWeight: FontWeight.bold)),
+                Text('Bonus Transactions'.tr, style: const TextStyle(fontSize: 14, color: Color(0xFF1E293B), fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Bonus Transactions',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+            Text(
+              'Bonus Transactions'.tr,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
             ),
             const SizedBox(height: 16),
 
@@ -251,8 +254,8 @@ class _BonusTransactionsScreenState extends ConsumerState<BonusTransactionsScree
                     spacing: 10,
                     runSpacing: 8,
                     children: [
-                      _buildDateField('From Date', _fromDateController, () => _selectDate(context, true)),
-                      _buildDateField('To Date', _toDateController, () => _selectDate(context, false)),
+                      _buildDateField('From Date'.tr, _fromDateController, () => _selectDate(context, true)),
+                      _buildDateField('To Date'.tr, _toDateController, () => _selectDate(context, false)),
                       Padding(
                         padding: const EdgeInsets.only(top: 18.0),
                         child: ElevatedButton(
@@ -263,7 +266,7 @@ class _BonusTransactionsScreenState extends ConsumerState<BonusTransactionsScree
                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           ),
-                          child: const Text('Apply', style: TextStyle(fontWeight: FontWeight.bold)),
+                          child: Text('Filter'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ),
                     ],
@@ -276,7 +279,7 @@ class _BonusTransactionsScreenState extends ConsumerState<BonusTransactionsScree
                         controller: _searchController,
                         onChanged: (val) => setState(() => _searchQuery = val.trim().toLowerCase()),
                         decoration: InputDecoration(
-                          hintText: 'Search Farmer...',
+                          hintText: 'Search Farmer...'.tr,
                           prefixIcon: const Icon(Icons.search, size: 18),
                           isDense: true,
                           filled: true,
@@ -328,7 +331,7 @@ class _BonusTransactionsScreenState extends ConsumerState<BonusTransactionsScree
                         Container(
                           height: 160,
                           alignment: Alignment.center,
-                          child: const Text('No bonus transactions recorded yet for this date range.', style: TextStyle(color: Colors.grey)),
+                          child: Text('No bonus transactions recorded yet.'.tr, style: const TextStyle(color: Colors.grey)),
                         )
                       else
                         SingleChildScrollView(
@@ -339,16 +342,16 @@ class _BonusTransactionsScreenState extends ConsumerState<BonusTransactionsScree
                             horizontalMargin: 12,
                             headingTextStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF334155)),
                             dataTextStyle: const TextStyle(fontSize: 12, color: Color(0xFF1E293B)),
-                            columns: const [
-                              DataColumn(label: Text('Sr.')),
-                              DataColumn(label: Text('Date')),
-                              DataColumn(label: Text('Farmer Name')),
-                              DataColumn(label: Text('Animal Type')),
-                              DataColumn(label: Text('Milk (L)')),
-                              DataColumn(label: Text('Bonus Amount')),
-                              DataColumn(label: Text('Paid Amount')),
-                              DataColumn(label: Text('Remaining')),
-                              DataColumn(label: Text('Actions')),
+                            columns: [
+                              DataColumn(label: Text('Sr.'.tr)),
+                              DataColumn(label: Text('Date'.tr)),
+                              DataColumn(label: Text('Farmer Name'.tr)),
+                              DataColumn(label: Text('Animal Type'.tr)),
+                              DataColumn(label: Text('Milk (L)'.tr)),
+                              DataColumn(label: Text('Total Bonus'.tr)),
+                              DataColumn(label: Text('Paid Amount'.tr)),
+                              DataColumn(label: Text('Remaining'.tr)),
+                              DataColumn(label: Text('Actions'.tr)),
                             ],
                             rows: filtered.asMap().entries.map((entry) {
                               final idx = entry.key + 1;
@@ -363,7 +366,7 @@ class _BonusTransactionsScreenState extends ConsumerState<BonusTransactionsScree
                                       style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
                                     ),
                                   ),
-                                  DataCell(Text(txn.animalType)),
+                                  DataCell(Text(txn.animalType.tr)),
                                   DataCell(Text(txn.milkQuantity.toStringAsFixed(1))),
                                   DataCell(Text('₹ ${txn.totalBonus.toStringAsFixed(2)}')),
                                   DataCell(
@@ -388,7 +391,7 @@ class _BonusTransactionsScreenState extends ConsumerState<BonusTransactionsScree
                                         // View / Print Receipt
                                         IconButton(
                                           icon: const Icon(Icons.picture_as_pdf, size: 18, color: Color(0xFF2563EB)),
-                                          tooltip: 'Print Receipt',
+                                          tooltip: 'Print'.tr,
                                           onPressed: () {
                                             final settings = ref.read(settingsProvider).value;
                                             BonusPdfService.printReceipt(txn: txn, settings: settings);
@@ -397,13 +400,13 @@ class _BonusTransactionsScreenState extends ConsumerState<BonusTransactionsScree
                                         // Edit
                                         IconButton(
                                           icon: const Icon(Icons.edit, size: 18, color: Color(0xFF0284C7)),
-                                          tooltip: 'Edit Transaction',
+                                          tooltip: 'Edit'.tr,
                                           onPressed: () => _editTransaction(txn),
                                         ),
                                         // Delete
                                         IconButton(
                                           icon: const Icon(Icons.delete_outline, size: 18, color: Color(0xFFDC2626)),
-                                          tooltip: 'Delete Transaction',
+                                          tooltip: 'Delete'.tr,
                                           onPressed: () => _confirmDelete(txn),
                                         ),
                                       ],

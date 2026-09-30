@@ -105,6 +105,7 @@ class _DairyManagementOfflineAppState extends ConsumerState<DairyManagementOffli
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue.shade900),
+        fontFamilyFallback: const ['Nirmala UI', 'Mangal', 'Segoe UI'],
         useMaterial3: true,
       ),
       home: homeWidget,

@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../models/flutter_models.dart';
 import '../../../providers/bonus_provider.dart';
+import '../../../providers/language_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../services/bonus_pdf_service.dart';
 import '../../../services/offline_db_helper.dart';
+import '../../../services/translations.dart';
 
 class BonusPaymentScreen extends ConsumerStatefulWidget {
   final String? preSelectedFarmerId;
@@ -55,7 +57,7 @@ class _BonusPaymentScreenState extends ConsumerState<BonusPaymentScreen> {
   Future<void> _submitPayment({bool printPdf = false}) async {
     if (_selectedFarmerId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a farmer.'), backgroundColor: Colors.red),
+        SnackBar(content: Text('Please select a farmer.'.tr), backgroundColor: Colors.red),
       );
       return;
     }
@@ -72,7 +74,7 @@ class _BonusPaymentScreenState extends ConsumerState<BonusPaymentScreen> {
     final payAmount = double.tryParse(_amountController.text.trim()) ?? 0.0;
     if (payAmount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Payment amount must be greater than zero.'), backgroundColor: Colors.red),
+        SnackBar(content: Text('Payment amount must be greater than zero.'.tr), backgroundColor: Colors.red),
       );
       return;
     }
@@ -80,7 +82,7 @@ class _BonusPaymentScreenState extends ConsumerState<BonusPaymentScreen> {
     if (payAmount > (farmer.remainingBonus + 0.01)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Cannot pay more than remaining bonus (₹ ${farmer.remainingBonus.toStringAsFixed(2)}).'),
+          content: Text('${"Cannot pay more than remaining bonus".tr} (₹ ${farmer.remainingBonus.toStringAsFixed(2)}).'),
           backgroundColor: Colors.red,
         ),
       );
@@ -125,7 +127,7 @@ class _BonusPaymentScreenState extends ConsumerState<BonusPaymentScreen> {
               children: [
                 const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 8),
-                Text('Bonus payment of ₹ ${payAmount.toStringAsFixed(2)} recorded!'),
+                Text('${"Bonus payment".tr} (₹ ${payAmount.toStringAsFixed(2)}) ${"recorded!".tr}'),
               ],
             ),
             backgroundColor: const Color(0xFF16A34A),
@@ -154,13 +156,14 @@ class _BonusPaymentScreenState extends ConsumerState<BonusPaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
     final summaryAsync = ref.watch(bonusCalculationProvider);
     final dateRange = ref.watch(bonusDateRangeProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Pay Bonus', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: Text('Pay Bonus'.tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF0F172A),
         elevation: 0.5,
@@ -223,7 +226,7 @@ class _BonusPaymentScreenState extends ConsumerState<BonusPaymentScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              'Bonus Period: ',
+                              'Bonus Period: '.tr,
                               style: TextStyle(fontSize: 13, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
                             ),
                             Container(
@@ -260,7 +263,7 @@ class _BonusPaymentScreenState extends ConsumerState<BonusPaymentScreen> {
                                 controller: controller,
                                 focusNode: focusNode,
                                 decoration: InputDecoration(
-                                  hintText: 'Search Farmer Name... 🔍',
+                                  hintText: 'Search Farmer...'.tr,
                                   hintStyle: const TextStyle(fontSize: 13, color: Colors.grey),
                                   prefixIcon: const Icon(Icons.search, size: 20, color: Color(0xFF2563EB)),
                                   isDense: true,
@@ -297,9 +300,9 @@ class _BonusPaymentScreenState extends ConsumerState<BonusPaymentScreen> {
                         children: [
                           Icon(Icons.person_search, size: 54, color: Colors.grey.shade400),
                           const SizedBox(height: 12),
-                          const Text(
-                            'Please search and select a farmer above to process bonus payment',
-                            style: TextStyle(fontSize: 15, color: Colors.grey, fontWeight: FontWeight.w500),
+                          Text(
+                            'Search and select a farmer to view the report.'.tr,
+                            style: const TextStyle(fontSize: 15, color: Colors.grey, fontWeight: FontWeight.w500),
                           ),
                         ],
                       ),
@@ -366,7 +369,7 @@ class _BonusPaymentScreenState extends ConsumerState<BonusPaymentScreen> {
                           icon: const Icon(Icons.check, size: 18),
                           label: _isSaving
                               ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                              : const Text('Save Payment', style: TextStyle(fontWeight: FontWeight.bold)),
+                              : Text('Save Payment'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF2563EB),
                             foregroundColor: Colors.white,
@@ -377,7 +380,7 @@ class _BonusPaymentScreenState extends ConsumerState<BonusPaymentScreen> {
                         ),
                         ElevatedButton.icon(
                           icon: const Icon(Icons.picture_as_pdf, size: 18),
-                          label: const Text('Save & Generate PDF', style: TextStyle(fontWeight: FontWeight.bold)),
+                          label: Text('Save & Generate PDF'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF16A34A),
                             foregroundColor: Colors.white,
@@ -393,7 +396,7 @@ class _BonusPaymentScreenState extends ConsumerState<BonusPaymentScreen> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           ),
                           onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('Cancel'),
+                          child: Text('Cancel'.tr),
                         ),
                       ],
                     ),
@@ -425,9 +428,9 @@ class _BonusPaymentScreenState extends ConsumerState<BonusPaymentScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Farmer Details',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+          Text(
+            'Farmer Details'.tr,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
           ),
           const SizedBox(height: 14),
           Row(
@@ -460,7 +463,7 @@ class _BonusPaymentScreenState extends ConsumerState<BonusPaymentScreen> {
                         border: Border.all(color: farmer.animalType == 'Cow' ? Colors.amber.shade200 : Colors.blue.shade200),
                       ),
                       child: Text(
-                        farmer.animalType,
+                        farmer.animalType.tr,
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
@@ -526,18 +529,18 @@ class _BonusPaymentScreenState extends ConsumerState<BonusPaymentScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Milk & Bonus Details',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+          Text(
+            'Details'.tr,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
           ),
           const SizedBox(height: 14),
-          _buildDetailRow('Total Milk (L)', '${farmer.totalMilk.toStringAsFixed(1)} L'),
-          _buildDetailRow('Bonus Rate', '₹ ${farmer.displayRate.toStringAsFixed(2)} / L'),
-          _buildDetailRow('Total Bonus', '₹ ${farmer.totalBonus.toStringAsFixed(2)}', isBold: true),
-          _buildDetailRow('Previously Paid', '₹ ${farmer.paidAmount.toStringAsFixed(2)}', color: const Color(0xFF16A34A)),
+          _buildDetailRow('Milk (L)'.tr, '${farmer.totalMilk.toStringAsFixed(1)} L'),
+          _buildDetailRow('Bonus Per Liter (₹)'.tr, '₹ ${farmer.displayRate.toStringAsFixed(2)} / L'),
+          _buildDetailRow('Total Bonus'.tr, '₹ ${farmer.totalBonus.toStringAsFixed(2)}', isBold: true),
+          _buildDetailRow('Paid Amount'.tr, '₹ ${farmer.paidAmount.toStringAsFixed(2)}', color: const Color(0xFF16A34A)),
           const Divider(height: 12, color: Color(0xFFF1F5F9)),
           _buildDetailRow(
-            'Remaining',
+            'Remaining'.tr,
             '₹ ${farmer.remainingBonus.toStringAsFixed(2)}',
             isBold: true,
             color: farmer.remainingBonus > 0 ? const Color(0xFFEA580C) : const Color(0xFF16A34A),
@@ -558,9 +561,9 @@ class _BonusPaymentScreenState extends ConsumerState<BonusPaymentScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Payment Details',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+          Text(
+            'Bonus Payment'.tr,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
           ),
           const SizedBox(height: 16),
 
@@ -568,7 +571,7 @@ class _BonusPaymentScreenState extends ConsumerState<BonusPaymentScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Bonus Amount to Pay *', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
+              Text('${"Bonus Amount".tr} *', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _amountController,
@@ -583,7 +586,7 @@ class _BonusPaymentScreenState extends ConsumerState<BonusPaymentScreen> {
                   fillColor: const Color(0xFFF8FAFC),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                  helperText: 'Remaining before payment: ₹ ${farmer.remainingBonus.toStringAsFixed(2)}',
+                  helperText: '${"Remaining".tr}: ₹ ${farmer.remainingBonus.toStringAsFixed(2)}',
                   helperStyle: const TextStyle(color: Color(0xFF64748B)),
                 ),
                 validator: (val) {
@@ -606,7 +609,7 @@ class _BonusPaymentScreenState extends ConsumerState<BonusPaymentScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Payment Mode', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
+                    Text('Payment Mode'.tr, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
                     const SizedBox(height: 6),
                     DropdownButtonFormField<String>(
                       value: _paymentMode,
@@ -634,7 +637,7 @@ class _BonusPaymentScreenState extends ConsumerState<BonusPaymentScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Payment Date', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
+                    Text('Date'.tr, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
                     const SizedBox(height: 6),
                     InkWell(
                       onTap: () async {
@@ -674,7 +677,7 @@ class _BonusPaymentScreenState extends ConsumerState<BonusPaymentScreen> {
           TextFormField(
             controller: _txnNoController,
             decoration: InputDecoration(
-              labelText: 'Transaction No / Reference (Optional)',
+              labelText: 'Transaction No / Ref'.tr,
               filled: true,
               fillColor: const Color(0xFFF8FAFC),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -685,7 +688,7 @@ class _BonusPaymentScreenState extends ConsumerState<BonusPaymentScreen> {
           TextFormField(
             controller: _remarksController,
             decoration: InputDecoration(
-              labelText: 'Remarks',
+              labelText: 'Remarks'.tr,
               filled: true,
               fillColor: const Color(0xFFF8FAFC),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -708,16 +711,16 @@ class _BonusPaymentScreenState extends ConsumerState<BonusPaymentScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'After Payment Preview',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+          Text(
+            'Details'.tr,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
           ),
           const SizedBox(height: 14),
-          _buildDetailRow('Total Bonus', '₹ ${totalBonus.toStringAsFixed(2)}'),
-          _buildDetailRow('Paid (New)', '₹ ${newPaid.toStringAsFixed(2)}', isBold: true, color: const Color(0xFF16A34A)),
+          _buildDetailRow('Total Bonus'.tr, '₹ ${totalBonus.toStringAsFixed(2)}'),
+          _buildDetailRow('Paid Amount'.tr, '₹ ${newPaid.toStringAsFixed(2)}', isBold: true, color: const Color(0xFF16A34A)),
           const Divider(height: 16, color: Color(0xFFCBD5E1)),
           _buildDetailRow(
-            'Remaining',
+            'Remaining'.tr,
             '₹ ${afterRemaining.toStringAsFixed(2)}',
             isBold: true,
             color: afterRemaining > 0 ? const Color(0xFFEA580C) : const Color(0xFF16A34A),

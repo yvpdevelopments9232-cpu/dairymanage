@@ -1,23 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/translations.dart';
+import '../main.dart';
 
 class LanguageNotifier extends Notifier<String> {
   @override
   String build() {
-    _loadSavedLanguage();
-    return AppTranslations.currentLanguage;
-  }
-
-  Future<void> _loadSavedLanguage() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
       final savedLang = prefs.getString(AppTranslations.keyLanguage);
       if (savedLang != null && (savedLang == 'en' || savedLang == 'mr')) {
         AppTranslations.currentLanguage = savedLang;
-        state = savedLang;
+        return savedLang;
       }
     } catch (_) {}
+    return AppTranslations.currentLanguage;
   }
 
   Future<void> setLanguage(String langCode) async {

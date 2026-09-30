@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../../models/flutter_models.dart';
 import '../../providers/main_dairy_provider.dart';
 import '../../providers/main_dairy_payment_provider.dart';
+import '../../services/translations.dart';
+import '../../providers/language_provider.dart';
 
 class MainDairyPaymentScreen extends ConsumerStatefulWidget {
   const MainDairyPaymentScreen({super.key});
@@ -252,6 +254,7 @@ class _MainDairyPaymentScreenState extends ConsumerState<MainDairyPaymentScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
     final paymentsAsync = ref.watch(mainDairyPaymentProvider);
     final dairiesAsync = ref.watch(mainDairyProvider);
     final dairies = dairiesAsync.value ?? [];
@@ -260,9 +263,9 @@ class _MainDairyPaymentScreenState extends ConsumerState<MainDairyPaymentScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Main Dairy Payments & Ledgers',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo),
+        title: Text(
+          'Main Dairy Payments & Ledgers'.tr,
+          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo),
         ),
         backgroundColor: Colors.white,
         elevation: 1,
@@ -312,7 +315,7 @@ class _MainDairyPaymentScreenState extends ConsumerState<MainDairyPaymentScreen>
                                 ),
                                 const SizedBox(width: 10),
                                 Text(
-                                  _editingId == null ? 'Record Main Dairy Payment' : 'Edit Main Dairy Payment',
+                                  _editingId == null ? 'Record Main Dairy Payment'.tr : 'Edit Main Dairy Payment'.tr,
                                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo),
                                 ),
                               ],
@@ -321,7 +324,7 @@ class _MainDairyPaymentScreenState extends ConsumerState<MainDairyPaymentScreen>
                               TextButton.icon(
                                 onPressed: _resetForm,
                                 icon: const Icon(Icons.close, size: 16),
-                                label: const Text('Cancel Edit'),
+                                label: Text('Cancel Edit'.tr),
                               )
                           ],
                         ),
@@ -340,7 +343,7 @@ class _MainDairyPaymentScreenState extends ConsumerState<MainDairyPaymentScreen>
                                 focusNode: _dairyNoFocus,
                                 keyboardType: TextInputType.number,
                                 decoration: InputDecoration(
-                                  labelText: 'D. ID',
+                                  labelText: 'D. ID'.tr,
                                   hintText: '001',
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
@@ -374,13 +377,13 @@ class _MainDairyPaymentScreenState extends ConsumerState<MainDairyPaymentScreen>
                                     controller: controller,
                                     focusNode: focusNode,
                                     decoration: InputDecoration(
-                                      labelText: 'Search Main Dairy (Name/No) *',
+                                      labelText: 'Search Main Dairy (Name/No) *'.tr,
                                       hintText: 'Type 001 or Sonai...',
                                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                                       suffixIcon: const Icon(Icons.search),
                                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                                     ),
-                                    validator: (v) => _selectedDairy == null ? 'Please select a Main Dairy' : null,
+                                    validator: (v) => _selectedDairy == null ? 'Please select a Main Dairy'.tr : null,
                                   );
                                 },
                               ),
@@ -425,7 +428,7 @@ class _MainDairyPaymentScreenState extends ConsumerState<MainDairyPaymentScreen>
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    const Text('Receivable Bal', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                                    Text('Receivable Bal'.tr, style: const TextStyle(fontSize: 11, color: Colors.grey)),
                                     const SizedBox(height: 2),
                                     Text(
                                       '₹ ${_selectedDairy!.currentBalance.toStringAsFixed(2)}',
@@ -454,7 +457,7 @@ class _MainDairyPaymentScreenState extends ConsumerState<MainDairyPaymentScreen>
                                 onTap: _pickDate,
                                 child: InputDecorator(
                                   decoration: InputDecoration(
-                                    labelText: 'Payment Date *',
+                                    labelText: 'Payment Date *'.tr,
                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                                     prefixIcon: const Icon(Icons.calendar_today, size: 20),
                                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -468,18 +471,18 @@ class _MainDairyPaymentScreenState extends ConsumerState<MainDairyPaymentScreen>
                               child: DropdownButtonFormField<String>(
                                 value: _paymentType,
                                 decoration: InputDecoration(
-                                  labelText: 'Payment Type *',
+                                  labelText: 'Payment Type *'.tr,
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                                 ),
-                                items: const [
+                                items: [
                                   DropdownMenuItem(
                                     value: 'In',
-                                    child: Text('Payment In (Received)', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                                    child: Text('Payment In (Received)'.tr, style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
                                   ),
                                   DropdownMenuItem(
                                     value: 'Out',
-                                    child: Text('Payment Out (Adjustment)', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                                    child: Text('Payment Out (Adjustment)'.tr, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
                                   ),
                                 ],
                                 onChanged: (v) => setState(() => _paymentType = v!),
@@ -501,16 +504,16 @@ class _MainDairyPaymentScreenState extends ConsumerState<MainDairyPaymentScreen>
                                 focusNode: _amountFocus,
                                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                 decoration: InputDecoration(
-                                  labelText: 'Amount Received (₹) *',
+                                  labelText: 'Amount Received (₹) *'.tr,
                                   hintText: '0.00',
                                   prefixIcon: const Icon(Icons.currency_rupee, size: 20),
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                                 ),
                                 validator: (v) {
-                                  if (v == null || v.trim().isEmpty) return 'Enter amount';
+                                  if (v == null || v.trim().isEmpty) return 'Enter amount'.tr;
                                   final val = double.tryParse(v.trim());
-                                  if (val == null || val <= 0) return 'Valid amount required';
+                                  if (val == null || val <= 0) return 'Valid amount required'.tr;
                                   return null;
                                 },
                               ),
@@ -520,12 +523,12 @@ class _MainDairyPaymentScreenState extends ConsumerState<MainDairyPaymentScreen>
                               child: DropdownButtonFormField<String>(
                                 value: _paymentMode,
                                 decoration: InputDecoration(
-                                  labelText: 'Payment Mode *',
+                                  labelText: 'Payment Mode *'.tr,
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                                 ),
                                 items: ['Bank Transfer', 'NEFT/RTGS', 'Cheque', 'Cash', 'UPI']
-                                    .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                                    .map((m) => DropdownMenuItem(value: m, child: Text(m.tr)))
                                     .toList(),
                                 onChanged: (v) => setState(() => _paymentMode = v!),
                               ),
@@ -544,7 +547,7 @@ class _MainDairyPaymentScreenState extends ConsumerState<MainDairyPaymentScreen>
                               child: TextFormField(
                                 controller: _refCtrl,
                                 decoration: InputDecoration(
-                                  labelText: 'Reference / UTR / Cheque No',
+                                  labelText: 'Reference / UTR / Cheque No'.tr,
                                   hintText: 'e.g. UTR12345678',
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -556,7 +559,7 @@ class _MainDairyPaymentScreenState extends ConsumerState<MainDairyPaymentScreen>
                               child: TextFormField(
                                 controller: _remarksCtrl,
                                 decoration: InputDecoration(
-                                  labelText: 'Remarks / Notes',
+                                  labelText: 'Remarks / Notes'.tr,
                                   hintText: 'e.g. Milk bill payment for cycle 1',
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -583,7 +586,7 @@ class _MainDairyPaymentScreenState extends ConsumerState<MainDairyPaymentScreen>
                                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                                 : const Icon(Icons.check_circle_outline),
                             label: Text(
-                              _editingId == null ? 'RECORD PAYMENT RECEIVED' : 'UPDATE PAYMENT RECORD',
+                              _editingId == null ? 'RECORD PAYMENT RECEIVED'.tr : 'UPDATE PAYMENT RECORD'.tr,
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, letterSpacing: 0.8),
                             ),
                           ),
@@ -609,15 +612,15 @@ class _MainDairyPaymentScreenState extends ConsumerState<MainDairyPaymentScreen>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Recent Main Dairy Transactions',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo),
+                      Text(
+                        'Recent Main Dairy Transactions'.tr,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo),
                       ),
                       if (_historyDateFilter != null)
                         TextButton.icon(
                           onPressed: () => setState(() => _historyDateFilter = null),
                           icon: const Icon(Icons.clear, size: 16),
-                          label: const Text('Clear Date Filter'),
+                          label: Text('Clear Date Filter'.tr),
                         ),
                     ],
                   ),
@@ -630,7 +633,7 @@ class _MainDairyPaymentScreenState extends ConsumerState<MainDairyPaymentScreen>
                         child: TextField(
                           controller: _searchHistoryCtrl,
                           decoration: InputDecoration(
-                            hintText: 'Search History by Dairy Name / D. ID...',
+                            hintText: 'Search History by Dairy Name / D. ID...'.tr,
                             prefixIcon: const Icon(Icons.search, size: 20),
                             suffixIcon: _searchHistoryCtrl.text.isNotEmpty
                                 ? IconButton(
@@ -723,9 +726,9 @@ class _MainDairyPaymentScreenState extends ConsumerState<MainDairyPaymentScreen>
                                         children: [
                                           Icon(Icons.receipt_long_outlined, size: 60, color: Colors.grey.shade400),
                                           const SizedBox(height: 12),
-                                          const Text(
-                                            'No Main Dairy transactions found',
-                                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                                          Text(
+                                            'No Main Dairy transactions found'.tr,
+                                            style: const TextStyle(fontSize: 16, color: Colors.grey),
                                           ),
                                         ],
                                       ),

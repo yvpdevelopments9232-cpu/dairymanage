@@ -8,6 +8,9 @@ import 'package:printing/printing.dart';
 import '../providers/staff_report_provider.dart';
 import '../providers/staff_provider.dart';
 import '../providers/settings_provider.dart';
+import '../services/translations.dart';
+import '../providers/language_provider.dart';
+import '../providers/display_mode_provider.dart';
 
 class StaffReportScreen extends ConsumerStatefulWidget {
   const StaffReportScreen({super.key});
@@ -175,13 +178,16 @@ class _StaffReportScreenState extends ConsumerState<StaffReportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
+    final displayMode = ref.watch(displayModeProvider);
+    final isMobile = displayMode == DisplayMode.mobile;
     final staffListAsync = ref.watch(staffProvider);
     final reportAsync = ref.watch(staffReportProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Staff Salary Report', style: TextStyle(color: Colors.white)),
+        title: Text('Staff Salary Report'.tr, style: const TextStyle(color: Colors.white)),
         backgroundColor: primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -191,69 +197,102 @@ class _StaffReportScreenState extends ConsumerState<StaffReportScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.white,
-            child: Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                SizedBox(
-                  width: 250,
-                  child: staffListAsync.when(
-                    loading: () => const CircularProgressIndicator(),
-                    error: (e, s) => Text('Error: $e'),
-                    data: (staffs) => DropdownButtonFormField<String>(
-                      decoration: InputDecoration(labelText: 'Select Staff', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                      value: _selectedStaffId,
-                      items: staffs.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))).toList(),
-                      onChanged: (val) {
-                        setState(() => _selectedStaffId = val);
-                        _applyFilter();
-                      },
-                    ),
+            child: isMobile
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      staffListAsync.when(
+                        loading: () => const CircularProgressIndicator(),
+                        error: (e, s) => Text('${"Error".tr}: $e'),
+                        data: (staffs) => DropdownButtonFormField<String>(
+                          decoration: InputDecoration(labelText: 'Select Staff'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                          value: _selectedStaffId,
+                          items: staffs.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))).toList(),
+                          onChanged: (val) {
+                            setState(() => _selectedStaffId = val);
+                            _applyFilter();
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        onPressed: _pickDateRange,
+                        icon: const Icon(Icons.date_range),
+                        label: Text(_startDate == null ? 'Select Dates'.tr : '${DateFormat('dd-MMM-yyyy').format(_startDate!)} to ${DateFormat('dd-MMM-yyyy').format(_endDate!)}'),
+                      ),
+                      if (reportAsync.hasValue && reportAsync.value!.staff != null) ...[
+                        const SizedBox(height: 12),
+                        ElevatedButton.icon(
+                          onPressed: () => _printPdf(reportAsync.value!),
+                          icon: const Icon(Icons.print),
+                          label: Text('PRINT REPORT'.tr),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                        ),
+                      ],
+                    ],
+                  )
+                : Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 250,
+                        child: staffListAsync.when(
+                          loading: () => const CircularProgressIndicator(),
+                          error: (e, s) => Text('${"Error".tr}: $e'),
+                          data: (staffs) => DropdownButtonFormField<String>(
+                            decoration: InputDecoration(labelText: 'Select Staff'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                            value: _selectedStaffId,
+                            items: staffs.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))).toList(),
+                            onChanged: (val) {
+                              setState(() => _selectedStaffId = val);
+                              _applyFilter();
+                            },
+                          ),
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: _pickDateRange,
+                        icon: const Icon(Icons.date_range),
+                        label: Text(_startDate == null ? 'Select Dates'.tr : '${DateFormat('dd-MMM-yyyy').format(_startDate!)} to ${DateFormat('dd-MMM-yyyy').format(_endDate!)}'),
+                      ),
+                      if (reportAsync.hasValue && reportAsync.value!.staff != null)
+                        ElevatedButton.icon(
+                          onPressed: () => _printPdf(reportAsync.value!),
+                          icon: const Icon(Icons.print),
+                          label: Text('PRINT REPORT'.tr),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                        ),
+                    ],
                   ),
-                ),
-                ElevatedButton.icon(
-                  onPressed: _pickDateRange,
-                  icon: const Icon(Icons.date_range),
-                  label: Text(_startDate == null ? 'Select Dates' : '${DateFormat('dd-MMM-yyyy').format(_startDate!)} to ${DateFormat('dd-MMM-yyyy').format(_endDate!)}'),
-                ),
-                if (reportAsync.hasValue && reportAsync.value!.staff != null)
-                  ElevatedButton.icon(
-                    onPressed: () => _printPdf(reportAsync.value!),
-                    icon: const Icon(Icons.print),
-                    label: const Text('PRINT REPORT'),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
-                  ),
-              ],
-            ),
           ),
           
           Expanded(
             child: reportAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, s) => Center(child: Text('Error: $e')),
+              error: (e, s) => Center(child: Text('${'Error'.tr}: $e')),
               data: (report) {
-                if (report.staff == null) return const Center(child: Text('Select staff and date range to generate report.'));
+                if (report.staff == null) return Center(child: Text('Select staff and date range to generate report.'.tr));
 
                 return SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(isMobile ? 12 : 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Salary Overview', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
+                      Text('Salary Overview'.tr, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
                       const SizedBox(height: 16),
                       Wrap(
                         children: [
-                          _buildSummaryCard('Present Days', report.totalPresentDays.toString(), Colors.blue),
-                          _buildSummaryCard('Gross Salary', '₹ ${report.calculatedSalary.toStringAsFixed(2)}', Colors.green),
-                          _buildSummaryCard('Advances Taken', '₹ ${report.totalAdvances.toStringAsFixed(2)}', Colors.orange),
-                          _buildSummaryCard('Net Payable', '₹ ${report.netPayable.toStringAsFixed(2)}', report.netPayable >= 0 ? Colors.teal : Colors.red),
+                          _buildSummaryCard('Present Days'.tr, report.totalPresentDays.toString(), Colors.blue),
+                          _buildSummaryCard('Gross Salary'.tr, '₹ ${report.calculatedSalary.toStringAsFixed(2)}', Colors.green),
+                          _buildSummaryCard('Advances Taken'.tr, '₹ ${report.totalAdvances.toStringAsFixed(2)}', Colors.orange),
+                          _buildSummaryCard('Net Payable'.tr, '₹ ${report.netPayable.toStringAsFixed(2)}', report.netPayable >= 0 ? Colors.teal : Colors.red),
                         ],
                       ),
-                      // Just rendering the UI summary
                       const SizedBox(height: 24),
-                      Text('Recent Advances', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
-                      if (report.advanceList.isEmpty) const Text('No advances.') else
+                      Text('Recent Advances'.tr, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
+                      if (report.advanceList.isEmpty) Text('No advances.'.tr) else
                       ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),

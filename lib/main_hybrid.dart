@@ -167,6 +167,7 @@ class _DairyManagementHybridAppState extends ConsumerState<DairyManagementHybrid
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal.shade800),
+        fontFamilyFallback: const ['Nirmala UI', 'Mangal', 'Segoe UI'],
         useMaterial3: true,
       ),
       home: homeWidget,

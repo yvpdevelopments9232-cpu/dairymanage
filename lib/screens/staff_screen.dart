@@ -4,6 +4,9 @@ import '../providers/staff_provider.dart';
 import '../providers/attendance_provider.dart';
 import 'staff_ledger_screen.dart';
 import '../widgets/desktop_wrapper.dart';
+import '../providers/language_provider.dart';
+import '../providers/display_mode_provider.dart';
+import '../services/translations.dart';
 
 class StaffScreen extends ConsumerStatefulWidget {
   const StaffScreen({super.key});
@@ -47,7 +50,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
       _phoneCtrl.clear();
       _roleCtrl.clear();
       _salaryCtrl.clear();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Staff member added successfully')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Staff member added successfully'.tr)));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
@@ -71,6 +74,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                 Expanded(
                   child: Consumer(
                     builder: (context, ref, child) {
+                      ref.watch(languageProvider);
                       final attAsync = ref.watch(attendanceProvider);
                       final staffAsync = ref.watch(staffProvider);
                       
@@ -82,7 +86,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Daily Attendance', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                              Text('Daily Attendance'.tr, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                               TextButton.icon(
                                 icon: const Icon(Icons.calendar_month),
                                 label: Text(dateStr, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -119,10 +123,10 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
 
                           return ListTile(
                             title: Text(staff.name),
-                            subtitle: Text(staff.role ?? 'Staff'),
+                            subtitle: Text(staff.role ?? 'Staff'.tr),
                             trailing: DropdownButton<String>(
                               value: status,
-                              items: ['Present', 'Absent', 'Half-Day'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                              items: ['Present', 'Absent', 'Half-Day'].map((e) => DropdownMenuItem(value: e, child: Text(e.tr))).toList(),
                               onChanged: (val) async {
                                 if (val != null) {
                                   try {
@@ -153,7 +157,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                   alignment: Alignment.centerRight,
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('DONE'),
+                    child: Text('DONE'.tr),
                   ),
                 ),
               ],
@@ -166,13 +170,15 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
+    final displayMode = ref.watch(displayModeProvider);
+    final isMobile = displayMode == DisplayMode.mobile || MediaQuery.of(context).size.width < 800;
     final staffAsync = ref.watch(staffProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
-    final isMobile = false; // Forced desktop layout as per user request
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Staff Management', style: TextStyle(color: Colors.black87)),
+        title: Text('Staff Management'.tr, style: const TextStyle(color: Colors.black87)),
         backgroundColor: Colors.white,
         elevation: 1,
       ),
@@ -183,34 +189,34 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
           Expanded(
             flex: isMobile ? 0 : 1,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(isMobile ? 16 : 24),
               child: Card(
                 elevation: 3,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 child: Padding(
-                  padding: const EdgeInsets.all(24.0),
+                  padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
                   child: Form(
                     key: _formKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Add New Staff', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
+                        Text('Add New Staff'.tr, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
                         const Divider(height: 32),
                         TextFormField(
                           controller: _nameCtrl,
-                          decoration: InputDecoration(labelText: 'Full Name *', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                          validator: (v) => v!.isEmpty ? 'Required' : null,
+                          decoration: InputDecoration(labelText: 'Full Name *'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                          validator: (v) => v!.isEmpty ? 'Required'.tr : null,
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _phoneCtrl,
-                          decoration: InputDecoration(labelText: 'Phone Number', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                          decoration: InputDecoration(labelText: 'Phone Number'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                           keyboardType: TextInputType.phone,
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _roleCtrl,
-                          decoration: InputDecoration(labelText: 'Role (e.g., Driver, Milker)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                          decoration: InputDecoration(labelText: 'Role (e.g., Driver, Milker)'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                         ),
                         const SizedBox(height: 16),
                         Wrap(
@@ -221,17 +227,17 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                               width: isMobile ? double.infinity : (MediaQuery.of(context).size.width / 4 - 40),
                               child: TextFormField(
                                 controller: _salaryCtrl,
-                                decoration: InputDecoration(labelText: 'Base Salary / Wage *', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                                decoration: InputDecoration(labelText: 'Base Salary / Wage *'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                                 keyboardType: TextInputType.number,
-                                validator: (v) => v!.isEmpty ? 'Required' : null,
+                                validator: (v) => v!.isEmpty ? 'Required'.tr : null,
                               ),
                             ),
                             SizedBox(
                               width: isMobile ? double.infinity : (MediaQuery.of(context).size.width / 4 - 60),
                               child: DropdownButtonFormField<String>(
-                                decoration: InputDecoration(labelText: 'Type *', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
+                                decoration: InputDecoration(labelText: 'Type *'.tr, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
                                 value: _salaryType,
-                                items: ['Monthly', 'Daily'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                                items: ['Monthly', 'Daily'].map((e) => DropdownMenuItem(value: e, child: Text(e.tr))).toList(),
                                 onChanged: (v) => setState(() => _salaryType = v!),
                               ),
                             ),
@@ -245,7 +251,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                             onPressed: _isSaving ? null : _submit,
                             style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
                             icon: _isSaving ? const CircularProgressIndicator(color: Colors.white) : const Icon(Icons.check_circle),
-                            label: Text(_isSaving ? 'SAVING...' : 'REGISTER STAFF', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            label: Text(_isSaving ? 'SAVING...'.tr : 'REGISTER STAFF'.tr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                           ),
                         ),
                       ],
@@ -269,11 +275,11 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Staff Directory', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text('Staff Directory'.tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                         ElevatedButton.icon(
                           onPressed: () => _showAttendanceDialog(context),
                           icon: const Icon(Icons.checklist),
-                          label: const Text('Mark Attendance'),
+                          label: Text('Mark Attendance'.tr),
                         ),
                       ],
                     ),
@@ -283,7 +289,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                       loading: () => const Center(child: CircularProgressIndicator()),
                       error: (e, s) => Center(child: Text('Error: $e')),
                       data: (staffList) {
-                        if (staffList.isEmpty) return const Center(child: Text('No staff members registered.'));
+                        if (staffList.isEmpty) return Center(child: Text('No staff members registered.'.tr));
                         return ListView.builder(
                           itemCount: staffList.length,
                           itemBuilder: (context, index) {
@@ -293,12 +299,12 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                               child: ListTile(
                                 leading: CircleAvatar(backgroundColor: primaryColor.withOpacity(0.1), child: Icon(Icons.person, color: primaryColor)),
                                 title: Text(staff.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                subtitle: Text('${staff.role ?? 'No Role'} | ₹${staff.salaryAmount} ${staff.salaryType}'),
+                                subtitle: Text('${staff.role ?? 'No Role'} | ₹${staff.salaryAmount} ${staff.salaryType.tr}'),
                                 trailing: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    Text('Balance', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                                    Text('Balance'.tr, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
                                     Text('₹${staff.balance.toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, color: staff.balance < 0 ? Colors.red : Colors.green)),
                                   ],
                                 ),
