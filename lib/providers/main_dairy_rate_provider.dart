@@ -145,6 +145,7 @@ class MainDairyRateNotifier extends AsyncNotifier<List<MainDairyRateConfig>> {
     final supabase = ref.read(supabaseClientProvider);
     state = const AsyncValue.loading();
     try {
+      final uid = supabase.auth.currentUser?.id;
       try {
         await supabase.from('main_dairy_rate_configs').insert({
           'animal_type': config.animalType,
@@ -162,6 +163,7 @@ class MainDairyRateNotifier extends AsyncNotifier<List<MainDairyRateConfig>> {
           'snf_rate': config.snfRate,
           'effective_date': config.effectiveDate,
           'is_active': true,
+          if (uid != null) 'user_id': uid,
         });
       } on PostgrestException catch (pe) {
         if (pe.code == 'PGRST204') {
@@ -180,6 +182,7 @@ class MainDairyRateNotifier extends AsyncNotifier<List<MainDairyRateConfig>> {
             'snf_rate': config.snfRate,
             'effective_date': config.effectiveDate,
             'is_active': true,
+            if (uid != null) 'user_id': uid,
           });
         } else {
           rethrow;
@@ -200,16 +203,19 @@ class MainDairyRateNotifier extends AsyncNotifier<List<MainDairyRateConfig>> {
       if (cleanId.isNotEmpty) {
         await supabase.from('main_dairy_rate_configs').delete().eq('id', cleanId);
       }
-      if (config != null) {
-        try {
-          final db = await OfflineDbHelper.instance.database;
+      try {
+        final db = await OfflineDbHelper.instance.database;
+        if (cleanId.isNotEmpty) {
+          await db.delete('main_dairy_rate_configs', where: 'id = ?', whereArgs: [cleanId]);
+        }
+        if (config != null) {
           await db.delete(
             'main_dairy_rate_configs',
             where: 'animal_type = ? AND rate_type = ? AND effective_date = ? AND base_rate = ? AND fat_point = ? AND fat_rate = ?',
             whereArgs: [config.animalType, config.rateType, config.effectiveDate, config.baseRate, config.fatPoint, config.fatRate],
           );
-        } catch (_) {}
-      }
+        }
+      } catch (_) {}
       state = await AsyncValue.guard(() => _fetchConfigs());
     } catch (e, st) {
       state = AsyncValue.error(e, st);

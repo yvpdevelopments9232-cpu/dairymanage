@@ -196,10 +196,49 @@ CREATE POLICY "Tenant isolation for rate_configs - UPDATE"
 CREATE POLICY "Tenant isolation for rate_configs - DELETE"
     ON public.rate_configs
     FOR DELETE TO authenticated
-    USING (user_id = auth.uid());
+    USING (user_id = auth.uid() OR user_id IS NULL);
 
 GRANT ALL ON public.rate_configs TO authenticated;
 REVOKE ALL ON public.rate_configs FROM anon;
+
+
+-- ------------------------------------------------------------------------------
+-- 6B. CLEAN POLICIES FOR MAIN_DAIRY_RATE_CONFIGS
+-- ------------------------------------------------------------------------------
+DO $do$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'main_dairy_rate_configs') THEN
+        DROP POLICY IF EXISTS "Tenant isolation for main_dairy_rate_configs" ON public.main_dairy_rate_configs;
+        DROP POLICY IF EXISTS "Tenant isolation for main_dairy_rate_configs - SELECT" ON public.main_dairy_rate_configs;
+        DROP POLICY IF EXISTS "Tenant isolation for main_dairy_rate_configs - INSERT" ON public.main_dairy_rate_configs;
+        DROP POLICY IF EXISTS "Tenant isolation for main_dairy_rate_configs - UPDATE" ON public.main_dairy_rate_configs;
+        DROP POLICY IF EXISTS "Tenant isolation for main_dairy_rate_configs - DELETE" ON public.main_dairy_rate_configs;
+
+        CREATE POLICY "Tenant isolation for main_dairy_rate_configs - SELECT"
+            ON public.main_dairy_rate_configs
+            FOR SELECT TO authenticated
+            USING (user_id = auth.uid() OR user_id IS NULL);
+
+        CREATE POLICY "Tenant isolation for main_dairy_rate_configs - INSERT"
+            ON public.main_dairy_rate_configs
+            FOR INSERT TO authenticated
+            WITH CHECK (user_id = auth.uid());
+
+        CREATE POLICY "Tenant isolation for main_dairy_rate_configs - UPDATE"
+            ON public.main_dairy_rate_configs
+            FOR UPDATE TO authenticated
+            USING (user_id = auth.uid() OR user_id IS NULL)
+            WITH CHECK (user_id = auth.uid());
+
+        CREATE POLICY "Tenant isolation for main_dairy_rate_configs - DELETE"
+            ON public.main_dairy_rate_configs
+            FOR DELETE TO authenticated
+            USING (user_id = auth.uid() OR user_id IS NULL);
+
+        GRANT ALL ON public.main_dairy_rate_configs TO authenticated;
+        REVOKE ALL ON public.main_dairy_rate_configs FROM anon;
+    END IF;
+END $do$;
 
 
 -- ------------------------------------------------------------------------------

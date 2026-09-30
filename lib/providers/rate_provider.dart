@@ -135,6 +135,7 @@ class RateConfigNotifier extends AsyncNotifier<List<RateConfig>> {
     state = const AsyncValue.loading();
     
     try {
+      final uid = supabase.auth.currentUser?.id;
       await supabase.from('rate_configs').insert({
         'animal_type': config.animalType,
         'rate_type': config.rateType,
@@ -151,6 +152,7 @@ class RateConfigNotifier extends AsyncNotifier<List<RateConfig>> {
         'snf_rate': config.snfRate,
         'effective_date': config.effectiveDate,
         'is_active': true,
+        if (uid != null) 'user_id': uid,
       });
       
       state = await AsyncValue.guard(() => _fetchConfigs());
@@ -168,16 +170,19 @@ class RateConfigNotifier extends AsyncNotifier<List<RateConfig>> {
       if (cleanId.isNotEmpty) {
         await supabase.from('rate_configs').delete().eq('id', cleanId);
       }
-      if (config != null) {
-        try {
-          final db = await OfflineDbHelper.instance.database;
+      try {
+        final db = await OfflineDbHelper.instance.database;
+        if (cleanId.isNotEmpty) {
+          await db.delete('rate_configs', where: 'id = ?', whereArgs: [cleanId]);
+        }
+        if (config != null) {
           await db.delete(
             'rate_configs',
             where: 'animal_type = ? AND rate_type = ? AND effective_date = ? AND base_rate = ? AND fat_point = ? AND fat_rate = ?',
             whereArgs: [config.animalType, config.rateType, config.effectiveDate, config.baseRate, config.fatPoint, config.fatRate],
           );
-        } catch (_) {}
-      }
+        }
+      } catch (_) {}
       state = await AsyncValue.guard(() => _fetchConfigs());
     } catch (e, st) {
       state = AsyncValue.error(e, st);

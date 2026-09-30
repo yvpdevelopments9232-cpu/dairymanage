@@ -285,6 +285,75 @@ BEGIN
         ';
         EXECUTE 'GRANT ALL ON public.purchase_items TO authenticated;';
     END IF;
+-- ------------------------------------------------------------------------------
+-- 7. CLEAN SYSTEM POLICIES (ROLES, RATE_CONFIGS, MAIN_DAIRY_RATE_CONFIGS)
+-- ------------------------------------------------------------------------------
+-- Allows viewing and deleting default/legacy templates (where user_id IS NULL)
+DO $do$
+BEGIN
+    -- roles
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'roles') THEN
+        DROP POLICY IF EXISTS "Tenant isolation for roles" ON public.roles;
+        DROP POLICY IF EXISTS "Tenant isolation for roles - SELECT" ON public.roles;
+        DROP POLICY IF EXISTS "Tenant isolation for roles - INSERT" ON public.roles;
+        DROP POLICY IF EXISTS "Tenant isolation for roles - UPDATE" ON public.roles;
+        DROP POLICY IF EXISTS "Tenant isolation for roles - DELETE" ON public.roles;
+
+        CREATE POLICY "Tenant isolation for roles - SELECT" ON public.roles FOR SELECT TO authenticated USING (owner_id = auth.uid() OR owner_id IS NULL);
+        CREATE POLICY "Tenant isolation for roles - INSERT" ON public.roles FOR INSERT TO authenticated WITH CHECK (owner_id = auth.uid());
+        CREATE POLICY "Tenant isolation for roles - UPDATE" ON public.roles FOR UPDATE TO authenticated USING (owner_id = auth.uid()) WITH CHECK (owner_id = auth.uid());
+        CREATE POLICY "Tenant isolation for roles - DELETE" ON public.roles FOR DELETE TO authenticated USING (owner_id = auth.uid());
+        GRANT ALL ON public.roles TO authenticated;
+        REVOKE ALL ON public.roles FROM anon;
+    END IF;
+
+    -- role_permissions
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'role_permissions') THEN
+        DROP POLICY IF EXISTS "Tenant isolation for role_permissions" ON public.role_permissions;
+        DROP POLICY IF EXISTS "Tenant isolation for role_permissions - SELECT" ON public.role_permissions;
+        DROP POLICY IF EXISTS "Tenant isolation for role_permissions - INSERT" ON public.role_permissions;
+        DROP POLICY IF EXISTS "Tenant isolation for role_permissions - UPDATE" ON public.role_permissions;
+        DROP POLICY IF EXISTS "Tenant isolation for role_permissions - DELETE" ON public.role_permissions;
+
+        CREATE POLICY "Tenant isolation for role_permissions - SELECT" ON public.role_permissions FOR SELECT TO authenticated USING (owner_id = auth.uid() OR owner_id IS NULL);
+        CREATE POLICY "Tenant isolation for role_permissions - INSERT" ON public.role_permissions FOR INSERT TO authenticated WITH CHECK (owner_id = auth.uid());
+        CREATE POLICY "Tenant isolation for role_permissions - UPDATE" ON public.role_permissions FOR UPDATE TO authenticated USING (owner_id = auth.uid()) WITH CHECK (owner_id = auth.uid());
+        CREATE POLICY "Tenant isolation for role_permissions - DELETE" ON public.role_permissions FOR DELETE TO authenticated USING (owner_id = auth.uid());
+        GRANT ALL ON public.role_permissions TO authenticated;
+        REVOKE ALL ON public.role_permissions FROM anon;
+    END IF;
+
+    -- rate_configs
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'rate_configs') THEN
+        DROP POLICY IF EXISTS "Tenant isolation for rate_configs" ON public.rate_configs;
+        DROP POLICY IF EXISTS "Tenant isolation for rate_configs - SELECT" ON public.rate_configs;
+        DROP POLICY IF EXISTS "Tenant isolation for rate_configs - INSERT" ON public.rate_configs;
+        DROP POLICY IF EXISTS "Tenant isolation for rate_configs - UPDATE" ON public.rate_configs;
+        DROP POLICY IF EXISTS "Tenant isolation for rate_configs - DELETE" ON public.rate_configs;
+
+        CREATE POLICY "Tenant isolation for rate_configs - SELECT" ON public.rate_configs FOR SELECT TO authenticated USING (user_id = auth.uid() OR user_id IS NULL);
+        CREATE POLICY "Tenant isolation for rate_configs - INSERT" ON public.rate_configs FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+        CREATE POLICY "Tenant isolation for rate_configs - UPDATE" ON public.rate_configs FOR UPDATE TO authenticated USING (user_id = auth.uid() OR user_id IS NULL) WITH CHECK (user_id = auth.uid());
+        CREATE POLICY "Tenant isolation for rate_configs - DELETE" ON public.rate_configs FOR DELETE TO authenticated USING (user_id = auth.uid() OR user_id IS NULL);
+        GRANT ALL ON public.rate_configs TO authenticated;
+        REVOKE ALL ON public.rate_configs FROM anon;
+    END IF;
+
+    -- main_dairy_rate_configs
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'main_dairy_rate_configs') THEN
+        DROP POLICY IF EXISTS "Tenant isolation for main_dairy_rate_configs" ON public.main_dairy_rate_configs;
+        DROP POLICY IF EXISTS "Tenant isolation for main_dairy_rate_configs - SELECT" ON public.main_dairy_rate_configs;
+        DROP POLICY IF EXISTS "Tenant isolation for main_dairy_rate_configs - INSERT" ON public.main_dairy_rate_configs;
+        DROP POLICY IF EXISTS "Tenant isolation for main_dairy_rate_configs - UPDATE" ON public.main_dairy_rate_configs;
+        DROP POLICY IF EXISTS "Tenant isolation for main_dairy_rate_configs - DELETE" ON public.main_dairy_rate_configs;
+
+        CREATE POLICY "Tenant isolation for main_dairy_rate_configs - SELECT" ON public.main_dairy_rate_configs FOR SELECT TO authenticated USING (user_id = auth.uid() OR user_id IS NULL);
+        CREATE POLICY "Tenant isolation for main_dairy_rate_configs - INSERT" ON public.main_dairy_rate_configs FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+        CREATE POLICY "Tenant isolation for main_dairy_rate_configs - UPDATE" ON public.main_dairy_rate_configs FOR UPDATE TO authenticated USING (user_id = auth.uid() OR user_id IS NULL) WITH CHECK (user_id = auth.uid());
+        CREATE POLICY "Tenant isolation for main_dairy_rate_configs - DELETE" ON public.main_dairy_rate_configs FOR DELETE TO authenticated USING (user_id = auth.uid() OR user_id IS NULL);
+        GRANT ALL ON public.main_dairy_rate_configs TO authenticated;
+        REVOKE ALL ON public.main_dairy_rate_configs FROM anon;
+    END IF;
 END $do$;
 
 -- ==============================================================================
