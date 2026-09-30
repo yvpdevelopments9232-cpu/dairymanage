@@ -733,8 +733,17 @@ class SyncService {
         final localCount = (localCountRes.first['c'] as num?)?.toInt() ?? 0;
 
         final lastPulled = await OfflineDbHelper.instance.getLastPulledAt(table);
-
+        final currentUid = client.auth.currentUser?.id;
         dynamic query = client.from(table).select();
+
+        // Enforce tenant isolation defense-in-depth on client pull
+        if (currentUid != null) {
+          if (validCols.contains('user_id')) {
+            query = query.eq('user_id', currentUid);
+          } else if (validCols.contains('owner_id')) {
+            query = query.eq('owner_id', currentUid);
+          }
+        }
 
         // Only filter by timestamp if local table already has data and lastPulled is present
         if (localCount > 0 && lastPulled != null && lastPulled.isNotEmpty) {
@@ -833,7 +842,16 @@ class SyncService {
         final validCols = await _getTableColumns(db, table);
         if (validCols.isEmpty) continue;
 
-        final rows = await client.from(table).select().timeout(const Duration(seconds: 30));
+        final currentUid = client.auth.currentUser?.id;
+        dynamic query = client.from(table).select();
+        if (currentUid != null) {
+          if (validCols.contains('user_id')) {
+            query = query.eq('user_id', currentUid);
+          } else if (validCols.contains('owner_id')) {
+            query = query.eq('owner_id', currentUid);
+          }
+        }
+        final rows = await query.timeout(const Duration(seconds: 30));
         hasAnyData = true;
         if (table == 'app_settings') {
           await db.delete('app_settings');

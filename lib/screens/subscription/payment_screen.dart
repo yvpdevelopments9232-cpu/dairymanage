@@ -5,7 +5,6 @@ import '../../services/subscription_service.dart';
 import '../../services/account_status_service.dart';
 import '../account_pending_screen.dart';
 import '../dashboard_screen.dart';
-import 'payment_success_screen.dart';
 
 class PaymentScreen extends ConsumerStatefulWidget {
   final SubscriptionPlan plan;
@@ -103,30 +102,40 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     setState(() => _isProcessing = true);
 
     try {
-      // Simulate secure payment gateway handshake (1.5 seconds)
-      await Future.delayed(const Duration(milliseconds: 1500));
-
       final now = DateTime.now();
       final dateStr = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
       final randomNum = (Random().nextInt(900000) + 100000).toString();
       final txnId = 'TXN$dateStr$randomNum';
 
-      // Record in Supabase and activate subscription
-      final activatedSub = await ref.read(subscriptionProvider.notifier).activateSubscription(
+      // Submit payment details for admin verification and approval
+      await ref.read(subscriptionProvider.notifier).submitPaymentForApproval(
         plan: widget.plan,
         paymentMethod: _selectedMethod,
         transactionId: txnId,
       );
 
+      // Force refresh account status to pending
+      await ref.read(accountStatusProvider.notifier).checkStatus(forceRefresh: true);
+
       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment request submitted successfully! Awaiting admin approval.'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 4),
+          ),
+        );
+
+        // Open Admin Approval Screen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => PaymentSuccessScreen(
-              subscription: activatedSub,
-              plan: widget.plan,
-              transactionId: txnId,
-              paymentMethod: _selectedMethod,
+            builder: (_) => AccountPendingScreen(
+              onReactivated: () {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (_) => const DashboardScreen()),
+                );
+              },
             ),
           ),
         );
@@ -135,7 +144,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Payment activation error: $e'),
+            content: Text('Submission error: $e'),
             backgroundColor: Colors.red.shade700,
           ),
         );

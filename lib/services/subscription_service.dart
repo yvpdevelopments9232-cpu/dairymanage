@@ -356,126 +356,17 @@ class SubscriptionNotifier extends Notifier<SubscriptionState> {
     }
   }
 
-  /// Activate a new subscription after successful payment
+  /// Activate a new subscription after payment submission (delegates to secure admin approval flow)
   Future<UserSubscription> activateSubscription({
     required SubscriptionPlan plan,
     required String paymentMethod,
     required String transactionId,
   }) async {
-    final client = Supabase.instance.client;
-    final currentUser = client.auth.currentUser;
-    if (currentUser == null) {
-      throw Exception('User is not authenticated');
-    }
-
-    final userId = currentUser.id;
-    final now = DateTime.now();
-    final endDate = now.add(Duration(days: plan.durationDays));
-
-    // Generate readable subscription ID: e.g. DM-20260929-784
-    final randomSuffix = (Random().nextInt(900) + 100).toString();
-    final dateStr = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
-    final subscriptionId = 'DM-$dateStr-$randomSuffix';
-    final invoiceNo = 'INV-$dateStr-$randomSuffix';
-
-    // 1. Record or update payment in public.subscription_payments table
-    try {
-      final existingPendingPay = await client
-          .from('subscription_payments')
-          .select('id')
-          .eq('user_id', userId)
-          .eq('payment_status', 'PENDING')
-          .maybeSingle();
-
-      if (existingPendingPay != null) {
-        await client.from('subscription_payments').update({
-          'transaction_id': transactionId,
-          'subscription_id': subscriptionId,
-          'plan_id': plan.id,
-          'plan_name': plan.name,
-          'amount': plan.price,
-          'payment_method': paymentMethod,
-          'payment_status': 'SUCCESS',
-          'invoice_no': invoiceNo,
-          'payment_date': now.toIso8601String(),
-        }).eq('id', existingPendingPay['id']);
-      } else {
-        await client.from('subscription_payments').insert({
-          'transaction_id': transactionId,
-          'user_id': userId,
-          'subscription_id': subscriptionId,
-          'plan_id': plan.id,
-          'plan_name': plan.name,
-          'amount': plan.price,
-          'payment_method': paymentMethod,
-          'payment_status': 'SUCCESS',
-          'invoice_no': invoiceNo,
-          'payment_date': now.toIso8601String(),
-        });
-      }
-    } catch (payErr) {
-      debugPrint('Subscription payments table insert note: $payErr');
-    }
-
-    // 2. Insert or update in public.subscriptions table (Ensure strictly 1 subscription row per user)
-    final subData = {
-      'subscription_id': subscriptionId,
-      'user_id': userId,
-      'plan_id': plan.id,
-      'plan_name': plan.name,
-      'amount': plan.price,
-      'start_date': now.toIso8601String(),
-      'end_date': endDate.toIso8601String(),
-      'status': 'ACTIVE',
-      'auto_renewal': true,
-      'updated_at': now.toIso8601String(),
-    };
-
-    final existingSub = await client
-        .from('subscriptions')
-        .select('id')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-    Map<String, dynamic> inserted;
-    if (existingSub != null) {
-      inserted = await client
-          .from('subscriptions')
-          .update(subData)
-          .eq('id', existingSub['id'])
-          .select()
-          .single();
-    } else {
-      inserted = await client
-          .from('subscriptions')
-          .insert(subData)
-          .select()
-          .single();
-    }
-
-    final userSub = UserSubscription.fromJson(inserted);
-
-    // 3. Mark public.users status as 'active'
-    try {
-      await client.from('users').upsert({
-        'id': userId,
-        'email': currentUser.email ?? '',
-        'status': 'active',
-      });
-    } catch (_) {}
-
-    // 4. Update local cache
-    final cacheKey = AppConfig.prefKey('cached_sub_status_$userId');
-    await app_main.prefs.setString(cacheKey, 'ACTIVE');
-
-    state = state.copyWith(
-      status: SubscriptionStatus.active,
-      currentSubscription: userSub,
-      lastChecked: DateTime.now(),
-      message: null,
+    return submitPaymentForApproval(
+      plan: plan,
+      paymentMethod: paymentMethod,
+      transactionId: transactionId,
     );
-
-    return userSub;
   }
 
   /// Submit UPI / QR payment for admin approval
