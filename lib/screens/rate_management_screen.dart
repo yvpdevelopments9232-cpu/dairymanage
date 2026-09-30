@@ -24,6 +24,10 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
   String? _editingConfigId;
   bool _isInitialized = false;
 
+  // Filter state for Tab 3 (All Configurations)
+  String _filterAnimalType = 'All';
+  String _filterRateType = 'All';
+
   // Inputs
   final _baseFatController = TextEditingController(text: '3.5');
   final _baseSnfController = TextEditingController(text: '8.5');
@@ -45,9 +49,9 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
-      if (!_tabController.indexIsChanging) {
+      if (!_tabController.indexIsChanging && _tabController.index < 2) {
         setState(() {
           _generatedChart = [];
           _populateFormForSelectedAnimalAndTab();
@@ -74,15 +78,25 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
   }
 
   void _populateFormForSelectedAnimalAndTab({RateConfig? specificConfig}) {
+    if (_tabController.index >= 2) return;
     final isIncrease = _tabController.index == 0;
     final targetRateType = isIncrease ? 'Increase' : 'Decrease';
 
     RateConfig? configToUse = specificConfig;
     if (configToUse == null) {
       final configs = ref.read(rateConfigProvider).value ?? [];
+      // 1. Direct match for animal type and rate type
       final matches = configs.where((c) => c.animalType == _animalType && c.rateType == targetRateType).toList();
       if (matches.isNotEmpty) {
         configToUse = matches.first;
+      } else {
+        // 2. Inherit base values from any existing config for this animal type
+        final anyAnimalMatch = configs.where((c) => c.animalType == _animalType).firstOrNull;
+        if (anyAnimalMatch != null) {
+          _baseFatController.text = anyAnimalMatch.baseFat.toString();
+          _baseSnfController.text = anyAnimalMatch.baseSnf.toString();
+          _baseRateController.text = anyAnimalMatch.baseRate.toString();
+        }
       }
     }
 
@@ -110,9 +124,9 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
       _editingConfigId = null;
       _effectiveDate = DateTime.now();
       if (_animalType == 'Cow Milk') {
-        _baseFatController.text = '3.5';
-        _baseSnfController.text = '8.5';
-        _baseRateController.text = '40.0';
+        if (_baseFatController.text.isEmpty || _baseFatController.text == '6.0') _baseFatController.text = '3.5';
+        if (_baseSnfController.text.isEmpty || _baseSnfController.text == '9.0') _baseSnfController.text = '8.5';
+        if (_baseRateController.text.isEmpty || _baseRateController.text == '55.0') _baseRateController.text = '40.0';
         _fatFromController.text = isIncrease ? '3.5' : '2.0';
         _fatToController.text = isIncrease ? '6.0' : '3.5';
         _fatPointController.text = '0.1';
@@ -123,9 +137,9 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
         _snfRateController.text = '1.0';
       } else {
         // Buffalo Milk
-        _baseFatController.text = '6.0';
-        _baseSnfController.text = '9.0';
-        _baseRateController.text = '55.0';
+        if (_baseFatController.text.isEmpty || _baseFatController.text == '3.5') _baseFatController.text = '6.0';
+        if (_baseSnfController.text.isEmpty || _baseSnfController.text == '8.5') _baseSnfController.text = '9.0';
+        if (_baseRateController.text.isEmpty || _baseRateController.text == '40.0') _baseRateController.text = '55.0';
         _fatFromController.text = isIncrease ? '6.0' : '4.5';
         _fatToController.text = isIncrease ? '10.0' : '6.0';
         _fatPointController.text = '0.1';
@@ -141,14 +155,15 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
   }
 
   void _generateChart() {
+    if (_tabController.index >= 2) return;
     final key = _tabController.index == 0 ? _incFormKey : _decFormKey;
     if (key.currentState != null && !key.currentState!.validate()) return;
 
     final isIncrease = _tabController.index == 0;
     
-    double baseFat = double.tryParse(_baseFatController.text) ?? (isIncrease ? 3.5 : 3.5);
-    double baseSnf = double.tryParse(_baseSnfController.text) ?? (isIncrease ? 8.5 : 8.5);
-    double baseRate = double.tryParse(_baseRateController.text) ?? (isIncrease ? 40.0 : 40.0);
+    double baseFat = double.tryParse(_baseFatController.text) ?? 3.5;
+    double baseSnf = double.tryParse(_baseSnfController.text) ?? 8.5;
+    double baseRate = double.tryParse(_baseRateController.text) ?? 40.0;
     
     double fatFrom = double.tryParse(_fatFromController.text) ?? (isIncrease ? 3.5 : 2.0);
     double fatTo = double.tryParse(_fatToController.text) ?? (isIncrease ? 6.0 : 3.5);
@@ -213,7 +228,7 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
           pw.Header(level: 0, child: pw.Text(title, style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold))),
           pw.Text('Effective From: ${DateFormat('dd MMM yyyy').format(_effectiveDate)}', style: const pw.TextStyle(fontSize: 14)),
           pw.SizedBox(height: 10),
-          pw.Table.fromTextArray(
+          pw.TableHelper.fromTextArray(
             headers: ['No.', 'Fat %', 'SNF %', 'Rate'],
             data: _generatedChart.map((e) => [
               e['no'].toString(),
@@ -312,7 +327,6 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       validator: (val) => val == null || val.isEmpty ? '*' : null,
       onChanged: (_) {
-        // Automatically reflect preview when fields are edited
         _generateChart();
       },
     );
@@ -332,6 +346,7 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
             // Header Card
             Card(
               color: bgColor,
+              elevation: 1,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: themeColor.withValues(alpha: 0.5))),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -345,43 +360,70 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                         Text(isIncrease ? 'Rate Increase Chart' : 'Rate Decrease Chart', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: themeColor)),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Text(
                       isIncrease ? 'Rate increases when Fat or SNF is higher than the base value.' : 'Rate decreases when Fat or SNF is lower than the base value.',
                       style: TextStyle(color: Colors.grey.shade700)
                     ),
                     const SizedBox(height: 16),
-                    Row(
+                    Wrap(
+                      spacing: 16,
+                      runSpacing: 12,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        const Text('Animal Type:', style: TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(width: 16),
-                        DropdownButton<String>(
-                          value: _animalType,
-                          items: ['Cow Milk', 'Buffalo Milk'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                          onChanged: (val) {
-                            if (val != null) {
-                              setState(() {
-                                _animalType = val;
-                                _populateFormForSelectedAnimalAndTab();
-                              });
-                            }
-                          },
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('Animal Type:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                            const SizedBox(width: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade400)
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _animalType,
+                                  items: ['Cow Milk', 'Buffalo Milk'].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontWeight: FontWeight.w600)))).toList(),
+                                  onChanged: (val) {
+                                    if (val != null) {
+                                      setState(() {
+                                        _animalType = val;
+                                        _populateFormForSelectedAnimalAndTab();
+                                      });
+                                    }
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        const Spacer(),
-                        const Text('Effective Date:', style: TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(width: 16),
-                        OutlinedButton.icon(
-                          icon: const Icon(Icons.calendar_month),
-                          label: Text(DateFormat('dd MMM yyyy').format(_effectiveDate)),
-                          onPressed: () async {
-                            final date = await showDatePicker(
-                              context: context,
-                              initialDate: _effectiveDate,
-                              firstDate: DateTime(2020),
-                              lastDate: DateTime(2030),
-                            );
-                            if (date != null) setState(() => _effectiveDate = date);
-                          },
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('Effective Date:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                            const SizedBox(width: 10),
+                            OutlinedButton.icon(
+                              icon: const Icon(Icons.calendar_month, size: 20),
+                              label: Text(DateFormat('dd MMM yyyy').format(_effectiveDate), style: const TextStyle(fontWeight: FontWeight.w600)),
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                side: BorderSide(color: Colors.grey.shade400),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              ),
+                              onPressed: () async {
+                                final date = await showDatePicker(
+                                  context: context,
+                                  initialDate: _effectiveDate,
+                                  firstDate: DateTime(2020),
+                                  lastDate: DateTime(2030),
+                                );
+                                if (date != null) setState(() => _effectiveDate = date);
+                              },
+                            )
+                          ],
                         )
                       ],
                     )
@@ -403,18 +445,18 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.edit_note, color: Colors.amber.shade900, size: 24),
+                    Icon(Icons.edit_note, color: Colors.amber.shade900, size: 26),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Active Configuration Loaded for $_animalType (${isIncrease ? "Increase" : "Decrease"})',
+                            'Editing Active Configuration: $_animalType (${isIncrease ? "Increase" : "Decrease"})',
                             style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber.shade900, fontSize: 14),
                           ),
                           Text(
-                            'Modify base price or ranges below and tap "Update Configuration", or tap "Save as New Version" for a new date.',
+                            'Modify base price or ranges below and tap "Update Configuration", or "Save as New Version" for a new date.',
                             style: TextStyle(color: Colors.brown.shade700, fontSize: 12),
                           ),
                         ],
@@ -422,7 +464,7 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                     ),
                     TextButton.icon(
                       icon: const Icon(Icons.add_circle, size: 18),
-                      label: const Text('New Mode'),
+                      label: const Text('Create New Instead'),
                       style: TextButton.styleFrom(foregroundColor: Colors.blue.shade900),
                       onPressed: () {
                         setState(() {
@@ -445,9 +487,9 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
             Row(
               children: [
                 Expanded(child: _buildField('Base Fat', _baseFatController)),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 Expanded(child: _buildField('Base SNF', _baseSnfController)),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 Expanded(child: _buildField('Base Rate (₹)', _baseRateController)),
               ],
             ),
@@ -457,7 +499,7 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
             Text(isIncrease ? 'Increase Settings' : 'Decrease Settings', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: themeColor)),
             const SizedBox(height: 8),
             Card(
-              elevation: 0,
+              elevation: 1,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade300)),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -490,54 +532,48 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
 
             // Actions
-            Row(
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
               children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.bar_chart),
-                    label: const Text('Generate Chart', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: themeColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    onPressed: _generateChart,
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.bar_chart),
+                  label: const Text('Generate Chart', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: themeColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                   ),
+                  onPressed: _generateChart,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    icon: _isSaving
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : Icon(_editingConfigId != null ? Icons.check_circle : Icons.save),
-                    label: Text(
-                      _editingConfigId != null ? 'Update Configuration' : 'Save Configuration',
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _editingConfigId != null ? Colors.amber.shade800 : Colors.blue.shade700,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    onPressed: _isSaving ? null : () => _saveConfig(saveAsNew: false),
+                ElevatedButton.icon(
+                  icon: _isSaving
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : Icon(_editingConfigId != null ? Icons.check_circle : Icons.save),
+                  label: Text(
+                    _editingConfigId != null ? 'Update Configuration' : 'Save Configuration',
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                   ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _editingConfigId != null ? Colors.amber.shade800 : Colors.blue.shade700,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  ),
+                  onPressed: _isSaving ? null : () => _saveConfig(saveAsNew: false),
                 ),
                 if (_editingConfigId != null) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.add_circle_outline),
-                      label: const Text('Save as New Version', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.blue.shade800,
-                        side: BorderSide(color: Colors.blue.shade800, width: 1.5),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      onPressed: _isSaving ? null : () => _saveConfig(saveAsNew: true),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.add_circle_outline),
+                    label: const Text('Save as New Version', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.blue.shade800,
+                      side: BorderSide(color: Colors.blue.shade800, width: 1.5),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                     ),
+                    onPressed: _isSaving ? null : () => _saveConfig(saveAsNew: true),
                   ),
                 ],
               ],
@@ -560,7 +596,7 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
               ),
               const SizedBox(height: 8),
               SizedBox(
-                height: 300,
+                height: 280,
                 child: SingleChildScrollView(
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
@@ -584,126 +620,291 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                   ),
                 ),
               ),
-            ]
+            ],
+
+            const SizedBox(height: 28),
+            const Divider(thickness: 1.5),
+            const SizedBox(height: 12),
+
+            // In-Tab Saved Configurations
+            _buildTabSpecificSavedConfigs(isIncrease),
+            const SizedBox(height: 40),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSavedConfigs() {
+  Widget _buildTabSpecificSavedConfigs(bool isIncrease) {
     final configsAsync = ref.watch(rateConfigProvider);
+    final targetRateType = isIncrease ? 'Increase' : 'Decrease';
+
     return configsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, st) => Center(child: Text('Error: $e')),
-      data: (configs) {
-        if (configs.isEmpty) {
-          return const Center(child: Padding(padding: EdgeInsets.all(32), child: Text('No saved configurations found.')));
+      data: (allConfigs) {
+        final configs = allConfigs.where((c) => c.rateType == targetRateType).toList();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Saved $targetRateType Configurations (${configs.length})',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.blue.shade900),
+                ),
+                TextButton.icon(
+                  icon: const Icon(Icons.open_in_new, size: 16),
+                  label: const Text('View All Configurations in Tab 3'),
+                  onPressed: () {
+                    _tabController.animateTo(2);
+                  },
+                )
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (configs.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Text('No saved $targetRateType configurations found yet. Set values above and tap "Save Configuration".', style: TextStyle(color: Colors.grey.shade600, fontStyle: FontStyle.italic)),
+              )
+            else
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  headingRowColor: WidgetStateProperty.all(isIncrease ? Colors.green.shade50 : Colors.red.shade50),
+                  columns: const [
+                    DataColumn(label: Text('Animal Type')),
+                    DataColumn(label: Text('Effective Date')),
+                    DataColumn(label: Text('Base Fat/SNF/Rate')),
+                    DataColumn(label: Text('Fat Pts/Rate')),
+                    DataColumn(label: Text('SNF Pts/Rate')),
+                    DataColumn(label: Text('Actions')),
+                  ],
+                  rows: configs.map((c) => _buildDataRow(c, showType: false)).toList(),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildAllSavedConfigsView() {
+    final configsAsync = ref.watch(rateConfigProvider);
+
+    return configsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, st) => Center(child: Text('Error: $e')),
+      data: (allConfigs) {
+        var filtered = allConfigs;
+        if (_filterAnimalType != 'All') {
+          filtered = filtered.where((c) => c.animalType == _filterAnimalType).toList();
         }
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            headingRowColor: WidgetStateProperty.all(Colors.blue.shade50),
-            columns: const [
-              DataColumn(label: Text('Animal Type')),
-              DataColumn(label: Text('Type')),
-              DataColumn(label: Text('Effective Date')),
-              DataColumn(label: Text('Base Fat/SNF/Rate')),
-              DataColumn(label: Text('Fat Pts/Rate')),
-              DataColumn(label: Text('SNF Pts/Rate')),
-              DataColumn(label: Text('Actions')),
-            ],
-            rows: configs.map((c) {
-              final isBeingEdited = _editingConfigId == c.id;
-              return DataRow(
-                color: isBeingEdited ? WidgetStateProperty.all(Colors.amber.shade50) : null,
-                cells: [
-                  DataCell(Text(c.animalType, style: const TextStyle(fontWeight: FontWeight.bold))),
-                  DataCell(
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: c.rateType == 'Increase' ? Colors.green.shade100 : Colors.red.shade100,
-                        borderRadius: BorderRadius.circular(12)
+        if (_filterRateType != 'All') {
+          filtered = filtered.where((c) => c.rateType == _filterRateType).toList();
+        }
+
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Filter Card
+              Card(
+                elevation: 1,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Wrap(
+                    spacing: 20,
+                    runSpacing: 10,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('Animal: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                          const SizedBox(width: 8),
+                          Wrap(
+                            spacing: 8,
+                            children: ['All', 'Cow Milk', 'Buffalo Milk'].map((animal) {
+                              final isSelected = _filterAnimalType == animal;
+                              return ChoiceChip(
+                                label: Text(animal),
+                                selected: isSelected,
+                                selectedColor: Colors.blue.shade100,
+                                onSelected: (_) {
+                                  setState(() => _filterAnimalType = animal);
+                                },
+                              );
+                            }).toList(),
+                          ),
+                        ],
                       ),
-                      child: Text(c.rateType, style: TextStyle(color: c.rateType == 'Increase' ? Colors.green.shade800 : Colors.red.shade800)),
-                    )
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('Type: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                          const SizedBox(width: 8),
+                          Wrap(
+                            spacing: 8,
+                            children: ['All', 'Increase', 'Decrease'].map((type) {
+                              final isSelected = _filterRateType == type;
+                              return ChoiceChip(
+                                label: Text(type),
+                                selected: isSelected,
+                                selectedColor: type == 'Increase' ? Colors.green.shade100 : (type == 'Decrease' ? Colors.red.shade100 : Colors.blue.shade100),
+                                onSelected: (_) {
+                                  setState(() => _filterRateType = type);
+                                },
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  DataCell(Text(c.effectiveDate)),
-                  DataCell(Text('${c.baseFat} / ${c.baseSnf} / ₹${c.baseRate}')),
-                  DataCell(Text('${c.fatPoint} -> ₹${c.fatRate}')),
-                  DataCell(Text('${c.snfPoint} -> ₹${c.snfRate}')),
-                  DataCell(
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.edit, color: isBeingEdited ? Colors.amber.shade900 : Colors.blue),
-                          tooltip: 'Edit Configuration',
-                          onPressed: () {
-                            setState(() {
-                              _animalType = c.animalType;
-                              final targetIndex = c.rateType == 'Increase' ? 0 : 1;
-                              if (_tabController.index != targetIndex) {
-                                _tabController.animateTo(targetIndex);
-                              }
-                              _populateFormForSelectedAnimalAndTab(specificConfig: c);
-                            });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Loaded ${c.animalType} (${c.rateType}) configuration into editor.'),
-                                backgroundColor: Colors.blue.shade700,
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                          },
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: Text('Showing ${filtered.length} of ${allConfigs.length} configurations (Scroll horizontally or vertically to see all details)', style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+              ),
+              const SizedBox(height: 8),
+
+              // Full height double-scrollable DataTable
+              Expanded(
+                child: filtered.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey.shade400),
+                            const SizedBox(height: 12),
+                            Text('No configurations match the filter.', style: TextStyle(color: Colors.grey.shade600)),
+                          ],
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          tooltip: 'Delete Configuration',
-                          onPressed: () async {
-                            final confirm = await showDialog<bool>(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                title: const Text('Delete Config'),
-                                content: Text('Are you sure you want to delete this ${c.animalType} (${c.rateType}) configuration effective from ${c.effectiveDate}?'),
-                                actions: [
-                                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('CANCEL')),
-                                  TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('DELETE', style: TextStyle(color: Colors.red))),
-                                ],
-                              ),
-                            );
-                            if (confirm == true) {
-                              try {
-                                await ref.read(rateConfigProvider.notifier).deleteRateConfig(c.id, config: c);
-                                if (!mounted) return;
-                                if (_editingConfigId == c.id) {
-                                  setState(() {
-                                    _editingConfigId = null;
-                                    _populateFormForSelectedAnimalAndTab();
-                                  });
-                                }
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Rate configuration deleted successfully.')),
-                                );
-                              } catch (err) {
-                                if (!mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Failed to delete: $err'), backgroundColor: Colors.red),
-                                );
-                              }
-                            }
-                          },
+                      )
+                    : Card(
+                        elevation: 1,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.vertical,
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: DataTable(
+                              headingRowColor: WidgetStateProperty.all(Colors.blue.shade50),
+                              columns: const [
+                                DataColumn(label: Text('Animal Type', style: TextStyle(fontWeight: FontWeight.bold))),
+                                DataColumn(label: Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
+                                DataColumn(label: Text('Effective Date', style: TextStyle(fontWeight: FontWeight.bold))),
+                                DataColumn(label: Text('Base Fat/SNF/Rate', style: TextStyle(fontWeight: FontWeight.bold))),
+                                DataColumn(label: Text('Fat Pts/Rate', style: TextStyle(fontWeight: FontWeight.bold))),
+                                DataColumn(label: Text('SNF Pts/Rate', style: TextStyle(fontWeight: FontWeight.bold))),
+                                DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
+                              ],
+                              rows: filtered.map((c) => _buildDataRow(c, showType: true)).toList(),
+                            ),
+                          ),
                         ),
-                      ],
-                    )
-                  ),
-                ]
-              );
-            }).toList(),
+                      ),
+              ),
+            ],
           ),
         );
       },
+    );
+  }
+
+  DataRow _buildDataRow(RateConfig c, {required bool showType}) {
+    final isBeingEdited = _editingConfigId == c.id;
+    return DataRow(
+      color: isBeingEdited ? WidgetStateProperty.all(Colors.amber.shade50) : null,
+      cells: [
+        DataCell(Text(c.animalType, style: const TextStyle(fontWeight: FontWeight.bold))),
+        if (showType)
+          DataCell(
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: c.rateType == 'Increase' ? Colors.green.shade100 : Colors.red.shade100,
+                borderRadius: BorderRadius.circular(12)
+              ),
+              child: Text(c.rateType, style: TextStyle(fontWeight: FontWeight.bold, color: c.rateType == 'Increase' ? Colors.green.shade800 : Colors.red.shade800)),
+            )
+          ),
+        DataCell(Text(c.effectiveDate)),
+        DataCell(Text('${c.baseFat} / ${c.baseSnf} / ₹${c.baseRate}')),
+        DataCell(Text('${c.fatPoint} -> ₹${c.fatRate}')),
+        DataCell(Text('${c.snfPoint} -> ₹${c.snfRate}')),
+        DataCell(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: Icon(Icons.edit, color: isBeingEdited ? Colors.amber.shade900 : Colors.blue.shade700),
+                tooltip: 'Edit Configuration',
+                onPressed: () {
+                  setState(() {
+                    _animalType = c.animalType;
+                    final targetIndex = c.rateType == 'Increase' ? 0 : 1;
+                    _tabController.animateTo(targetIndex);
+                    _populateFormForSelectedAnimalAndTab(specificConfig: c);
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Loaded ${c.animalType} (${c.rateType}) configuration into editor.'),
+                      backgroundColor: Colors.blue.shade700,
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                tooltip: 'Delete Configuration',
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Delete Config'),
+                      content: Text('Are you sure you want to delete this ${c.animalType} (${c.rateType}) configuration effective from ${c.effectiveDate}?'),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('CANCEL')),
+                        TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('DELETE', style: TextStyle(color: Colors.red))),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) {
+                    try {
+                      await ref.read(rateConfigProvider.notifier).deleteRateConfig(c.id, config: c);
+                      if (!mounted) return;
+                      if (_editingConfigId == c.id) {
+                        setState(() {
+                          _editingConfigId = null;
+                          _populateFormForSelectedAnimalAndTab();
+                        });
+                      }
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Rate configuration deleted successfully.')),
+                      );
+                    } catch (err) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to delete: $err'), backgroundColor: Colors.red),
+                      );
+                    }
+                  }
+                },
+              ),
+            ],
+          )
+        ),
+      ]
     );
   }
 
@@ -722,6 +923,8 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
       });
     }
 
+    final totalCount = configsAsync.value?.length ?? 0;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Rate Management'),
@@ -731,46 +934,35 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
         bottom: TabBar(
           controller: _tabController,
           labelColor: Colors.blue.shade900,
-          unselectedLabelColor: Colors.grey,
+          unselectedLabelColor: Colors.grey.shade700,
           indicatorColor: Colors.blue.shade900,
-          tabs: const [
-            Tab(icon: Icon(Icons.arrow_upward, color: Colors.green), text: 'Rate Increase Chart'),
-            Tab(icon: Icon(Icons.arrow_downward, color: Colors.red), text: 'Rate Decrease Chart'),
+          indicatorWeight: 3,
+          tabs: [
+            const Tab(
+              icon: Icon(Icons.arrow_upward, color: Colors.green),
+              text: 'Rate Increase Chart',
+            ),
+            const Tab(
+              icon: Icon(Icons.arrow_downward, color: Colors.red),
+              text: 'Rate Decrease Chart',
+            ),
+            Tab(
+              icon: Badge(
+                label: Text(totalCount.toString()),
+                isLabelVisible: totalCount > 0,
+                child: const Icon(Icons.table_chart, color: Colors.blue),
+              ),
+              text: 'All Saved Configurations',
+            ),
           ],
         ),
       ),
-      body: Column(
+      body: TabBarView(
+        controller: _tabController,
         children: [
-          Expanded(
-            flex: 2,
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildTabContent(true),
-                _buildTabContent(false),
-              ],
-            ),
-          ),
-          const Divider(height: 1, thickness: 1),
-          Expanded(
-            flex: 1,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Saved Rate Configurations', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.blue.shade900)),
-                      Text('Tap Edit to load into form', style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic)),
-                    ],
-                  ),
-                ),
-                Expanded(child: _buildSavedConfigs()),
-              ],
-            )
-          )
+          _buildTabContent(true),
+          _buildTabContent(false),
+          _buildAllSavedConfigsView(),
         ],
       ),
     );
