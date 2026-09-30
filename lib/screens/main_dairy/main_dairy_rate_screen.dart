@@ -6,6 +6,8 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../../models/flutter_models.dart';
 import '../../providers/main_dairy_rate_provider.dart';
+import '../../services/translations.dart';
+import '../../providers/language_provider.dart';
 
 class MainDairyRateScreen extends ConsumerStatefulWidget {
   const MainDairyRateScreen({super.key});
@@ -333,6 +335,7 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
   }
 
   Widget _buildTabContent(bool isIncrease) {
+    final lang = ref.watch(languageProvider);
     final themeColor = isIncrease ? Colors.green.shade600 : Colors.red.shade600;
     final bgColor = isIncrease ? Colors.green.shade50 : Colors.red.shade50;
 
@@ -347,7 +350,7 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
             Card(
               color: bgColor,
               elevation: 1,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: themeColor.withOpacity(0.5))),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: themeColor.withValues(alpha: 0.5))),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -358,7 +361,9 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
                         Icon(isIncrease ? Icons.arrow_upward : Icons.arrow_downward, color: themeColor, size: 28),
                         const SizedBox(width: 8),
                         Text(
-                          isIncrease ? 'Main Dairy Rate Increase Chart' : 'Main Dairy Rate Decrease Chart',
+                          isIncrease
+                              ? AppTranslations.tr('Main Dairy Rate Increase Chart', lang)
+                              : AppTranslations.tr('Main Dairy Rate Decrease Chart', lang),
                           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: themeColor),
                         ),
                       ],
@@ -366,8 +371,8 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
                     const SizedBox(height: 6),
                     Text(
                       isIncrease
-                          ? 'Outward dispatch rate increases when Fat or SNF is higher than base.'
-                          : 'Outward dispatch rate decreases when Fat or SNF is lower than base.',
+                          ? AppTranslations.tr('Outward dispatch rate increases when Fat or SNF is higher than base.', lang)
+                          : AppTranslations.tr('Outward dispatch rate decreases when Fat or SNF is lower than base.', lang),
                       style: TextStyle(color: Colors.grey.shade700),
                     ),
                     const SizedBox(height: 16),
@@ -379,7 +384,7 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text('Animal Type:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                            Text(AppTranslations.tr('Animal Type:', lang), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                             const SizedBox(width: 10),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -391,7 +396,7 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
                                   value: _animalType,
-                                  items: ['Cow Milk', 'Buffalo Milk'].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontWeight: FontWeight.w600)))).toList(),
+                                  items: ['Cow Milk', 'Buffalo Milk'].map((e) => DropdownMenuItem(value: e, child: Text(AppTranslations.tr(e, lang), style: const TextStyle(fontWeight: FontWeight.w600)))).toList(),
                                   onChanged: (val) {
                                     if (val != null) {
                                       setState(() {
@@ -408,7 +413,7 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text('Effective Date:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                            Text(AppTranslations.tr('Effective Date:', lang), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                             const SizedBox(width: 10),
                             OutlinedButton.icon(
                               icon: const Icon(Icons.calendar_month, size: 20),
@@ -487,7 +492,7 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
             ],
 
             // Base Values (Responsive)
-            Text('Base Values', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue.shade900)),
+            Text(AppTranslations.tr('Base Values', lang), style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue.shade900)),
             const SizedBox(height: 8),
             LayoutBuilder(
               builder: (context, constraints) {
@@ -497,23 +502,23 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
                     children: [
                       Row(
                         children: [
-                          Expanded(child: _buildField('Base Fat', _baseFatController)),
+                          Expanded(child: _buildField(AppTranslations.tr('Base Fat', lang), _baseFatController)),
                           const SizedBox(width: 8),
-                          Expanded(child: _buildField('Base SNF', _baseSnfController)),
+                          Expanded(child: _buildField(AppTranslations.tr('Base SNF', lang), _baseSnfController)),
                         ],
                       ),
                       const SizedBox(height: 10),
-                      _buildField('Base Rate (₹)', _baseRateController),
+                      _buildField(AppTranslations.tr('Base Rate (₹)', lang), _baseRateController),
                     ],
                   );
                 }
                 return Row(
                   children: [
-                    Expanded(child: _buildField('Base Fat', _baseFatController)),
+                    Expanded(child: _buildField(AppTranslations.tr('Base Fat', lang), _baseFatController)),
                     const SizedBox(width: 12),
-                    Expanded(child: _buildField('Base SNF', _baseSnfController)),
+                    Expanded(child: _buildField(AppTranslations.tr('Base SNF', lang), _baseSnfController)),
                     const SizedBox(width: 12),
-                    Expanded(child: _buildField('Base Rate (₹)', _baseRateController)),
+                    Expanded(child: _buildField(AppTranslations.tr('Base Rate (₹)', lang), _baseRateController)),
                   ],
                 );
               },
@@ -521,7 +526,12 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
             const SizedBox(height: 16),
 
             // Settings (Responsive)
-            Text(isIncrease ? 'Increase Settings' : 'Decrease Settings', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: themeColor)),
+            Text(
+              isIncrease
+                  ? AppTranslations.tr('Increase Settings', lang)
+                  : AppTranslations.tr('Decrease Settings', lang),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: themeColor),
+            ),
             const SizedBox(height: 8),
             Card(
               elevation: 1,
@@ -536,33 +546,33 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
                         children: [
                           Row(
                             children: [
-                              Expanded(child: _buildField('Fat Range From', _fatFromController)),
+                              Expanded(child: _buildField(AppTranslations.tr('Fat Range From', lang), _fatFromController)),
                               const SizedBox(width: 8),
-                              Expanded(child: _buildField('Fat Range To', _fatToController)),
+                              Expanded(child: _buildField(AppTranslations.tr('Fat Range To', lang), _fatToController)),
                             ],
                           ),
                           const SizedBox(height: 10),
                           Row(
                             children: [
-                              Expanded(child: _buildField('Fat Point', _fatPointController)),
+                              Expanded(child: _buildField(AppTranslations.tr('Fat Point', lang), _fatPointController)),
                               const SizedBox(width: 8),
-                              Expanded(child: _buildField('Fat Rate (₹)', _fatRateController)),
+                              Expanded(child: _buildField(AppTranslations.tr('Fat Rate (₹)', lang), _fatRateController)),
                             ],
                           ),
                           const SizedBox(height: 16),
                           Row(
                             children: [
-                              Expanded(child: _buildField('SNF Range From', _snfFromController)),
+                              Expanded(child: _buildField(AppTranslations.tr('SNF Range From', lang), _snfFromController)),
                               const SizedBox(width: 8),
-                              Expanded(child: _buildField('SNF Range To', _snfToController)),
+                              Expanded(child: _buildField(AppTranslations.tr('SNF Range To', lang), _snfToController)),
                             ],
                           ),
                           const SizedBox(height: 10),
                           Row(
                             children: [
-                              Expanded(child: _buildField('SNF Point', _snfPointController)),
+                              Expanded(child: _buildField(AppTranslations.tr('SNF Point', lang), _snfPointController)),
                               const SizedBox(width: 8),
-                              Expanded(child: _buildField('SNF Rate (₹)', _snfRateController)),
+                              Expanded(child: _buildField(AppTranslations.tr('SNF Rate (₹)', lang), _snfRateController)),
                             ],
                           ),
                         ],
@@ -572,25 +582,25 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
                       children: [
                         Row(
                           children: [
-                            Expanded(child: _buildField('Fat Range From', _fatFromController)),
+                            Expanded(child: _buildField(AppTranslations.tr('Fat Range From', lang), _fatFromController)),
                             const SizedBox(width: 8),
-                            Expanded(child: _buildField('Fat Range To', _fatToController)),
+                            Expanded(child: _buildField(AppTranslations.tr('Fat Range To', lang), _fatToController)),
                             const SizedBox(width: 8),
-                            Expanded(child: _buildField('Fat Point', _fatPointController)),
+                            Expanded(child: _buildField(AppTranslations.tr('Fat Point', lang), _fatPointController)),
                             const SizedBox(width: 8),
-                            Expanded(child: _buildField('Fat Rate (₹)', _fatRateController)),
+                            Expanded(child: _buildField(AppTranslations.tr('Fat Rate (₹)', lang), _fatRateController)),
                           ],
                         ),
                         const SizedBox(height: 16),
                         Row(
                           children: [
-                            Expanded(child: _buildField('SNF Range From', _snfFromController)),
+                            Expanded(child: _buildField(AppTranslations.tr('SNF Range From', lang), _snfFromController)),
                             const SizedBox(width: 8),
-                            Expanded(child: _buildField('SNF Range To', _snfToController)),
+                            Expanded(child: _buildField(AppTranslations.tr('SNF Range To', lang), _snfToController)),
                             const SizedBox(width: 8),
-                            Expanded(child: _buildField('SNF Point', _snfPointController)),
+                            Expanded(child: _buildField(AppTranslations.tr('SNF Point', lang), _snfPointController)),
                             const SizedBox(width: 8),
-                            Expanded(child: _buildField('SNF Rate (₹)', _snfRateController)),
+                            Expanded(child: _buildField(AppTranslations.tr('SNF Rate (₹)', lang), _snfRateController)),
                           ],
                         ),
                       ],
@@ -608,7 +618,7 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
               children: [
                 ElevatedButton.icon(
                   icon: const Icon(Icons.bar_chart),
-                  label: const Text('Generate Chart', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                  label: Text(AppTranslations.tr('Generate Chart', lang), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: themeColor,
                     foregroundColor: Colors.white,
@@ -621,7 +631,9 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
                       ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                       : Icon(_editingConfigId != null ? Icons.check_circle : Icons.save),
                   label: Text(
-                    _editingConfigId != null ? 'Update Configuration' : 'Save Configuration',
+                    _editingConfigId != null
+                        ? AppTranslations.tr('Update Configuration', lang)
+                        : AppTranslations.tr('Save Configuration', lang),
                     style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -634,7 +646,7 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
                 if (_editingConfigId != null) ...[
                   OutlinedButton.icon(
                     icon: const Icon(Icons.add_circle_outline),
-                    label: const Text('Save as New Version', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    label: Text(AppTranslations.tr('Save as New Version', lang), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.blue.shade800,
                       side: BorderSide(color: Colors.blue.shade800, width: 1.5),
@@ -679,7 +691,7 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
                             child: SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
                               child: DataTable(
-                                headingRowColor: WidgetStateProperty.all(themeColor.withOpacity(0.12)),
+                                headingRowColor: WidgetStateProperty.all(themeColor.withValues(alpha: 0.12)),
                                 columns: const [
                                   DataColumn(label: Text('No.', style: TextStyle(fontWeight: FontWeight.bold))),
                                   DataColumn(label: Text('Fat %', style: TextStyle(fontWeight: FontWeight.bold))),
@@ -725,6 +737,7 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
           filteredConfigs = filteredConfigs.where((c) => c.rateType == _filterRateType).toList();
         }
 
+        final lang = ref.watch(languageProvider);
         return Column(
           children: [
             // Filter Bar
@@ -739,10 +752,10 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('Animal: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                      Text(AppTranslations.tr('Animal: ', lang), style: const TextStyle(fontWeight: FontWeight.bold)),
                       DropdownButton<String>(
                         value: _filterAnimalType,
-                        items: ['All', 'Cow Milk', 'Buffalo Milk'].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                        items: ['All', 'Cow Milk', 'Buffalo Milk'].map((t) => DropdownMenuItem(value: t, child: Text(AppTranslations.tr(t, lang)))).toList(),
                         onChanged: (val) {
                           if (val != null) setState(() => _filterAnimalType = val);
                         },
@@ -752,10 +765,10 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('Rate Type: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                      Text('${AppTranslations.tr('Rate Type', lang)}: ', style: const TextStyle(fontWeight: FontWeight.bold)),
                       DropdownButton<String>(
                         value: _filterRateType,
-                        items: ['All', 'Increase', 'Decrease'].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                        items: ['All', 'Increase', 'Decrease'].map((t) => DropdownMenuItem(value: t, child: Text(AppTranslations.tr(t, lang)))).toList(),
                         onChanged: (val) {
                           if (val != null) setState(() => _filterRateType = val);
                         },
@@ -771,10 +784,10 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
             // Scrollable 2D Table
             Expanded(
               child: filteredConfigs.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Padding(
-                        padding: EdgeInsets.all(32),
-                        child: Text('No saved Main Dairy rate configurations found.', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                        padding: const EdgeInsets.all(32),
+                        child: Text(AppTranslations.tr('No saved Main Dairy rate configurations found.', lang), style: const TextStyle(fontSize: 16, color: Colors.grey)),
                       ),
                     )
                   : Scrollbar(
@@ -786,18 +799,18 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
                           child: DataTable(
                             headingRowColor: WidgetStateProperty.all(Colors.blue.shade50),
                             columnSpacing: 20,
-                            columns: const [
-                              DataColumn(label: Text('Animal Type', style: TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Rate Type', style: TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Effective Date', style: TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Base Fat', style: TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Base SNF', style: TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Base Rate', style: TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Fat Range', style: TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Fat Increment', style: TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('SNF Range', style: TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('SNF Increment', style: TextStyle(fontWeight: FontWeight.bold))),
-                              DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
+                            columns: [
+                              DataColumn(label: Text(AppTranslations.tr('Animal Type', lang), style: const TextStyle(fontWeight: FontWeight.bold))),
+                              DataColumn(label: Text(AppTranslations.tr('Rate Type', lang), style: const TextStyle(fontWeight: FontWeight.bold))),
+                              DataColumn(label: Text(AppTranslations.tr('Effective Date', lang), style: const TextStyle(fontWeight: FontWeight.bold))),
+                              DataColumn(label: Text(AppTranslations.tr('Base Fat', lang), style: const TextStyle(fontWeight: FontWeight.bold))),
+                              DataColumn(label: Text(AppTranslations.tr('Base SNF', lang), style: const TextStyle(fontWeight: FontWeight.bold))),
+                              DataColumn(label: Text(AppTranslations.tr('Base Rate', lang), style: const TextStyle(fontWeight: FontWeight.bold))),
+                              DataColumn(label: Text(AppTranslations.tr('Fat Range', lang), style: const TextStyle(fontWeight: FontWeight.bold))),
+                              DataColumn(label: Text(AppTranslations.tr('Fat Increment', lang), style: const TextStyle(fontWeight: FontWeight.bold))),
+                              DataColumn(label: Text(AppTranslations.tr('SNF Range', lang), style: const TextStyle(fontWeight: FontWeight.bold))),
+                              DataColumn(label: Text(AppTranslations.tr('SNF Increment', lang), style: const TextStyle(fontWeight: FontWeight.bold))),
+                              DataColumn(label: Text(AppTranslations.tr('Actions', lang), style: const TextStyle(fontWeight: FontWeight.bold))),
                             ],
                             rows: filteredConfigs.map((c) {
                               final isIncrease = c.rateType == 'Increase';
@@ -912,10 +925,11 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
     }
 
     final totalCount = configsAsync.value?.length ?? 0;
+    final lang = ref.watch(languageProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Main Dairy Rate Management'),
+        title: Text(AppTranslations.tr('Main Dairy Rate Management', lang)),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 0,
@@ -926,13 +940,13 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
           indicatorColor: Colors.blue.shade900,
           indicatorWeight: 3,
           tabs: [
-            const Tab(
-              icon: Icon(Icons.arrow_upward, color: Colors.green),
-              text: 'Rate Increase Chart',
+            Tab(
+              icon: const Icon(Icons.arrow_upward, color: Colors.green),
+              text: AppTranslations.tr('Rate Increase Chart', lang),
             ),
-            const Tab(
-              icon: Icon(Icons.arrow_downward, color: Colors.red),
-              text: 'Rate Decrease Chart',
+            Tab(
+              icon: const Icon(Icons.arrow_downward, color: Colors.red),
+              text: AppTranslations.tr('Rate Decrease Chart', lang),
             ),
             Tab(
               icon: Badge(
@@ -940,7 +954,7 @@ class _MainDairyRateScreenState extends ConsumerState<MainDairyRateScreen> with 
                 isLabelVisible: totalCount > 0,
                 child: const Icon(Icons.table_chart, color: Colors.blue),
               ),
-              text: 'All Saved Configurations',
+              text: AppTranslations.tr('All Saved Configurations', lang),
             ),
           ],
         ),

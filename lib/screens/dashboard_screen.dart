@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +7,8 @@ import 'login_screen.dart';
 import 'sub_login_screen.dart';
 import '../main.dart';
 import '../providers/auth_provider.dart';
+import '../providers/language_provider.dart';
+import '../services/translations.dart';
 import '../widgets/desktop_wrapper.dart';
 import 'farmer_screen.dart';
 import 'milk_collection_screen.dart';
@@ -138,21 +139,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   ];
 
   Future<void> _confirmLogout(BuildContext context) async {
+    final lang = ref.read(languageProvider);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.power_settings_new, color: Colors.red),
-            SizedBox(width: 8),
-            Text('Logout Confirmation'),
+            const Icon(Icons.power_settings_new, color: Colors.red),
+            const SizedBox(width: 8),
+            Text(AppTranslations.tr('Logout Confirmation', lang)),
           ],
         ),
-        content: const Text('Are you sure you want to log out of your account?'),
+        content: Text(AppTranslations.tr('Are you sure you want to log out of your account?', lang)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('CANCEL'),
+            child: Text(AppTranslations.tr('CANCEL', lang)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -160,7 +162,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('LOGOUT', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(AppTranslations.tr('LOGOUT', lang), style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -342,6 +344,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final isDesktop = false; // Always use mobile drawer layout so it doesn't permanently occupy the screen
     final primaryColor = Theme.of(context).colorScheme.primary;
     final outOfStockProducts = ref.watch(outOfStockProductsProvider);
+    final lang = ref.watch(languageProvider);
 
     // Automatic reminder notification when opening Dashboard if products are out of stock
     if (outOfStockProducts.isNotEmpty && !_hasShownStockAlert) {
@@ -389,10 +392,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
         title: Text(
           _isMainDairyMode
-              ? 'Main Dairy Portal'
+              ? AppTranslations.tr('Main Dairy Portal', lang)
               : (ref.watch(sessionProvider)?.isAdmin == true
-                  ? 'Dairy Management'
-                  : '${ref.watch(sessionProvider)?.activeEmployee?.name ?? ""} - Dairy'),
+                  ? AppTranslations.tr('Dairy Management', lang)
+                  : '${ref.watch(sessionProvider)?.activeEmployee?.name ?? ""} - ${AppTranslations.tr("Dairy Management", lang)}'),
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           overflow: TextOverflow.ellipsis,
           maxLines: 1,
@@ -408,7 +411,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           if (_isMainDairyMode)
             TextButton.icon(
               icon: const Icon(Icons.arrow_back, color: Colors.white),
-              label: const Text('LOCAL DAIRY', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              label: Text(AppTranslations.tr('Local Dairy', lang).toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               onPressed: () {
                 setState(() {
                   _isMainDairyMode = false;
@@ -469,33 +472,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               }
             },
             itemBuilder: (ctx) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'help',
                 child: Row(
                   children: [
-                    Icon(Icons.support_agent, color: Colors.blue),
-                    SizedBox(width: 8),
-                    Text('Help Center & Support'),
+                    const Icon(Icons.support_agent, color: Colors.blue),
+                    const SizedBox(width: 8),
+                    Text(AppTranslations.tr('Help Center', lang)),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'switch',
                 child: Row(
                   children: [
-                    Icon(Icons.swap_horiz, color: Colors.blue),
-                    SizedBox(width: 8),
-                    Text('Switch Account'),
+                    const Icon(Icons.swap_horiz, color: Colors.blue),
+                    const SizedBox(width: 8),
+                    Text(AppTranslations.tr('Switch Account', lang)),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'logout',
                 child: Row(
                   children: [
-                    Icon(Icons.logout, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('Logout', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                    const Icon(Icons.logout, color: Colors.red),
+                    const SizedBox(width: 8),
+                    Text(AppTranslations.tr('Logout', lang), style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
@@ -552,8 +555,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final settingsAsync = ref.watch(settingsProvider);
     final dairyName = settingsAsync.value?.dairyName ?? 'My Dairy';
     final logoBytes = settingsAsync.value?.logoBytes;
-
-    final activeMenuItems = _isMainDairyMode ? _mainDairyMenuItems : _menuItems;
+    final lang = ref.watch(languageProvider);
 
     return Column(
       children: [
@@ -564,11 +566,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             color: Colors.indigo.shade900,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Icon(Icons.domain, size: 44, color: Colors.white),
-                SizedBox(height: 8),
-                Text('MAIN DAIRY PORTAL', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                Text('Outward Milk Dispatches & Rates', style: TextStyle(fontSize: 11, color: Colors.white70)),
+              children: [
+                const Icon(Icons.domain, size: 44, color: Colors.white),
+                const SizedBox(height: 8),
+                Text(AppTranslations.tr('MAIN DAIRY PORTAL', lang), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                Text(AppTranslations.tr('Outward Milk Dispatches & Rates', lang), style: const TextStyle(fontSize: 11, color: Colors.white70)),
               ],
             ),
           )
@@ -576,7 +578,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           Container(
             height: 140,
             width: double.infinity,
-            color: primaryColor.withOpacity(0.1),
+            color: primaryColor.withValues(alpha: 0.1),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -616,7 +618,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               elevation: 2,
             ),
             icon: const Icon(Icons.power_settings_new),
-            label: const Text('LOGOUT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.1)),
+            label: Text(AppTranslations.tr('LOGOUT', lang), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.1)),
           ),
         ),
       ],
@@ -655,9 +657,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             children: [
               ListTile(
                 leading: const Icon(Icons.workspace_premium, color: Colors.white),
-                title: const Text(
-                  'Bonus',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                title: Text(
+                  AppTranslations.tr('Bonus', ref.watch(languageProvider)),
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
                 ),
                 trailing: Icon(
                   _isBonusExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
@@ -675,7 +677,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               if (_isBonusExpanded)
                 Container(
                   padding: const EdgeInsets.only(bottom: 6),
-                  color: Colors.indigo.shade900.withOpacity(0.4),
+                  color: Colors.indigo.shade900.withValues(alpha: 0.4),
                   child: Column(
                     children: bonusSubItems.map((sub) {
                       final isSubSelected = _mainDairySelectedMenu == sub;
@@ -690,7 +692,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           contentPadding: const EdgeInsets.only(left: 24, right: 12),
                           leading: _getIconForMenu(sub, isSubSelected),
                           title: Text(
-                            sub,
+                            AppTranslations.tr(sub, ref.watch(languageProvider)),
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: isSubSelected ? FontWeight.bold : FontWeight.normal,
@@ -724,9 +726,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           child: ListTile(
             leading: const Icon(Icons.arrow_back, color: Colors.white),
-            title: const Text(
-              '⬅ Back to Local Dairy',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            title: Text(
+              AppTranslations.tr('⬅ Back to Local Dairy', ref.watch(languageProvider)),
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
             ),
             onTap: () {
               setState(() {
@@ -745,6 +747,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildMainDairyTile(String title, IconData icon) {
     final isSelected = _mainDairySelectedMenu == title;
+    final lang = ref.watch(languageProvider);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
@@ -755,7 +758,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: ListTile(
         leading: Icon(icon, color: Colors.white),
         title: Text(
-          title,
+          AppTranslations.tr(title, lang),
           style: TextStyle(
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             color: Colors.white,
@@ -804,9 +807,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               children: [
                 ListTile(
                   leading: const Icon(Icons.workspace_premium, color: Colors.white),
-                  title: const Text(
-                    'Bonus',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                  title: Text(
+                    AppTranslations.tr('Bonus', ref.watch(languageProvider)),
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                   trailing: Icon(
                     _isLocalDairyBonusExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
@@ -822,7 +825,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 if (_isLocalDairyBonusExpanded)
                   Container(
                     padding: const EdgeInsets.only(bottom: 6),
-                    color: Colors.blue.shade900.withOpacity(0.4),
+                    color: Colors.blue.shade900.withValues(alpha: 0.4),
                     child: Column(
                       children: bonusSubItems.map((sub) {
                         final isSubSelected = isBonusActive && _localDairyBonusSelectedSub == sub;
@@ -837,7 +840,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             contentPadding: const EdgeInsets.only(left: 24, right: 12),
                             leading: _getIconForMenu(sub, isSubSelected),
                             title: Text(
-                              sub,
+                              AppTranslations.tr(sub, ref.watch(languageProvider)),
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: isSubSelected ? FontWeight.bold : FontWeight.normal,
@@ -875,7 +878,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           child: ListTile(
             leading: _getIconForMenu(menu, isSelected),
             title: Text(
-              menu,
+              AppTranslations.tr(menu, ref.watch(languageProvider)),
               style: TextStyle(
                 fontWeight: isSelected || menu == 'Main Dairy' ? FontWeight.bold : FontWeight.normal,
                 color: Colors.white,

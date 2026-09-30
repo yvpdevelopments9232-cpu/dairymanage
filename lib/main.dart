@@ -17,6 +17,9 @@ import 'models/subscription_model.dart';
 import 'screens/subscription/choose_plan_screen.dart';
 import 'screens/subscription/subscription_expired_screen.dart';
 
+import 'services/translations.dart';
+import 'providers/language_provider.dart';
+
 late SharedPreferences prefs;
 
 void main() async {
@@ -24,6 +27,8 @@ void main() async {
   AppConfig.isOfflineMode = false;
   
   prefs = await SharedPreferences.getInstance();
+  final savedLang = prefs.getString(AppTranslations.keyLanguage) ?? 'en';
+  AppTranslations.currentLanguage = savedLang;
 
   await Supabase.initialize(
     url: 'https://xlgsccosvlbpgwxuygwj.supabase.co',
@@ -37,13 +42,16 @@ void main() async {
   );
 }
 
-class DairyManagementApp extends StatelessWidget {
+class DairyManagementApp extends ConsumerWidget {
   const DairyManagementApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageProvider);
     return MaterialApp(
-      title: 'Dairy Management',
+      key: ValueKey(lang),
+      title: AppTranslations.tr('Dairy Management', lang),
+      locale: Locale(lang),
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue.shade900),
@@ -51,7 +59,6 @@ class DairyManagementApp extends StatelessWidget {
       ),
       home: const AuthGate(),
       builder: (context, child) => GlobalOfflineWrapper(child: child!),
- 
     );
   }
 }

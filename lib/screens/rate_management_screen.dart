@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/session_provider.dart';
 import '../providers/rate_provider.dart';
+import '../services/translations.dart';
+import '../providers/language_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -333,6 +335,7 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
   }
 
   Widget _buildTabContent(bool isIncrease) {
+    final lang = ref.watch(languageProvider);
     final themeColor = isIncrease ? Colors.green.shade600 : Colors.red.shade600;
     final bgColor = isIncrease ? Colors.green.shade50 : Colors.red.shade50;
 
@@ -357,13 +360,20 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                       children: [
                         Icon(isIncrease ? Icons.arrow_upward : Icons.arrow_downward, color: themeColor, size: 28),
                         const SizedBox(width: 8),
-                        Text(isIncrease ? 'Rate Increase Chart' : 'Rate Decrease Chart', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: themeColor)),
+                        Text(
+                          isIncrease
+                              ? AppTranslations.tr('Rate Increase Chart', lang)
+                              : AppTranslations.tr('Rate Decrease Chart', lang),
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: themeColor),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      isIncrease ? 'Rate increases when Fat or SNF is higher than the base value.' : 'Rate decreases when Fat or SNF is lower than the base value.',
-                      style: TextStyle(color: Colors.grey.shade700)
+                      isIncrease
+                          ? AppTranslations.tr('Rate increases when Fat or SNF is higher than the base value.', lang)
+                          : AppTranslations.tr('Rate decreases when Fat or SNF is lower than the base value.', lang),
+                      style: TextStyle(color: Colors.grey.shade700),
                     ),
                     const SizedBox(height: 16),
                     Wrap(
@@ -374,7 +384,7 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text('Animal Type:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                            Text(AppTranslations.tr('Animal Type:', lang), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                             const SizedBox(width: 10),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -386,7 +396,7 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
                                   value: _animalType,
-                                  items: ['Cow Milk', 'Buffalo Milk'].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontWeight: FontWeight.w600)))).toList(),
+                                  items: ['Cow Milk', 'Buffalo Milk'].map((e) => DropdownMenuItem(value: e, child: Text(AppTranslations.tr(e, lang), style: const TextStyle(fontWeight: FontWeight.w600)))).toList(),
                                   onChanged: (val) {
                                     if (val != null) {
                                       setState(() {
@@ -403,7 +413,7 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text('Effective Date:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                            Text(AppTranslations.tr('Effective Date:', lang), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                             const SizedBox(width: 10),
                             OutlinedButton.icon(
                               icon: const Icon(Icons.calendar_month, size: 20),
@@ -482,7 +492,7 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
             ],
             
             // Base Values
-            Text('Base Values', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue.shade900)),
+            Text(AppTranslations.tr('Base Values', lang), style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue.shade900)),
             const SizedBox(height: 8),
             LayoutBuilder(
               builder: (context, constraints) {
@@ -492,23 +502,23 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                     children: [
                       Row(
                         children: [
-                          Expanded(child: _buildField('Base Fat', _baseFatController)),
+                          Expanded(child: _buildField(AppTranslations.tr('Base Fat', lang), _baseFatController)),
                           const SizedBox(width: 8),
-                          Expanded(child: _buildField('Base SNF', _baseSnfController)),
+                          Expanded(child: _buildField(AppTranslations.tr('Base SNF', lang), _baseSnfController)),
                         ],
                       ),
                       const SizedBox(height: 10),
-                      _buildField('Base Rate (₹)', _baseRateController),
+                      _buildField(AppTranslations.tr('Base Rate (₹)', lang), _baseRateController),
                     ],
                   );
                 }
                 return Row(
                   children: [
-                    Expanded(child: _buildField('Base Fat', _baseFatController)),
+                    Expanded(child: _buildField(AppTranslations.tr('Base Fat', lang), _baseFatController)),
                     const SizedBox(width: 12),
-                    Expanded(child: _buildField('Base SNF', _baseSnfController)),
+                    Expanded(child: _buildField(AppTranslations.tr('Base SNF', lang), _baseSnfController)),
                     const SizedBox(width: 12),
-                    Expanded(child: _buildField('Base Rate (₹)', _baseRateController)),
+                    Expanded(child: _buildField(AppTranslations.tr('Base Rate (₹)', lang), _baseRateController)),
                   ],
                 );
               },
@@ -516,7 +526,12 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
             const SizedBox(height: 16),
 
             // Settings
-            Text(isIncrease ? 'Increase Settings' : 'Decrease Settings', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: themeColor)),
+            Text(
+              isIncrease
+                  ? AppTranslations.tr('Increase Settings', lang)
+                  : AppTranslations.tr('Decrease Settings', lang),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: themeColor),
+            ),
             const SizedBox(height: 8),
             Card(
               elevation: 1,
@@ -531,33 +546,33 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                         children: [
                           Row(
                             children: [
-                              Expanded(child: _buildField('Fat Range From', _fatFromController)),
+                              Expanded(child: _buildField(AppTranslations.tr('Fat Range From', lang), _fatFromController)),
                               const SizedBox(width: 8),
-                              Expanded(child: _buildField('Fat Range To', _fatToController)),
+                              Expanded(child: _buildField(AppTranslations.tr('Fat Range To', lang), _fatToController)),
                             ],
                           ),
                           const SizedBox(height: 10),
                           Row(
                             children: [
-                              Expanded(child: _buildField('Fat Point', _fatPointController)),
+                              Expanded(child: _buildField(AppTranslations.tr('Fat Point', lang), _fatPointController)),
                               const SizedBox(width: 8),
-                              Expanded(child: _buildField('Fat Rate (₹)', _fatRateController)),
+                              Expanded(child: _buildField(AppTranslations.tr('Fat Rate (₹)', lang), _fatRateController)),
                             ],
                           ),
                           const SizedBox(height: 16),
                           Row(
                             children: [
-                              Expanded(child: _buildField('SNF Range From', _snfFromController)),
+                              Expanded(child: _buildField(AppTranslations.tr('SNF Range From', lang), _snfFromController)),
                               const SizedBox(width: 8),
-                              Expanded(child: _buildField('SNF Range To', _snfToController)),
+                              Expanded(child: _buildField(AppTranslations.tr('SNF Range To', lang), _snfToController)),
                             ],
                           ),
                           const SizedBox(height: 10),
                           Row(
                             children: [
-                              Expanded(child: _buildField('SNF Point', _snfPointController)),
+                              Expanded(child: _buildField(AppTranslations.tr('SNF Point', lang), _snfPointController)),
                               const SizedBox(width: 8),
-                              Expanded(child: _buildField('SNF Rate (₹)', _snfRateController)),
+                              Expanded(child: _buildField(AppTranslations.tr('SNF Rate (₹)', lang), _snfRateController)),
                             ],
                           ),
                         ],
@@ -567,25 +582,25 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                       children: [
                         Row(
                           children: [
-                            Expanded(child: _buildField('Fat Range From', _fatFromController)),
+                            Expanded(child: _buildField(AppTranslations.tr('Fat Range From', lang), _fatFromController)),
                             const SizedBox(width: 8),
-                            Expanded(child: _buildField('Fat Range To', _fatToController)),
+                            Expanded(child: _buildField(AppTranslations.tr('Fat Range To', lang), _fatToController)),
                             const SizedBox(width: 8),
-                            Expanded(child: _buildField('Fat Point', _fatPointController)),
+                            Expanded(child: _buildField(AppTranslations.tr('Fat Point', lang), _fatPointController)),
                             const SizedBox(width: 8),
-                            Expanded(child: _buildField('Fat Rate (₹)', _fatRateController)),
+                            Expanded(child: _buildField(AppTranslations.tr('Fat Rate (₹)', lang), _fatRateController)),
                           ],
                         ),
                         const SizedBox(height: 16),
                         Row(
                           children: [
-                            Expanded(child: _buildField('SNF Range From', _snfFromController)),
+                            Expanded(child: _buildField(AppTranslations.tr('SNF Range From', lang), _snfFromController)),
                             const SizedBox(width: 8),
-                            Expanded(child: _buildField('SNF Range To', _snfToController)),
+                            Expanded(child: _buildField(AppTranslations.tr('SNF Range To', lang), _snfToController)),
                             const SizedBox(width: 8),
-                            Expanded(child: _buildField('SNF Point', _snfPointController)),
+                            Expanded(child: _buildField(AppTranslations.tr('SNF Point', lang), _snfPointController)),
                             const SizedBox(width: 8),
-                            Expanded(child: _buildField('SNF Rate (₹)', _snfRateController)),
+                            Expanded(child: _buildField(AppTranslations.tr('SNF Rate (₹)', lang), _snfRateController)),
                           ],
                         ),
                       ],
@@ -603,7 +618,7 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
               children: [
                 ElevatedButton.icon(
                   icon: const Icon(Icons.bar_chart),
-                  label: const Text('Generate Chart', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                  label: Text(AppTranslations.tr('Generate Chart', lang), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: themeColor,
                     foregroundColor: Colors.white,
@@ -616,7 +631,9 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                       ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                       : Icon(_editingConfigId != null ? Icons.check_circle : Icons.save),
                   label: Text(
-                    _editingConfigId != null ? 'Update Configuration' : 'Save Configuration',
+                    _editingConfigId != null
+                        ? AppTranslations.tr('Update Configuration', lang)
+                        : AppTranslations.tr('Save Configuration', lang),
                     style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -629,7 +646,7 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                 if (_editingConfigId != null) ...[
                   OutlinedButton.icon(
                     icon: const Icon(Icons.add_circle_outline),
-                    label: const Text('Save as New Version', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    label: Text(AppTranslations.tr('Save as New Version', lang), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.blue.shade800,
                       side: BorderSide(color: Colors.blue.shade800, width: 1.5),
@@ -647,7 +664,7 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Generated Preview (${_generatedChart.length} combinations)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue.shade900)),
+                  Text('${AppTranslations.tr('Generated Preview', lang)} (${_generatedChart.length})', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue.shade900)),
                   ElevatedButton.icon(
                     icon: const Icon(Icons.picture_as_pdf),
                     label: const Text('Export PDF'),
@@ -755,6 +772,7 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
 
   Widget _buildAllSavedConfigsView() {
     final configsAsync = ref.watch(rateConfigProvider);
+    final lang = ref.watch(languageProvider);
 
     return configsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -787,14 +805,14 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Text('Animal: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text(AppTranslations.tr('Animal: ', lang), style: const TextStyle(fontWeight: FontWeight.bold)),
                           const SizedBox(width: 8),
                           Wrap(
                             spacing: 8,
                             children: ['All', 'Cow Milk', 'Buffalo Milk'].map((animal) {
                               final isSelected = _filterAnimalType == animal;
                               return ChoiceChip(
-                                label: Text(animal),
+                                label: Text(AppTranslations.tr(animal, lang)),
                                 selected: isSelected,
                                 selectedColor: Colors.blue.shade100,
                                 onSelected: (_) {
@@ -808,14 +826,14 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Text('Type: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text(AppTranslations.tr('Type: ', lang), style: const TextStyle(fontWeight: FontWeight.bold)),
                           const SizedBox(width: 8),
                           Wrap(
                             spacing: 8,
                             children: ['All', 'Increase', 'Decrease'].map((type) {
                               final isSelected = _filterRateType == type;
                               return ChoiceChip(
-                                label: Text(type),
+                                label: Text(AppTranslations.tr(type, lang)),
                                 selected: isSelected,
                                 selectedColor: type == 'Increase' ? Colors.green.shade100 : (type == 'Decrease' ? Colors.red.shade100 : Colors.blue.shade100),
                                 onSelected: (_) {
@@ -834,7 +852,7 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
 
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: Text('Showing ${filtered.length} of ${allConfigs.length} configurations (Scroll horizontally or vertically to see all details)', style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+                child: Text('Showing ${filtered.length} of ${allConfigs.length} configurations', style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
               ),
               const SizedBox(height: 8),
 
@@ -847,7 +865,7 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                           children: [
                             Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey.shade400),
                             const SizedBox(height: 12),
-                            Text('No configurations match the filter.', style: TextStyle(color: Colors.grey.shade600)),
+                            Text(AppTranslations.tr('No saved configurations found.', lang), style: TextStyle(color: Colors.grey.shade600)),
                           ],
                         ),
                       )
@@ -860,14 +878,14 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                             scrollDirection: Axis.horizontal,
                             child: DataTable(
                               headingRowColor: WidgetStateProperty.all(Colors.blue.shade50),
-                              columns: const [
-                                DataColumn(label: Text('Animal Type', style: TextStyle(fontWeight: FontWeight.bold))),
-                                DataColumn(label: Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
-                                DataColumn(label: Text('Effective Date', style: TextStyle(fontWeight: FontWeight.bold))),
-                                DataColumn(label: Text('Base Fat/SNF/Rate', style: TextStyle(fontWeight: FontWeight.bold))),
-                                DataColumn(label: Text('Fat Pts/Rate', style: TextStyle(fontWeight: FontWeight.bold))),
-                                DataColumn(label: Text('SNF Pts/Rate', style: TextStyle(fontWeight: FontWeight.bold))),
-                                DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
+                              columns: [
+                                DataColumn(label: Text(AppTranslations.tr('Animal Type', lang), style: const TextStyle(fontWeight: FontWeight.bold))),
+                                DataColumn(label: Text(AppTranslations.tr('Rate Type', lang), style: const TextStyle(fontWeight: FontWeight.bold))),
+                                DataColumn(label: Text(AppTranslations.tr('Effective Date', lang), style: const TextStyle(fontWeight: FontWeight.bold))),
+                                DataColumn(label: Text('${AppTranslations.tr("Base Fat", lang)}/${AppTranslations.tr("SNF", lang)}/${AppTranslations.tr("Rate", lang)}', style: const TextStyle(fontWeight: FontWeight.bold))),
+                                const DataColumn(label: Text('Fat Pts/Rate', style: TextStyle(fontWeight: FontWeight.bold))),
+                                const DataColumn(label: Text('SNF Pts/Rate', style: TextStyle(fontWeight: FontWeight.bold))),
+                                DataColumn(label: Text(AppTranslations.tr('Actions', lang), style: const TextStyle(fontWeight: FontWeight.bold))),
                               ],
                               rows: filtered.map((c) => _buildDataRow(c, showType: true)).toList(),
                             ),
@@ -986,10 +1004,11 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
     }
 
     final totalCount = configsAsync.value?.length ?? 0;
+    final lang = ref.watch(languageProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Rate Management'),
+        title: Text(AppTranslations.tr('Rate Management', lang)),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 0,
@@ -1000,13 +1019,13 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
           indicatorColor: Colors.blue.shade900,
           indicatorWeight: 3,
           tabs: [
-            const Tab(
-              icon: Icon(Icons.arrow_upward, color: Colors.green),
-              text: 'Rate Increase Chart',
+            Tab(
+              icon: const Icon(Icons.arrow_upward, color: Colors.green),
+              text: AppTranslations.tr('Rate Increase Chart', lang),
             ),
-            const Tab(
-              icon: Icon(Icons.arrow_downward, color: Colors.red),
-              text: 'Rate Decrease Chart',
+            Tab(
+              icon: const Icon(Icons.arrow_downward, color: Colors.red),
+              text: AppTranslations.tr('Rate Decrease Chart', lang),
             ),
             Tab(
               icon: Badge(
@@ -1014,7 +1033,7 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                 isLabelVisible: totalCount > 0,
                 child: const Icon(Icons.table_chart, color: Colors.blue),
               ),
-              text: 'All Saved Configurations',
+              text: AppTranslations.tr('All Saved Configurations', lang),
             ),
           ],
         ),

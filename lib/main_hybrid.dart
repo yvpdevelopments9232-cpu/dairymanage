@@ -17,6 +17,8 @@ import 'models/subscription_model.dart';
 import 'screens/subscription/choose_plan_screen.dart';
 import 'screens/subscription/subscription_expired_screen.dart';
 import 'widgets/offline_wrapper.dart';
+import 'services/translations.dart';
+import 'providers/language_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +26,8 @@ void main() async {
   AppConfig.isHybridMode = true;
 
   main_file.prefs = await SharedPreferences.getInstance();
+  final savedLang = main_file.prefs.getString(AppTranslations.keyLanguage) ?? 'en';
+  AppTranslations.currentLanguage = savedLang;
 
   // Initialize Supabase for background cloud synchronization
   try {
@@ -154,8 +158,12 @@ class _DairyManagementHybridAppState extends ConsumerState<DairyManagementHybrid
       homeWidget = const LoginScreen();
     }
 
+    final lang = ref.watch(languageProvider);
+
     return MaterialApp(
-      title: 'Dairy Management (Hybrid Auto-Sync)',
+      key: ValueKey(lang),
+      title: AppTranslations.tr('Dairy Management (Hybrid Auto-Sync)', lang),
+      locale: Locale(lang),
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal.shade800),

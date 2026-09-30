@@ -9,12 +9,16 @@ import 'screens/login_screen.dart';
 import 'screens/sub_login_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'widgets/offline_wrapper.dart';
+import 'services/translations.dart';
+import 'providers/language_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   AppConfig.isOfflineMode = true;
 
   main_file.prefs = await SharedPreferences.getInstance();
+  final savedLang = main_file.prefs.getString(AppTranslations.keyLanguage) ?? 'en';
+  AppTranslations.currentLanguage = savedLang;
 
   // Initialize offline SQLite database and schema
   await OfflineDbHelper.instance.database;
@@ -92,8 +96,12 @@ class _DairyManagementOfflineAppState extends ConsumerState<DairyManagementOffli
       homeWidget = const LoginScreen();
     }
 
+    final lang = ref.watch(languageProvider);
+
     return MaterialApp(
-      title: 'Dairy Management (Offline Edition)',
+      key: ValueKey(lang),
+      title: AppTranslations.tr('Dairy Management (Offline Edition)', lang),
+      locale: Locale(lang),
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue.shade900),

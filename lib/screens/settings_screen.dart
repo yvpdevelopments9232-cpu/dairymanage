@@ -8,6 +8,8 @@ import '../services/offline_db_helper.dart';
 import '../main.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'help_center_screen.dart';
+import '../providers/language_provider.dart';
+import '../services/translations.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -128,10 +130,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final settingsAsync = ref.watch(settingsProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
+    final currentLang = ref.watch(languageProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('App Settings', style: TextStyle(color: Colors.black87)),
+        title: Text(AppTranslations.tr('Settings', currentLang), style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black87),
@@ -152,6 +155,168 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Language Mode Selection Card (Permanent i18n)
+                      Card(
+                        elevation: 3,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: BorderSide(color: Colors.blue.shade300, width: 1.5),
+                        ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: LinearGradient(
+                              colors: [Colors.blue.shade50, Colors.white],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: primaryColor,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Icon(Icons.translate, color: Colors.white, size: 24),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          AppTranslations.tr('Language Settings', currentLang),
+                                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor),
+                                        ),
+                                        Text(
+                                          AppTranslations.tr('Choose your preferred language for the application', currentLang),
+                                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Divider(height: 24),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(12),
+                                      onTap: () async {
+                                        final messenger = ScaffoldMessenger.of(context);
+                                        await ref.read(languageProvider.notifier).setLanguage('en');
+                                        if (mounted) {
+                                          messenger.showSnackBar(
+                                            SnackBar(
+                                              content: Text(AppTranslations.tr('Language changed to English', 'en')),
+                                              backgroundColor: Colors.blue.shade800,
+                                              duration: const Duration(seconds: 2),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                                        decoration: BoxDecoration(
+                                          color: currentLang == 'en' ? Colors.blue.shade800 : Colors.white,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: currentLang == 'en' ? Colors.blue.shade900 : Colors.grey.shade300,
+                                            width: currentLang == 'en' ? 2 : 1,
+                                          ),
+                                          boxShadow: currentLang == 'en'
+                                              ? [BoxShadow(color: Colors.blue.shade200, blurRadius: 6, offset: const Offset(0, 3))]
+                                              : [],
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              currentLang == 'en' ? Icons.check_circle : Icons.radio_button_unchecked,
+                                              color: currentLang == 'en' ? Colors.white : Colors.grey,
+                                              size: 20,
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Text(
+                                              'English',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: currentLang == 'en' ? Colors.white : Colors.black87,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(12),
+                                      onTap: () async {
+                                        final messenger = ScaffoldMessenger.of(context);
+                                        await ref.read(languageProvider.notifier).setLanguage('mr');
+                                        if (mounted) {
+                                          messenger.showSnackBar(
+                                            SnackBar(
+                                              content: Text(AppTranslations.tr('Language changed to Marathi', 'mr')),
+                                              backgroundColor: Colors.green.shade800,
+                                              duration: const Duration(seconds: 2),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                                        decoration: BoxDecoration(
+                                          color: currentLang == 'mr' ? Colors.green.shade700 : Colors.white,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: currentLang == 'mr' ? Colors.green.shade900 : Colors.grey.shade300,
+                                            width: currentLang == 'mr' ? 2 : 1,
+                                          ),
+                                          boxShadow: currentLang == 'mr'
+                                              ? [BoxShadow(color: Colors.green.shade200, blurRadius: 6, offset: const Offset(0, 3))]
+                                              : [],
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              currentLang == 'mr' ? Icons.check_circle : Icons.radio_button_unchecked,
+                                              color: currentLang == 'mr' ? Colors.white : Colors.grey,
+                                              size: 20,
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Text(
+                                              'मराठी (Marathi)',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: currentLang == 'mr' ? Colors.white : Colors.black87,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
                       // Logo Section
                       Center(
                         child: Column(
@@ -170,7 +335,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             OutlinedButton.icon(
                               onPressed: _pickImage,
                               icon: const Icon(Icons.upload),
-                              label: const Text('Upload Dairy Logo'),
+                              label: Text(AppTranslations.tr('Upload Logo', currentLang)),
                             ),
                           ],
                         ),
@@ -190,7 +355,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 children: [
                                   Icon(Icons.business, color: primaryColor, size: 28),
                                   const SizedBox(width: 12),
-                                  Text('Business Profile', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
+                                  Text(AppTranslations.tr('General Settings', currentLang), style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
                                 ],
                               ),
                               const Divider(height: 32),
@@ -199,7 +364,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   Expanded(
                                     child: TextFormField(
                                       controller: _dairyNameCtrl,
-                                      decoration: const InputDecoration(labelText: 'Dairy Name *', border: OutlineInputBorder()),
+                                      decoration: InputDecoration(labelText: '${AppTranslations.tr("Dairy Name", currentLang)} *', border: const OutlineInputBorder()),
                                       validator: (val) => val == null || val.isEmpty ? 'Required' : null,
                                     ),
                                   ),
@@ -207,7 +372,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   Expanded(
                                     child: TextFormField(
                                       controller: _ownerNameCtrl,
-                                      decoration: const InputDecoration(labelText: 'Owner Name', border: OutlineInputBorder()),
+                                      decoration: InputDecoration(labelText: AppTranslations.tr('Owner Name', currentLang), border: const OutlineInputBorder()),
                                     ),
                                   ),
                                 ],
@@ -218,7 +383,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   Expanded(
                                     child: TextFormField(
                                       controller: _mobileCtrl,
-                                      decoration: const InputDecoration(labelText: 'Contact Number', border: OutlineInputBorder()),
+                                      decoration: InputDecoration(labelText: AppTranslations.tr('Mobile Number', currentLang), border: const OutlineInputBorder()),
                                       keyboardType: TextInputType.phone,
                                     ),
                                   ),
@@ -226,7 +391,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   Expanded(
                                     child: TextFormField(
                                       controller: _gstCtrl,
-                                      decoration: const InputDecoration(labelText: 'GST Number', border: OutlineInputBorder()),
+                                      decoration: InputDecoration(labelText: AppTranslations.tr('GST Number', currentLang), border: const OutlineInputBorder()),
                                     ),
                                   ),
                                 ],
@@ -234,18 +399,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               const SizedBox(height: 16),
                               TextFormField(
                                 controller: _addressCtrl,
-                                decoration: const InputDecoration(labelText: 'Full Address', border: OutlineInputBorder()),
+                                decoration: InputDecoration(labelText: AppTranslations.tr('Address', currentLang), border: const OutlineInputBorder()),
                                 maxLines: 2,
                               ),
                               if (AppConfig.isOfflineMode) ...[
                                 const SizedBox(height: 16),
                                 TextFormField(
                                   controller: _adminPinCtrl,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Offline Admin Login PIN (Default: 1234)',
-                                    hintText: 'Enter 4-digit PIN or password',
-                                    border: OutlineInputBorder(),
-                                    prefixIcon: Icon(Icons.lock_outline),
+                                  decoration: InputDecoration(
+                                    labelText: AppTranslations.tr('Offline Admin Login PIN (Default: 1234)', currentLang),
+                                    hintText: AppTranslations.tr('Enter 4-digit PIN or password', currentLang),
+                                    border: const OutlineInputBorder(),
+                                    prefixIcon: const Icon(Icons.lock_outline),
                                   ),
                                 ),
                               ],
@@ -269,18 +434,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 children: [
                                   Icon(Icons.print, color: primaryColor, size: 28),
                                   const SizedBox(width: 12),
-                                  Text('Receipt Printing Details', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
+                                  Text(AppTranslations.tr('Receipt Printing Details', currentLang), style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
                                 ],
                               ),
                               const Divider(height: 32),
                               TextFormField(
                                 controller: _headerCtrl,
-                                decoration: const InputDecoration(labelText: 'Receipt Header (e.g. Thanks for visiting!)', border: OutlineInputBorder()),
+                                decoration: InputDecoration(labelText: AppTranslations.tr('Receipt Header (e.g. Thanks for visiting!)', currentLang), border: const OutlineInputBorder()),
                               ),
                               const SizedBox(height: 16),
                               TextFormField(
                                 controller: _footerCtrl,
-                                decoration: const InputDecoration(labelText: 'Receipt Footer (e.g. Visit again)', border: OutlineInputBorder()),
+                                decoration: InputDecoration(labelText: AppTranslations.tr('Receipt Footer (e.g. Visit again)', currentLang), border: const OutlineInputBorder()),
                               ),
                             ],
                           ),
@@ -301,7 +466,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
                           ),
                           icon: _isSaving ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white)) : const Icon(Icons.save),
-                          label: Text(_isSaving ? 'SAVING...' : 'SAVE SETTINGS', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          label: Text(_isSaving ? (currentLang == 'mr' ? 'जतन करत आहे...' : 'SAVING...') : AppTranslations.tr('Save Settings', currentLang).toUpperCase(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                         ),
                       ),
 
@@ -319,14 +484,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   children: [
                                     Icon(Icons.backup, color: Colors.teal.shade800, size: 28),
                                     const SizedBox(width: 12),
-                                    Text('Local Database Backup & Restore',
+                                    Text(AppTranslations.tr('Local Database Backup & Restore', currentLang),
                                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.teal.shade800)),
                                   ],
                                 ),
                                 const Divider(height: 32),
-                                const Text(
-                                  'Create a secure local copy of your offline database. You can copy backups to a USB drive or other folder, and restore anytime.',
-                                  style: TextStyle(color: Colors.black87),
+                                Text(
+                                  AppTranslations.tr('Create a secure local copy of your offline database. You can copy backups to a USB drive or other folder, and restore anytime.', currentLang),
+                                  style: const TextStyle(color: Colors.black87),
                                 ),
                                 const SizedBox(height: 20),
                                 Wrap(
@@ -341,11 +506,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                             showDialog(
                                               context: context,
                                               builder: (ctx) => AlertDialog(
-                                                title: const Row(
+                                                title: Row(
                                                   children: [
-                                                    Icon(Icons.check_circle, color: Colors.green),
-                                                    SizedBox(width: 8),
-                                                    Text('Backup Successful'),
+                                                    const Icon(Icons.check_circle, color: Colors.green),
+                                                    const SizedBox(width: 8),
+                                                    Text(AppTranslations.tr('Backup Successful', currentLang)),
                                                   ],
                                                 ),
                                                 content: SelectableText('Database backed up to:\n\n$path'),
@@ -392,7 +557,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Card(
                         elevation: 2,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        color: Colors.blue.shade50.withOpacity(0.5),
+                        color: Colors.blue.shade50.withValues(alpha: 0.5),
                         child: Padding(
                           padding: const EdgeInsets.all(20),
                           child: Column(
