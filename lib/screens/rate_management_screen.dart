@@ -21,18 +21,20 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
 
   String _animalType = 'Cow Milk';
   DateTime _effectiveDate = DateTime.now();
+  String? _editingConfigId;
+  bool _isInitialized = false;
 
   // Inputs
   final _baseFatController = TextEditingController(text: '3.5');
   final _baseSnfController = TextEditingController(text: '8.5');
-  final _baseRateController = TextEditingController(text: '40');
+  final _baseRateController = TextEditingController(text: '40.0');
 
-  final _fatFromController = TextEditingController(text: '2.5');
+  final _fatFromController = TextEditingController(text: '3.5');
   final _fatToController = TextEditingController(text: '6.0');
   final _fatPointController = TextEditingController(text: '0.1');
   final _fatRateController = TextEditingController(text: '1.0');
 
-  final _snfFromController = TextEditingController(text: '7.0');
+  final _snfFromController = TextEditingController(text: '8.5');
   final _snfToController = TextEditingController(text: '10.0');
   final _snfPointController = TextEditingController(text: '0.1');
   final _snfRateController = TextEditingController(text: '1.0');
@@ -45,9 +47,12 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() {
-      setState(() {
-        _generatedChart = [];
-      });
+      if (!_tabController.indexIsChanging) {
+        setState(() {
+          _generatedChart = [];
+          _populateFormForSelectedAnimalAndTab();
+        });
+      }
     });
   }
 
@@ -68,37 +73,104 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
     super.dispose();
   }
 
+  void _populateFormForSelectedAnimalAndTab({RateConfig? specificConfig}) {
+    final isIncrease = _tabController.index == 0;
+    final targetRateType = isIncrease ? 'Increase' : 'Decrease';
+
+    RateConfig? configToUse = specificConfig;
+    if (configToUse == null) {
+      final configs = ref.read(rateConfigProvider).value ?? [];
+      final matches = configs.where((c) => c.animalType == _animalType && c.rateType == targetRateType).toList();
+      if (matches.isNotEmpty) {
+        configToUse = matches.first;
+      }
+    }
+
+    if (configToUse != null) {
+      _editingConfigId = configToUse.id;
+      _baseFatController.text = configToUse.baseFat.toString();
+      _baseSnfController.text = configToUse.baseSnf.toString();
+      _baseRateController.text = configToUse.baseRate.toString();
+
+      _fatFromController.text = configToUse.fatRangeFrom.toString();
+      _fatToController.text = configToUse.fatRangeTo.toString();
+      _fatPointController.text = configToUse.fatPoint.toString();
+      _fatRateController.text = configToUse.fatRate.toString();
+
+      _snfFromController.text = configToUse.snfRangeFrom.toString();
+      _snfToController.text = configToUse.snfRangeTo.toString();
+      _snfPointController.text = configToUse.snfPoint.toString();
+      _snfRateController.text = configToUse.snfRate.toString();
+
+      final parsedDate = DateTime.tryParse(configToUse.effectiveDate);
+      if (parsedDate != null) {
+        _effectiveDate = parsedDate;
+      }
+    } else {
+      _editingConfigId = null;
+      _effectiveDate = DateTime.now();
+      if (_animalType == 'Cow Milk') {
+        _baseFatController.text = '3.5';
+        _baseSnfController.text = '8.5';
+        _baseRateController.text = '40.0';
+        _fatFromController.text = isIncrease ? '3.5' : '2.0';
+        _fatToController.text = isIncrease ? '6.0' : '3.5';
+        _fatPointController.text = '0.1';
+        _fatRateController.text = '1.0';
+        _snfFromController.text = isIncrease ? '8.5' : '7.0';
+        _snfToController.text = isIncrease ? '10.0' : '8.5';
+        _snfPointController.text = '0.1';
+        _snfRateController.text = '1.0';
+      } else {
+        // Buffalo Milk
+        _baseFatController.text = '6.0';
+        _baseSnfController.text = '9.0';
+        _baseRateController.text = '55.0';
+        _fatFromController.text = isIncrease ? '6.0' : '4.5';
+        _fatToController.text = isIncrease ? '10.0' : '6.0';
+        _fatPointController.text = '0.1';
+        _fatRateController.text = '1.0';
+        _snfFromController.text = isIncrease ? '9.0' : '7.5';
+        _snfToController.text = isIncrease ? '11.5' : '9.0';
+        _snfPointController.text = '0.1';
+        _snfRateController.text = '1.0';
+      }
+    }
+
+    _generateChart();
+  }
+
   void _generateChart() {
     final key = _tabController.index == 0 ? _incFormKey : _decFormKey;
-    if (!key.currentState!.validate()) return;
+    if (key.currentState != null && !key.currentState!.validate()) return;
 
     final isIncrease = _tabController.index == 0;
     
-    double baseFat = double.parse(_baseFatController.text);
-    double baseSnf = double.parse(_baseSnfController.text);
-    double baseRate = double.parse(_baseRateController.text);
+    double baseFat = double.tryParse(_baseFatController.text) ?? (isIncrease ? 3.5 : 3.5);
+    double baseSnf = double.tryParse(_baseSnfController.text) ?? (isIncrease ? 8.5 : 8.5);
+    double baseRate = double.tryParse(_baseRateController.text) ?? (isIncrease ? 40.0 : 40.0);
     
-    double fatFrom = double.parse(_fatFromController.text);
-    double fatTo = double.parse(_fatToController.text);
-    double fatPoint = double.parse(_fatPointController.text);
-    double fatRate = double.parse(_fatRateController.text);
+    double fatFrom = double.tryParse(_fatFromController.text) ?? (isIncrease ? 3.5 : 2.0);
+    double fatTo = double.tryParse(_fatToController.text) ?? (isIncrease ? 6.0 : 3.5);
+    double fatPoint = double.tryParse(_fatPointController.text) ?? 0.1;
+    double fatRate = double.tryParse(_fatRateController.text) ?? 1.0;
     
-    double snfFrom = double.parse(_snfFromController.text);
-    double snfTo = double.parse(_snfToController.text);
-    double snfPoint = double.parse(_snfPointController.text);
-    double snfRate = double.parse(_snfRateController.text);
+    double snfFrom = double.tryParse(_snfFromController.text) ?? (isIncrease ? 8.5 : 7.0);
+    double snfTo = double.tryParse(_snfToController.text) ?? (isIncrease ? 10.0 : 8.5);
+    double snfPoint = double.tryParse(_snfPointController.text) ?? 0.1;
+    double snfRate = double.tryParse(_snfRateController.text) ?? 1.0;
+
+    if (fatPoint <= 0) fatPoint = 0.1;
+    if (snfPoint <= 0) snfPoint = 0.1;
 
     List<Map<String, dynamic>> rows = [];
     int counter = 1;
 
-    // Generate Permutations
-    // To avoid massive permutations, we'll increment by 0.1 usually
     for (double f = fatFrom; f <= fatTo + 0.01; f += 0.1) {
       double fat = double.parse(f.toStringAsFixed(1));
       for (double s = snfFrom; s <= snfTo + 0.01; s += 0.1) {
         double snf = double.parse(s.toStringAsFixed(1));
         
-        // Check if row applies to Increase or Decrease
         if (isIncrease) {
           if (fat >= baseFat && snf >= baseSnf) {
             double finalRate = baseRate;
@@ -159,7 +231,7 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
     await Printing.layoutPdf(onLayout: (format) async => pdf.save());
   }
 
-  Future<void> _saveConfig() async {
+  Future<void> _saveConfig({bool saveAsNew = false}) async {
     final session = ref.read(sessionProvider);
     if (session != null && !session.isAdmin && (!session.canAdd('Rate Management') && !session.canEdit('Rate Management'))) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -168,14 +240,15 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
       return;
     }
     final key = _tabController.index == 0 ? _incFormKey : _decFormKey;
-    if (!key.currentState!.validate()) return;
+    if (key.currentState != null && !key.currentState!.validate()) return;
 
     setState(() => _isSaving = true);
     final rateType = _tabController.index == 0 ? 'Increase' : 'Decrease';
+    final dateStr = DateFormat('yyyy-MM-dd').format(_effectiveDate);
 
     try {
       final config = RateConfig(
-        id: '', // Generated by Supabase
+        id: (!saveAsNew && _editingConfigId != null) ? _editingConfigId! : '',
         animalType: _animalType,
         rateType: rateType,
         baseFat: double.parse(_baseFatController.text),
@@ -189,18 +262,38 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
         snfRangeTo: double.parse(_snfToController.text),
         snfPoint: double.parse(_snfPointController.text),
         snfRate: double.parse(_snfRateController.text),
-        effectiveDate: DateFormat('yyyy-MM-dd').format(_effectiveDate),
+        effectiveDate: dateStr,
         isActive: true,
-        createdAt: '',
+        createdAt: DateTime.now().toIso8601String(),
       );
 
-      await ref.read(rateConfigProvider.notifier).saveRateConfig(config);
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Rate Configuration Saved successfully!'), backgroundColor: Colors.green));
+      if (!saveAsNew && _editingConfigId != null && _editingConfigId!.isNotEmpty) {
+        await ref.read(rateConfigProvider.notifier).updateRateConfig(_editingConfigId!, config);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('$_animalType ($rateType) updated: Base Rate ₹${config.baseRate} applies immediately!'),
+              backgroundColor: Colors.green.shade700,
+            ),
+          );
+        }
+      } else {
+        await ref.read(rateConfigProvider.notifier).saveRateConfig(config);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('New $_animalType ($rateType) saved effective from $dateStr!'),
+              backgroundColor: Colors.green.shade700,
+            ),
+          );
+        }
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -218,6 +311,10 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
       ),
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       validator: (val) => val == null || val.isEmpty ? '*' : null,
+      onChanged: (_) {
+        // Automatically reflect preview when fields are edited
+        _generateChart();
+      },
     );
   }
 
@@ -235,7 +332,7 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
             // Header Card
             Card(
               color: bgColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: themeColor.withOpacity(0.5))),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: themeColor.withValues(alpha: 0.5))),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -262,7 +359,12 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                           value: _animalType,
                           items: ['Cow Milk', 'Buffalo Milk'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                           onChanged: (val) {
-                            if (val != null) setState(() => _animalType = val);
+                            if (val != null) {
+                              setState(() {
+                                _animalType = val;
+                                _populateFormForSelectedAnimalAndTab();
+                              });
+                            }
                           },
                         ),
                         const Spacer(),
@@ -288,6 +390,54 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
               ),
             ),
             const SizedBox(height: 16),
+
+            // Active Edit Mode Banner
+            if (_editingConfigId != null) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.amber.shade400, width: 1.2),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_note, color: Colors.amber.shade900, size: 24),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Active Configuration Loaded for $_animalType (${isIncrease ? "Increase" : "Decrease"})',
+                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber.shade900, fontSize: 14),
+                          ),
+                          Text(
+                            'Modify base price or ranges below and tap "Update Configuration", or tap "Save as New Version" for a new date.',
+                            style: TextStyle(color: Colors.brown.shade700, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton.icon(
+                      icon: const Icon(Icons.add_circle, size: 18),
+                      label: const Text('New Mode'),
+                      style: TextButton.styleFrom(foregroundColor: Colors.blue.shade900),
+                      onPressed: () {
+                        setState(() {
+                          _editingConfigId = null;
+                          _effectiveDate = DateTime.now();
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Switched to New Configuration mode.'), duration: Duration(seconds: 1)),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
             
             // Base Values
             Text('Base Values', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue.shade900)),
@@ -298,7 +448,7 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                 const SizedBox(width: 8),
                 Expanded(child: _buildField('Base SNF', _baseSnfController)),
                 const SizedBox(width: 8),
-                Expanded(child: _buildField('Base Rate', _baseRateController)),
+                Expanded(child: _buildField('Base Rate (₹)', _baseRateController)),
               ],
             ),
             const SizedBox(height: 16),
@@ -348,20 +498,48 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                 Expanded(
                   child: ElevatedButton.icon(
                     icon: const Icon(Icons.bar_chart),
-                    label: const Text('Generate Rate Chart', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(backgroundColor: themeColor, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16)),
+                    label: const Text('Generate Chart', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: themeColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
                     onPressed: _generateChart,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    icon: const Icon(Icons.save),
-                    label: _isSaving ? const CircularProgressIndicator(color: Colors.white) : const Text('Save Configuration', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.blue.shade700, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16)),
-                    onPressed: _isSaving ? null : _saveConfig,
+                    icon: _isSaving
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : Icon(_editingConfigId != null ? Icons.check_circle : Icons.save),
+                    label: Text(
+                      _editingConfigId != null ? 'Update Configuration' : 'Save Configuration',
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _editingConfigId != null ? Colors.amber.shade800 : Colors.blue.shade700,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: _isSaving ? null : () => _saveConfig(saveAsNew: false),
                   ),
                 ),
+                if (_editingConfigId != null) ...[
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.add_circle_outline),
+                      label: const Text('Save as New Version', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.blue.shade800,
+                        side: BorderSide(color: Colors.blue.shade800, width: 1.5),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      onPressed: _isSaving ? null : () => _saveConfig(saveAsNew: true),
+                    ),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 24),
@@ -371,7 +549,7 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Generated Preview (Top 100 rows)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue.shade900)),
+                  Text('Generated Preview (${_generatedChart.length} combinations)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue.shade900)),
                   ElevatedButton.icon(
                     icon: const Icon(Icons.picture_as_pdf),
                     label: const Text('Export PDF'),
@@ -387,7 +565,7 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: DataTable(
-                      headingRowColor: MaterialStateProperty.all(themeColor.withOpacity(0.1)),
+                      headingRowColor: WidgetStateProperty.all(themeColor.withValues(alpha: 0.1)),
                       columns: const [
                         DataColumn(label: Text('No.', style: TextStyle(fontWeight: FontWeight.bold))),
                         DataColumn(label: Text('Fat', style: TextStyle(fontWeight: FontWeight.bold))),
@@ -425,7 +603,7 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: DataTable(
-            headingRowColor: MaterialStateProperty.all(Colors.blue.shade50),
+            headingRowColor: WidgetStateProperty.all(Colors.blue.shade50),
             columns: const [
               DataColumn(label: Text('Animal Type')),
               DataColumn(label: Text('Type')),
@@ -435,59 +613,94 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
               DataColumn(label: Text('SNF Pts/Rate')),
               DataColumn(label: Text('Actions')),
             ],
-            rows: configs.map((c) => DataRow(
-              cells: [
-                DataCell(Text(c.animalType, style: const TextStyle(fontWeight: FontWeight.bold))),
-                DataCell(
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: c.rateType == 'Increase' ? Colors.green.shade100 : Colors.red.shade100,
-                      borderRadius: BorderRadius.circular(12)
-                    ),
-                    child: Text(c.rateType, style: TextStyle(color: c.rateType == 'Increase' ? Colors.green.shade800 : Colors.red.shade800)),
-                  )
-                ),
-                DataCell(Text(c.effectiveDate)),
-                DataCell(Text('${c.baseFat} / ${c.baseSnf} / ₹${c.baseRate}')),
-                DataCell(Text('${c.fatPoint} -> ₹${c.fatRate}')),
-                DataCell(Text('${c.snfPoint} -> ₹${c.snfRate}')),
-                DataCell(
-                  IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () async {
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Delete Config'),
-                          content: const Text('Are you sure you want to delete this configuration?'),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('CANCEL')),
-                            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('DELETE', style: TextStyle(color: Colors.red))),
-                          ],
+            rows: configs.map((c) {
+              final isBeingEdited = _editingConfigId == c.id;
+              return DataRow(
+                color: isBeingEdited ? WidgetStateProperty.all(Colors.amber.shade50) : null,
+                cells: [
+                  DataCell(Text(c.animalType, style: const TextStyle(fontWeight: FontWeight.bold))),
+                  DataCell(
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: c.rateType == 'Increase' ? Colors.green.shade100 : Colors.red.shade100,
+                        borderRadius: BorderRadius.circular(12)
+                      ),
+                      child: Text(c.rateType, style: TextStyle(color: c.rateType == 'Increase' ? Colors.green.shade800 : Colors.red.shade800)),
+                    )
+                  ),
+                  DataCell(Text(c.effectiveDate)),
+                  DataCell(Text('${c.baseFat} / ${c.baseSnf} / ₹${c.baseRate}')),
+                  DataCell(Text('${c.fatPoint} -> ₹${c.fatRate}')),
+                  DataCell(Text('${c.snfPoint} -> ₹${c.snfRate}')),
+                  DataCell(
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.edit, color: isBeingEdited ? Colors.amber.shade900 : Colors.blue),
+                          tooltip: 'Edit Configuration',
+                          onPressed: () {
+                            setState(() {
+                              _animalType = c.animalType;
+                              final targetIndex = c.rateType == 'Increase' ? 0 : 1;
+                              if (_tabController.index != targetIndex) {
+                                _tabController.animateTo(targetIndex);
+                              }
+                              _populateFormForSelectedAnimalAndTab(specificConfig: c);
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Loaded ${c.animalType} (${c.rateType}) configuration into editor.'),
+                                backgroundColor: Colors.blue.shade700,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                      if (confirm == true) {
-                        try {
-                          await ref.read(rateConfigProvider.notifier).deleteRateConfig(c.id, config: c);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Rate configuration deleted successfully.')),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          tooltip: 'Delete Configuration',
+                          onPressed: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Delete Config'),
+                                content: Text('Are you sure you want to delete this ${c.animalType} (${c.rateType}) configuration effective from ${c.effectiveDate}?'),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('CANCEL')),
+                                  TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('DELETE', style: TextStyle(color: Colors.red))),
+                                ],
+                              ),
                             );
-                          }
-                        } catch (err) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Failed to delete: $err'), backgroundColor: Colors.red),
-                            );
-                          }
-                        }
-                      }
-                    },
-                  )
-                ),
-              ]
-            )).toList(),
+                            if (confirm == true) {
+                              try {
+                                await ref.read(rateConfigProvider.notifier).deleteRateConfig(c.id, config: c);
+                                if (!mounted) return;
+                                if (_editingConfigId == c.id) {
+                                  setState(() {
+                                    _editingConfigId = null;
+                                    _populateFormForSelectedAnimalAndTab();
+                                  });
+                                }
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Rate configuration deleted successfully.')),
+                                );
+                              } catch (err) {
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Failed to delete: $err'), backgroundColor: Colors.red),
+                                );
+                              }
+                            }
+                          },
+                        ),
+                      ],
+                    )
+                  ),
+                ]
+              );
+            }).toList(),
           ),
         );
       },
@@ -496,6 +709,19 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
 
   @override
   Widget build(BuildContext context) {
+    // Initial auto-populate when rateConfigProvider loads
+    final configsAsync = ref.watch(rateConfigProvider);
+    if (!_isInitialized && configsAsync.hasValue) {
+      _isInitialized = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _populateFormForSelectedAnimalAndTab();
+          });
+        }
+      });
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Rate Management'),
@@ -532,8 +758,14 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text('Saved Rate Configurations', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue.shade900)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Saved Rate Configurations', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.blue.shade900)),
+                      Text('Tap Edit to load into form', style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic)),
+                    ],
+                  ),
                 ),
                 Expanded(child: _buildSavedConfigs()),
               ],

@@ -119,6 +119,11 @@ END $do$;
 -- ------------------------------------------------------------------------------
 -- Everyone needs to view default roles (Manager, Billing, etc. where owner_id IS NULL)
 -- but can only create/update/delete their own roles.
+DROP POLICY IF EXISTS "Tenant isolation for roles - SELECT" ON public.roles;
+DROP POLICY IF EXISTS "Tenant isolation for roles - INSERT" ON public.roles;
+DROP POLICY IF EXISTS "Tenant isolation for roles - UPDATE" ON public.roles;
+DROP POLICY IF EXISTS "Tenant isolation for roles - DELETE" ON public.roles;
+
 CREATE POLICY "Tenant isolation for roles - SELECT"
     ON public.roles
     FOR SELECT TO authenticated
@@ -147,6 +152,11 @@ REVOKE ALL ON public.roles FROM anon;
 -- ------------------------------------------------------------------------------
 -- 5. CLEAN POLICIES FOR ROLE_PERMISSIONS
 -- ------------------------------------------------------------------------------
+DROP POLICY IF EXISTS "Tenant isolation for role_permissions - SELECT" ON public.role_permissions;
+DROP POLICY IF EXISTS "Tenant isolation for role_permissions - INSERT" ON public.role_permissions;
+DROP POLICY IF EXISTS "Tenant isolation for role_permissions - UPDATE" ON public.role_permissions;
+DROP POLICY IF EXISTS "Tenant isolation for role_permissions - DELETE" ON public.role_permissions;
+
 CREATE POLICY "Tenant isolation for role_permissions - SELECT"
     ON public.role_permissions
     FOR SELECT TO authenticated
