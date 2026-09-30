@@ -129,6 +129,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     'Milk Purchase',
     'Milk Sale',
     'Payments',
+    'Rate Management',
     'Bonus',
     'Bank',
     'Reports',
@@ -641,6 +642,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         _buildMainDairyTile('Milk Purchase', Icons.shopping_cart),
         _buildMainDairyTile('Milk Sale', Icons.storefront),
         _buildMainDairyTile('Payments', Icons.payments),
+        _buildMainDairyTile('Rate Management', Icons.price_change),
         // Bonus Expandable Tree
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1029,7 +1031,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           mainDairyContent = const DesktopWrapper(child: MainDairyReportsScreen());
           break;
         case 'Rate Management':
-          mainDairyContent = const DesktopWrapper(child: MainDairyRateScreen());
+          mainDairyContent = const MainDairyRateScreen();
           break;
         case 'Help Center':
           mainDairyContent = const DesktopWrapper(child: HelpCenterScreen());
@@ -1078,7 +1080,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       case 'Staff': content = const DesktopWrapper(child: StaffScreen()); break;
       case 'Advances': content = const DesktopWrapper(child: AdvanceScreen()); break;
       case 'Reports': content = const DesktopWrapper(child: ReportsScreen()); break;
-      case 'Rate Management': content = const DesktopWrapper(child: RateManagementScreen()); break;
+      case 'Rate Management': content = const RateManagementScreen(); break;
       case 'Bonus':
         switch (_localDairyBonusSelectedSub) {
           case 'Bonus Dashboard':

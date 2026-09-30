@@ -195,6 +195,52 @@ class MainDairyRateNotifier extends AsyncNotifier<List<MainDairyRateConfig>> {
     }
   }
 
+  Future<void> updateRateConfig(String id, MainDairyRateConfig config) async {
+    final supabase = ref.read(supabaseClientProvider);
+    state = const AsyncValue.loading();
+    try {
+      final cleanId = id.trim();
+      final updateData = {
+        'animal_type': config.animalType,
+        'rate_type': config.rateType,
+        'base_fat': config.baseFat,
+        'base_snf': config.baseSnf,
+        'base_rate': config.baseRate,
+        'fat_range_from': config.fatRangeFrom,
+        'fat_range_to': config.fatRangeTo,
+        'fat_point': config.fatPoint,
+        'fat_rate': config.fatRate,
+        'snf_range_from': config.snfRangeFrom,
+        'snf_range_to': config.snfRangeTo,
+        'snf_point': config.snfPoint,
+        'snf_rate': config.snfRate,
+        'effective_date': config.effectiveDate,
+        'is_active': config.isActive,
+      };
+
+      if (cleanId.isNotEmpty) {
+        try {
+          await supabase.from('main_dairy_rate_configs').update(updateData).eq('id', cleanId);
+        } catch (_) {}
+      }
+
+      try {
+        final db = await OfflineDbHelper.instance.database;
+        if (cleanId.isNotEmpty) {
+          await db.update('main_dairy_rate_configs', {
+            ...updateData,
+            'is_active': config.isActive ? 1 : 0,
+          }, where: 'id = ?', whereArgs: [cleanId]);
+        }
+      } catch (_) {}
+
+      state = await AsyncValue.guard(() => _fetchConfigs());
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+
   Future<void> deleteRateConfig(String id, {MainDairyRateConfig? config}) async {
     final supabase = ref.read(supabaseClientProvider);
     state = const AsyncValue.loading();

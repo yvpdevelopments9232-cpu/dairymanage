@@ -484,14 +484,34 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
             // Base Values
             Text('Base Values', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue.shade900)),
             const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(child: _buildField('Base Fat', _baseFatController)),
-                const SizedBox(width: 12),
-                Expanded(child: _buildField('Base SNF', _baseSnfController)),
-                const SizedBox(width: 12),
-                Expanded(child: _buildField('Base Rate (₹)', _baseRateController)),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isCompact = constraints.maxWidth < 650;
+                if (isCompact) {
+                  return Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(child: _buildField('Base Fat', _baseFatController)),
+                          const SizedBox(width: 8),
+                          Expanded(child: _buildField('Base SNF', _baseSnfController)),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      _buildField('Base Rate (₹)', _baseRateController),
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(child: _buildField('Base Fat', _baseFatController)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildField('Base SNF', _baseSnfController)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildField('Base Rate (₹)', _baseRateController)),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 16),
 
@@ -503,32 +523,74 @@ class _RateManagementScreenState extends ConsumerState<RateManagementScreen> wit
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade300)),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    Row(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isCompact = constraints.maxWidth < 650;
+                    if (isCompact) {
+                      return Column(
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(child: _buildField('Fat Range From', _fatFromController)),
+                              const SizedBox(width: 8),
+                              Expanded(child: _buildField('Fat Range To', _fatToController)),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(child: _buildField('Fat Point', _fatPointController)),
+                              const SizedBox(width: 8),
+                              Expanded(child: _buildField('Fat Rate (₹)', _fatRateController)),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(child: _buildField('SNF Range From', _snfFromController)),
+                              const SizedBox(width: 8),
+                              Expanded(child: _buildField('SNF Range To', _snfToController)),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(child: _buildField('SNF Point', _snfPointController)),
+                              const SizedBox(width: 8),
+                              Expanded(child: _buildField('SNF Rate (₹)', _snfRateController)),
+                            ],
+                          ),
+                        ],
+                      );
+                    }
+                    return Column(
                       children: [
-                        Expanded(child: _buildField('Fat Range From', _fatFromController)),
-                        const SizedBox(width: 8),
-                        Expanded(child: _buildField('Fat Range To', _fatToController)),
-                        const SizedBox(width: 8),
-                        Expanded(child: _buildField('Fat Point', _fatPointController)),
-                        const SizedBox(width: 8),
-                        Expanded(child: _buildField('Fat Rate (₹)', _fatRateController)),
+                        Row(
+                          children: [
+                            Expanded(child: _buildField('Fat Range From', _fatFromController)),
+                            const SizedBox(width: 8),
+                            Expanded(child: _buildField('Fat Range To', _fatToController)),
+                            const SizedBox(width: 8),
+                            Expanded(child: _buildField('Fat Point', _fatPointController)),
+                            const SizedBox(width: 8),
+                            Expanded(child: _buildField('Fat Rate (₹)', _fatRateController)),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(child: _buildField('SNF Range From', _snfFromController)),
+                            const SizedBox(width: 8),
+                            Expanded(child: _buildField('SNF Range To', _snfToController)),
+                            const SizedBox(width: 8),
+                            Expanded(child: _buildField('SNF Point', _snfPointController)),
+                            const SizedBox(width: 8),
+                            Expanded(child: _buildField('SNF Rate (₹)', _snfRateController)),
+                          ],
+                        ),
                       ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(child: _buildField('SNF Range From', _snfFromController)),
-                        const SizedBox(width: 8),
-                        Expanded(child: _buildField('SNF Range To', _snfToController)),
-                        const SizedBox(width: 8),
-                        Expanded(child: _buildField('SNF Point', _snfPointController)),
-                        const SizedBox(width: 8),
-                        Expanded(child: _buildField('SNF Rate (₹)', _snfRateController)),
-                      ],
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
             ),
