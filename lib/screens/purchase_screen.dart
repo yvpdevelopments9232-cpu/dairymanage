@@ -448,7 +448,7 @@ class _PurchaseScreenState extends ConsumerState<PurchaseScreen> {
                   final p = purchases[index];
                   return Card(
                     elevation: 0,
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    margin: EdgeInsets.symmetric(horizontal: isMobile ? 0 : 16, vertical: 4),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                       side: BorderSide(color: Colors.grey.shade200),
@@ -489,16 +489,16 @@ class _PurchaseScreenState extends ConsumerState<PurchaseScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 8),
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Padding(
-                                padding: const EdgeInsets.only(left: 46.0),
-                                child: Row(
+                              Expanded(
+                                child: Wrap(
+                                  spacing: 12,
+                                  runSpacing: 4,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
                                   children: [
                                     Text('${'Paid:'.tr} ₹${p.paidAmount}', style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.w600)),
-                                    const SizedBox(width: 12),
                                     Text('${'Bal:'.tr} ₹${p.balance}', style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.w600)),
                                   ],
                                 ),
@@ -509,7 +509,7 @@ class _PurchaseScreenState extends ConsumerState<PurchaseScreen> {
                                   IconButton(
                                     icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
                                     padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                                     tooltip: 'Edit'.tr,
                                     onPressed: () => _showEditPurchaseDialog(context, p),
                                   ),
@@ -517,7 +517,7 @@ class _PurchaseScreenState extends ConsumerState<PurchaseScreen> {
                                   IconButton(
                                     icon: const Icon(Icons.delete, color: Colors.red, size: 20),
                                     padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                                     tooltip: 'Delete'.tr,
                                     onPressed: () => _confirmDeletePurchase(context, p),
                                   ),

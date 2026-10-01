@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/app_config.dart';
-import '../providers/session_provider.dart';
 import '../services/translations.dart';
 import '../providers/language_provider.dart';
 
@@ -128,7 +127,7 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
     final fullMessage =
         'Name: ${name.isNotEmpty ? name : "Dairy User"}\n'
         'Subject: $subject\n'
-        'Edition: ${AppConfig.isOfflineMode ? "Offline" : (AppConfig.isHybridMode ? "Hybrid" : "Cloud Online")}\n'
+        'Edition: ${AppConfig.fullEditionDescription}\n'
         'Message: $msg';
 
     if (viaWhatsApp) {
@@ -164,7 +163,7 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Top Header Hero Banner
-                _buildHeroBanner(primaryColor),
+                _buildHeroBanner(context, primaryColor),
                 const SizedBox(height: 24),
 
                 // Main Content Grid / Column
@@ -222,10 +221,12 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
   }
 
   // 1. Hero Header Banner
-  Widget _buildHeroBanner(Color primaryColor) {
+  Widget _buildHeroBanner(BuildContext context, Color primaryColor) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isMobile ? 16 : 24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [const Color(0xFF0F172A), primaryColor],
@@ -242,34 +243,37 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
         ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(isMobile ? 12 : 16),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.12),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.support_agent, size: 40, color: Colors.white),
+            child: Icon(Icons.support_agent, size: isMobile ? 30 : 40, color: Colors.white),
           ),
-          const SizedBox(width: 20),
+          SizedBox(width: isMobile ? 14 : 20),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
                       'HELP CENTER & SUPPORT'.tr,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 22,
+                        fontSize: isMobile ? 17 : 22,
                         fontWeight: FontWeight.bold,
-                        letterSpacing: 0.8,
+                        letterSpacing: 0.6,
                       ),
                     ),
-                    const SizedBox(width: 12),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: Colors.green.shade600,
                         borderRadius: BorderRadius.circular(12),
@@ -277,18 +281,18 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.fiber_manual_record, color: Colors.white, size: 10),
+                          Icon(Icons.fiber_manual_record, color: Colors.white, size: 8),
                           SizedBox(width: 4),
-                          Text('ACTIVE', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                          Text('ACTIVE', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'Dedicated technical support, license approvals, milk chart configurations, and custom dairy software features by Yu_Vi Development.',
-                  style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+                  style: TextStyle(color: Colors.white70, fontSize: isMobile ? 12 : 13, height: 1.4),
                 ),
               ],
             ),
@@ -801,7 +805,9 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
           const SizedBox(height: 12),
           _buildDiagRow('Application Name', 'Dairy Management System'),
           _buildDiagRow('Version', 'v1.0.2+3'),
-          _buildDiagRow('Edition', AppConfig.isOfflineMode ? '100% Offline' : (AppConfig.isHybridMode ? 'Hybrid Sync' : 'Cloud Online')),
+          _buildDiagRow('Installed Edition', AppConfig.editionName),
+          _buildDiagRow('Target Platform', AppConfig.platformName),
+          _buildDiagRow('Database Mode', AppConfig.isOfflineMode ? 'SQLite Local Database' : 'Supabase Cloud (PostgreSQL)'),
           _buildDiagRow('Developer Organization', developerName),
           _buildDiagRow('Direct Support Phone', primaryPhone),
           _buildDiagRow('Primary Email', primaryEmail),
