@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/flutter_models.dart';
 import 'auth_provider.dart';
 import 'package:intl/intl.dart';
@@ -73,20 +72,23 @@ class MilkCollectionNotifier extends AsyncNotifier<List<MilkCollection>> {
 
         double combinedQty = oldQty + qty;
         
-        // Calculate weighted averages for mathematically perfect merging
-        double combinedFat = ((oldQty * oldFat) + (qty * fat)) / combinedQty;
-        double combinedSnf = ((oldQty * oldSnf) + (qty * snf)) / combinedQty;
-        double combinedRate = ((oldQty * oldRate) + (qty * rate)) / combinedQty;
+        // Calculate weighted averages for mathematically perfect merging (guarded against division by zero)
+        double combinedFat = combinedQty > 0 ? ((oldQty * oldFat) + (qty * fat)) / combinedQty : 0.0;
+        double combinedSnf = combinedQty > 0 ? ((oldQty * oldSnf) + (qty * snf)) / combinedQty : 0.0;
+        double combinedRate = combinedQty > 0 ? ((oldQty * oldRate) + (qty * rate)) / combinedQty : 0.0;
+        double combinedTotal = double.parse((combinedQty * combinedRate).toStringAsFixed(2));
 
         await supabase.from('milk_collections').update({
           'quantity': double.parse(combinedQty.toStringAsFixed(2)),
           'fat': double.parse(combinedFat.toStringAsFixed(2)),
           'snf': double.parse(combinedSnf.toStringAsFixed(2)),
           'rate': double.parse(combinedRate.toStringAsFixed(2)),
+          'total_amount': combinedTotal,
         }).eq('id', existing['id']);
         
       } else {
         // INSERT NEW ENTRY
+        final calcTotal = totalAmount ?? double.parse((qty * rate).toStringAsFixed(2));
         await supabase.from('milk_collections').insert({
           'collection_date': date,
           'collection_time': time,
@@ -98,6 +100,7 @@ class MilkCollectionNotifier extends AsyncNotifier<List<MilkCollection>> {
           'fat': fat,
           'snf': snf,
           'rate': rate,
+          'total_amount': calcTotal,
           'payment_status': 'Pending'
         });
       }
@@ -120,11 +123,13 @@ class MilkCollectionNotifier extends AsyncNotifier<List<MilkCollection>> {
     state = const AsyncValue.loading();
     
     try {
+      final calculatedTotal = totalAmount ?? double.parse((qty * rate).toStringAsFixed(2));
       await supabase.from('milk_collections').update({
         'quantity': qty,
         'fat': fat,
         'snf': snf,
         'rate': rate,
+        'total_amount': calculatedTotal,
       }).eq('id', id);
       
       state = await AsyncValue.guard(() => _fetchCollections(currentDate, currentShift));

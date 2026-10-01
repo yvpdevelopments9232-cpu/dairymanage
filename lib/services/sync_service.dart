@@ -123,6 +123,18 @@ class SyncService {
     if (!cloudTableColumns.containsKey(table)) return;
 
     try {
+      final client = Supabase.instance.client;
+      final currentUid = client.auth.currentUser?.id;
+      if (currentUid != null) {
+        if (payload.eventType == PostgresChangeEvent.delete) {
+          final recordUid = payload.oldRecord['user_id'] ?? payload.oldRecord['owner_id'];
+          if (recordUid != null && recordUid.toString().isNotEmpty && recordUid.toString() != currentUid) return;
+        } else {
+          final recordUid = payload.newRecord['user_id'] ?? payload.newRecord['owner_id'];
+          if (recordUid != null && recordUid.toString().isNotEmpty && recordUid.toString() != currentUid) return;
+        }
+      }
+
       final db = await OfflineDbHelper.instance.database;
       final validCols = await _getTableColumns(db, table);
       if (validCols.isEmpty) return;
@@ -424,7 +436,7 @@ class SyncService {
     'sale_items': {'id', 'sale_id', 'product_id', 'quantity', 'unit', 'rate', 'total_amount'},
     'purchases': {'id', 'invoice_no', 'purchase_date', 'supplier_id', 'subtotal', 'discount', 'tax_amount', 'grand_total', 'paid_amount', 'balance', 'created_at', 'user_id', 'vehicle_no'},
     'purchase_items': {'id', 'purchase_id', 'product_id', 'quantity', 'purchase_rate', 'total_amount'},
-    'expenses': {'id', 'category', 'amount', 'expense_date', 'payment_mode', 'notes', 'user_id', 'created_at'},
+    'expenses': {'id', 'category', 'amount', 'expense_date', 'payment_mode', 'notes', 'description', 'remarks', 'user_id', 'created_at'},
     'payments': {'id', 'payment_date', 'party_type', 'farmer_id', 'customer_id', 'supplier_id', 'payment_type', 'amount', 'payment_mode', 'reference_no', 'remarks', 'created_at', 'user_id'},
     'rate_history': {'id', 'item_name', 'old_rate', 'new_rate', 'rate_category', 'effective_from', 'reason', 'user_id', 'created_at'},
     'main_dairy_collections': {'id', 'main_dairy_id', 'collection_date', 'shift', 'milk_type', 'quantity', 'fat', 'snf', 'rate', 'total_amount', 'payment_status', 'remarks', 'created_at'},
@@ -734,25 +746,36 @@ class SyncService {
 
         final lastPulled = await OfflineDbHelper.instance.getLastPulledAt(table);
         final currentUid = client.auth.currentUser?.id;
-        dynamic query = client.from(table).select();
+        const int pageSize = 1000;
+        int offset = 0;
+        final List<Map<String, dynamic>> incrementalRows = [];
 
-        // Enforce tenant isolation defense-in-depth on client pull
-        if (currentUid != null) {
-          if (validCols.contains('user_id')) {
-            query = query.eq('user_id', currentUid);
-          } else if (validCols.contains('owner_id')) {
-            query = query.eq('owner_id', currentUid);
+        while (true) {
+          dynamic query = client.from(table).select();
+          if (currentUid != null) {
+            if (validCols.contains('user_id')) {
+              query = query.eq('user_id', currentUid);
+            } else if (validCols.contains('owner_id')) {
+              query = query.eq('owner_id', currentUid);
+            }
+          }
+          if (localCount > 0 && lastPulled != null && lastPulled.isNotEmpty) {
+            final filterCol = (table == 'app_settings' || validCols.contains('updated_at')) ? 'updated_at' : 'created_at';
+            query = query.gt(filterCol, lastPulled);
+          }
+          final page = await query.range(offset, offset + pageSize - 1).timeout(const Duration(seconds: 30));
+          if (page is List && page.isNotEmpty) {
+            for (var item in page) {
+              incrementalRows.add(Map<String, dynamic>.from(item as Map));
+            }
+            if (page.length < pageSize) break;
+            offset += pageSize;
+          } else {
+            break;
           }
         }
 
-        // Only filter by timestamp if local table already has data and lastPulled is present
-        if (localCount > 0 && lastPulled != null && lastPulled.isNotEmpty) {
-          final filterCol = (table == 'app_settings' || validCols.contains('updated_at')) ? 'updated_at' : 'created_at';
-          query = query.gt(filterCol, lastPulled);
-        }
-
-        final rows = await query.timeout(const Duration(seconds: 15));
-        if (rows.isNotEmpty) {
+        if (incrementalRows.isNotEmpty) {
           hasNewData = true;
           if (table == 'app_settings') {
             await db.delete('app_settings');
@@ -760,16 +783,15 @@ class SyncService {
 
           String? maxTimestamp = lastPulled;
 
-          for (var r in rows) {
-            final row = Map<String, dynamic>.from(r as Map);
-            final sanitized = sanitizeRowForSqlite(row, validCols);
+          for (var r in incrementalRows) {
+            final sanitized = sanitizeRowForSqlite(r, validCols);
             await db.insert(
               table,
               sanitized,
               conflictAlgorithm: ConflictAlgorithm.replace,
             );
 
-            final rowTs = (row['updated_at'] ?? row['created_at'])?.toString();
+            final rowTs = (r['updated_at'] ?? r['created_at'])?.toString();
             if (rowTs != null && (maxTimestamp == null || rowTs.compareTo(maxTimestamp) > 0)) {
               maxTimestamp = rowTs;
             }
@@ -843,23 +865,47 @@ class SyncService {
         if (validCols.isEmpty) continue;
 
         final currentUid = client.auth.currentUser?.id;
-        dynamic query = client.from(table).select();
-        if (currentUid != null) {
-          if (validCols.contains('user_id')) {
-            query = query.eq('user_id', currentUid);
-          } else if (validCols.contains('owner_id')) {
-            query = query.eq('owner_id', currentUid);
+        const int pageSize = 1000;
+        int offset = 0;
+        final List<Map<String, dynamic>> allRows = [];
+        bool pullSuccess = true;
+
+        while (true) {
+          try {
+            dynamic query = client.from(table).select();
+            if (currentUid != null) {
+              if (validCols.contains('user_id')) {
+                query = query.eq('user_id', currentUid);
+              } else if (validCols.contains('owner_id')) {
+                query = query.eq('owner_id', currentUid);
+              }
+            }
+            final page = await query.range(offset, offset + pageSize - 1).timeout(const Duration(seconds: 45));
+            if (page is List && page.isNotEmpty) {
+              for (var item in page) {
+                allRows.add(Map<String, dynamic>.from(item as Map));
+              }
+              if (page.length < pageSize) break;
+              offset += pageSize;
+            } else {
+              break;
+            }
+          } catch (e) {
+            pullSuccess = false;
+            debugPrint('Error during paginated pull for $table: $e');
+            break;
           }
         }
-        final rows = await query.timeout(const Duration(seconds: 30));
+
+        if (!pullSuccess) continue;
+
         hasAnyData = true;
         if (table == 'app_settings') {
           await db.delete('app_settings');
         }
 
-        // Reconcile cloud deletions: remove rows from SQLite that were deleted on Supabase
-        // (Only for rows not currently pending upload in sync_queue)
-        final cloudIds = (rows as List).map((r) => (r as Map)['id']?.toString()).whereType<String>().toSet();
+        // Reconcile cloud deletions ONLY when we have successfully fetched all paginated cloud rows
+        final cloudIds = allRows.map((r) => r['id']?.toString()).whereType<String>().toSet();
         final pendingQueue = await db.query(
           'sync_queue',
           columns: ['row_id'],
@@ -876,17 +922,16 @@ class SyncService {
           }
         }
 
-        if (rows.isNotEmpty) {
+        if (allRows.isNotEmpty) {
           String? maxTimestamp;
-          for (var r in rows) {
-            final row = Map<String, dynamic>.from(r as Map);
-            final sanitized = sanitizeRowForSqlite(row, validCols);
+          for (var r in allRows) {
+            final sanitized = sanitizeRowForSqlite(r, validCols);
             await db.insert(
               table,
               sanitized,
               conflictAlgorithm: ConflictAlgorithm.replace,
             );
-            final rowTs = (row['updated_at'] ?? row['created_at'])?.toString();
+            final rowTs = (r['updated_at'] ?? r['created_at'])?.toString();
             if (rowTs != null && (maxTimestamp == null || rowTs.compareTo(maxTimestamp) > 0)) {
               maxTimestamp = rowTs;
             }

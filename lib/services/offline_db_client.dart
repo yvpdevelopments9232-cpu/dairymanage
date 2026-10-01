@@ -370,6 +370,14 @@ class OfflineFilterBuilder implements Future<dynamic> {
       case 'update':
         if (updateValues != null && updateValues!.isNotEmpty) {
           final sanitized = _sanitizeRowForDb(updateValues!);
+          if ((table == 'milk_collections' || table == 'main_dairy_collections') &&
+              sanitized.containsKey('quantity') &&
+              sanitized.containsKey('rate') &&
+              !sanitized.containsKey('total_amount')) {
+            final q = (sanitized['quantity'] as num).toDouble();
+            final r = (sanitized['rate'] as num).toDouble();
+            sanitized['total_amount'] = double.parse((q * r).toStringAsFixed(2));
+          }
           String? whereClause = _whereConditions.isNotEmpty ? _whereConditions.join(' AND ') : null;
 
           if (AppConfig.isHybridMode &&
@@ -377,17 +385,21 @@ class OfflineFilterBuilder implements Future<dynamic> {
               table != 'sync_queue' &&
               table != 'sync_metadata') {
             try {
-              final matching = await db.query(table, where: whereClause, whereArgs: _whereArgs.isNotEmpty ? _whereArgs : null);
-              await db.update(table, sanitized, where: whereClause, whereArgs: _whereArgs.isNotEmpty ? _whereArgs : null);
-              for (var item in matching) {
-                final updatedRow = Map<String, dynamic>.from(item)..addAll(sanitized);
-                await OfflineDbHelper.instance.enqueueSync(
-                  tableName: table,
-                  rowId: item['id'].toString(),
-                  action: 'UPSERT',
-                  payload: jsonEncode(updatedRow),
-                );
-              }
+              await db.transaction((txn) async {
+                final matching = await txn.query(table, where: whereClause, whereArgs: _whereArgs.isNotEmpty ? _whereArgs : null);
+                await txn.update(table, sanitized, where: whereClause, whereArgs: _whereArgs.isNotEmpty ? _whereArgs : null);
+                for (var item in matching) {
+                  final updatedRow = Map<String, dynamic>.from(item)..addAll(sanitized);
+                  await txn.insert('sync_queue', {
+                    'table_name': table,
+                    'row_id': item['id'].toString(),
+                    'action': 'UPSERT',
+                    'payload': jsonEncode(updatedRow),
+                    'created_at': DateTime.now().toIso8601String(),
+                    'status': 'pending',
+                  });
+                }
+              });
               SyncService.instance.triggerSync();
             } catch (_) {
               await db.update(table, sanitized, where: whereClause, whereArgs: _whereArgs.isNotEmpty ? _whereArgs : null);
@@ -413,16 +425,20 @@ class OfflineFilterBuilder implements Future<dynamic> {
             table != 'sync_queue' &&
             table != 'sync_metadata') {
           try {
-            final matching = await db.query(table, where: whereClause, whereArgs: whereArgs);
-            await db.delete(table, where: whereClause, whereArgs: whereArgs);
-            for (var item in matching) {
-              await OfflineDbHelper.instance.enqueueSync(
-                tableName: table,
-                rowId: item['id'].toString(),
-                action: 'DELETE',
-                payload: jsonEncode({'id': item['id']}),
-              );
-            }
+            await db.transaction((txn) async {
+              final matching = await txn.query(table, where: whereClause, whereArgs: whereArgs);
+              await txn.delete(table, where: whereClause, whereArgs: whereArgs);
+              for (var item in matching) {
+                await txn.insert('sync_queue', {
+                  'table_name': table,
+                  'row_id': item['id'].toString(),
+                  'action': 'DELETE',
+                  'payload': jsonEncode({'id': item['id']}),
+                  'created_at': DateTime.now().toIso8601String(),
+                  'status': 'pending',
+                });
+              }
+            });
             SyncService.instance.triggerSync();
           } catch (_) {
             await db.delete(table, where: whereClause, whereArgs: whereArgs);

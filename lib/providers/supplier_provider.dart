@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/flutter_models.dart';
 import 'auth_provider.dart';
 
@@ -58,6 +57,10 @@ class SupplierNotifier extends AsyncNotifier<List<Supplier>> {
     final supabase = ref.read(supabaseClientProvider);
     state = const AsyncValue.loading();
     try {
+      final purchases = await supabase.from('purchases').select('id').eq('supplier_id', id).limit(1);
+      if ((purchases as List).isNotEmpty) {
+        throw Exception('Cannot delete supplier with recorded purchase transactions. Please set status to inactive instead.');
+      }
       await supabase.from('suppliers').delete().eq('id', id);
       state = await AsyncValue.guard(() => _fetchSuppliers());
     } catch (e, st) {

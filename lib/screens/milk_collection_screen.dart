@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/session_provider.dart';
 
 import '../providers/milk_collection_provider.dart';
 import '../providers/farmer_provider.dart';
@@ -170,17 +169,35 @@ class _MilkCollectionScreenState extends ConsumerState<MilkCollectionScreen> {
       final notifier = ref.read(milkCollectionProvider.notifier);
       final time = DateFormat('HH:mm:ss').format(DateTime.now());
 
-      await notifier.addCollection(
-        date: notifier.currentDate,
-        time: time,
-        shift: notifier.currentShift,
-        farmerId: _selectedFarmerId!,
-        milkType: _milkType,
-        qty: double.parse(_qtyController.text),
-        fat: double.tryParse(_fatController.text) ?? 0,
-        snf: double.tryParse(_snfController.text) ?? 0,
-        rate: double.parse(_rateController.text),
-      );
+      if (_editingId != null) {
+        final qtyVal = double.tryParse(_qtyController.text) ?? 0;
+        final fatVal = double.tryParse(_fatController.text) ?? 0;
+        final snfVal = double.tryParse(_snfController.text) ?? 0;
+        final rateVal = double.tryParse(_rateController.text) ?? 0;
+        final totalVal = double.parse((qtyVal * rateVal).toStringAsFixed(2));
+
+        await notifier.updateCollection(
+          _editingId!,
+          qty: qtyVal,
+          fat: fatVal,
+          snf: snfVal,
+          rate: rateVal,
+          totalAmount: totalVal,
+        );
+        _editingId = null;
+      } else {
+        await notifier.addCollection(
+          date: notifier.currentDate,
+          time: time,
+          shift: notifier.currentShift,
+          farmerId: _selectedFarmerId!,
+          milkType: _milkType,
+          qty: double.tryParse(_qtyController.text) ?? 0,
+          fat: double.tryParse(_fatController.text) ?? 0,
+          snf: double.tryParse(_snfController.text) ?? 0,
+          rate: double.tryParse(_rateController.text) ?? 0,
+        );
+      }
 
       // Clear for next entry
       _farmerNoController.clear();

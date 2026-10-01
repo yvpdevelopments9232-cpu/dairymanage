@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/flutter_models.dart';
 import 'auth_provider.dart';
 
@@ -65,6 +64,7 @@ class PurchaseNotifier extends AsyncNotifier<List<Purchase>> {
           'payment_type': 'Out',
           'amount': paidAmount,
           'payment_mode': 'Cash',
+          'reference_no': invoiceNo,
           'remarks': 'Paid on Purchase $invoiceNo',
         });
       }
@@ -81,6 +81,9 @@ class PurchaseNotifier extends AsyncNotifier<List<Purchase>> {
     state = const AsyncValue.loading();
     try {
       await supabase.from('purchase_items').delete().eq('purchase_id', purchaseId);
+      try {
+        await supabase.from('payments').delete().eq('reference_no', invoiceNo);
+      } catch (_) {}
       try {
         await supabase.from('payments').delete().like('remarks', '%$invoiceNo%');
       } catch (_) {}
@@ -118,6 +121,16 @@ class PurchaseNotifier extends AsyncNotifier<List<Purchase>> {
           'quantity': qty,
           'purchase_rate': purchaseRate,
         }).eq('purchase_id', purchaseId);
+      } catch (_) {}
+
+      try {
+        final purRes = await supabase.from('purchases').select('invoice_no').eq('id', purchaseId).maybeSingle();
+        final invNo = purRes?['invoice_no'];
+        if (invNo != null && paidAmount > 0) {
+          await supabase.from('payments').update({
+            'amount': paidAmount,
+          }).eq('reference_no', invNo);
+        }
       } catch (_) {}
 
       state = await AsyncValue.guard(() => _fetchPurchases());

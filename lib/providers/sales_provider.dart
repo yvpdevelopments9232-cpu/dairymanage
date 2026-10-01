@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/flutter_models.dart';
 import 'auth_provider.dart';
 
@@ -63,6 +62,7 @@ class SalesNotifier extends AsyncNotifier<List<Sale>> {
           'payment_type': 'In', 
           'amount': paidAmount,
           'payment_mode': 'Cash',
+          'reference_no': invoiceNo,
           'remarks': 'Paid for Sale $invoiceNo',
         };
         if (partyType == 'Customer') {
@@ -85,6 +85,9 @@ class SalesNotifier extends AsyncNotifier<List<Sale>> {
     state = const AsyncValue.loading();
     try {
       await supabase.from('sale_items').delete().eq('sale_id', saleId);
+      try {
+        await supabase.from('payments').delete().eq('reference_no', invoiceNo);
+      } catch (_) {}
       try {
         await supabase.from('payments').delete().like('remarks', '%$invoiceNo%');
       } catch (_) {}
@@ -121,6 +124,16 @@ class SalesNotifier extends AsyncNotifier<List<Sale>> {
           'rate': rate,
           'total_amount': totalAmount,
         }).eq('sale_id', saleId);
+      } catch (_) {}
+
+      try {
+        final saleRes = await supabase.from('sales').select('invoice_no').eq('id', saleId).maybeSingle();
+        final invNo = saleRes?['invoice_no'];
+        if (invNo != null && paidAmount > 0) {
+          await supabase.from('payments').update({
+            'amount': paidAmount,
+          }).eq('reference_no', invNo);
+        }
       } catch (_) {}
 
       state = await AsyncValue.guard(() => _fetchSales());

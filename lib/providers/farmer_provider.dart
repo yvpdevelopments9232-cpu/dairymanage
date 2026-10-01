@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/flutter_models.dart';
 import 'auth_provider.dart';
 
@@ -77,12 +76,19 @@ class FarmersNotifier extends AsyncNotifier<List<Farmer>> {
     }
   }
 
-  // Delete farmer
+  // Delete farmer safely
   Future<void> deleteFarmer(String id) async {
     final supabase = ref.read(supabaseClientProvider);
     
     state = const AsyncValue.loading();
     try {
+      final collections = await supabase.from('milk_collections').select('id').eq('farmer_id', id).limit(1);
+      if ((collections as List).isNotEmpty) {
+        throw Exception('Cannot delete farmer with recorded milk collections. Please set status to inactive instead.');
+      }
+      try {
+        await supabase.from('animals').delete().eq('farmer_id', id);
+      } catch (_) {}
       await supabase.from('farmers').delete().eq('id', id);
       state = await AsyncValue.guard(() => _fetchFarmers());
     } catch (e, st) {

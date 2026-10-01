@@ -85,6 +85,7 @@ class MainDairyRateNotifier extends AsyncNotifier<List<MainDairyRateConfig>> {
         finalRate -= points * decConfig.snfRate;
       }
 
+      if (finalRate < 0) finalRate = 0.0;
       return double.parse(finalRate.toStringAsFixed(2));
     } catch (_) {
       return null;

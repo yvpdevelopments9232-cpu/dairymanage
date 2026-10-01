@@ -142,28 +142,48 @@ final bonusCalculationProvider = FutureProvider<BonusCalculationSummary>((ref) a
   final settingsAsync = ref.watch(bonusSettingsProvider);
   final settings = settingsAsync.value ?? BonusSettings(id: 'default_settings', cowRate: 0.40, buffaloRate: 0.50);
 
-  final db = await OfflineDbHelper.instance.database;
+  List<Map<String, dynamic>> farmersRows;
+  List<Map<String, dynamic>> collections;
+  List<Map<String, dynamic>> transactions;
 
-  // 1. Fetch all farmers
-  final farmersRows = await db.query('farmers', orderBy: 'name ASC');
+  if (!AppConfig.isOfflineMode && !AppConfig.isHybridMode) {
+    final supabase = ref.read(supabaseClientProvider);
+    final fRes = await supabase.from('farmers').select().order('name');
+    farmersRows = (fRes as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+
+    final cRes = await supabase.from('milk_collections').select()
+        .gte('collection_date', dateRange.fromDate)
+        .lte('collection_date', dateRange.toDate);
+    collections = (cRes as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+
+    final tRes = await supabase.from('bonus_transactions').select()
+        .gte('from_date', dateRange.fromDate)
+        .lte('to_date', dateRange.toDate);
+    transactions = (tRes as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  } else {
+    final db = await OfflineDbHelper.instance.database;
+    final fRes = await db.query('farmers', orderBy: 'name ASC');
+    farmersRows = fRes.map((e) => Map<String, dynamic>.from(e)).toList();
+
+    final cRes = await db.query(
+      'milk_collections',
+      where: 'collection_date >= ? AND collection_date <= ?',
+      whereArgs: [dateRange.fromDate, dateRange.toDate],
+    );
+    collections = cRes.map((e) => Map<String, dynamic>.from(e)).toList();
+
+    final tRes = await db.query(
+      'bonus_transactions',
+      where: 'from_date >= ? AND to_date <= ?',
+      whereArgs: [dateRange.fromDate, dateRange.toDate],
+    );
+    transactions = tRes.map((e) => Map<String, dynamic>.from(e)).toList();
+  }
+
   final farmersMap = <String, Map<String, dynamic>>{};
   for (var f in farmersRows) {
     farmersMap[f['id'].toString()] = f;
   }
-
-  // 2. Fetch milk collections between fromDate and toDate
-  final collections = await db.query(
-    'milk_collections',
-    where: 'collection_date >= ? AND collection_date <= ?',
-    whereArgs: [dateRange.fromDate, dateRange.toDate],
-  );
-
-  // 3. Fetch bonus transactions in this period
-  final transactions = await db.query(
-    'bonus_transactions',
-    where: 'from_date >= ? AND to_date <= ?',
-    whereArgs: [dateRange.fromDate, dateRange.toDate],
-  );
 
   // Sum payments per farmer
   final farmerPaidMap = <String, double>{};
@@ -276,8 +296,19 @@ class BonusTransactionsNotifier extends AsyncNotifier<List<BonusTransaction>> {
 
   Future<List<BonusTransaction>> _fetchTransactions() async {
     final dateRange = ref.watch(bonusDateRangeProvider);
-    final db = await OfflineDbHelper.instance.database;
 
+    if (!AppConfig.isOfflineMode && !AppConfig.isHybridMode) {
+      final supabase = ref.read(supabaseClientProvider);
+      final res = await supabase.from('bonus_transactions')
+          .select()
+          .gte('payment_date', dateRange.fromDate)
+          .lte('payment_date', dateRange.toDate)
+          .order('payment_date', ascending: false)
+          .order('created_at', ascending: false);
+      return (res as List).map((r) => BonusTransaction.fromJson(Map<String, dynamic>.from(r as Map))).toList();
+    }
+
+    final db = await OfflineDbHelper.instance.database;
     final rows = await db.query(
       'bonus_transactions',
       where: 'payment_date >= ? AND payment_date <= ?',
@@ -289,17 +320,22 @@ class BonusTransactionsNotifier extends AsyncNotifier<List<BonusTransaction>> {
   }
 
   Future<void> recordPayment(BonusTransaction txn) async {
-    final db = await OfflineDbHelper.instance.database;
-    await db.insert('bonus_transactions', txn.toJson());
+    if (!AppConfig.isOfflineMode && !AppConfig.isHybridMode) {
+      final supabase = ref.read(supabaseClientProvider);
+      await supabase.from('bonus_transactions').insert(txn.toJson());
+    } else {
+      final db = await OfflineDbHelper.instance.database;
+      await db.insert('bonus_transactions', txn.toJson());
 
-    if (AppConfig.isHybridMode) {
-      await OfflineDbHelper.instance.enqueueSync(
-        tableName: 'bonus_transactions',
-        rowId: txn.id,
-        action: 'UPSERT',
-        payload: jsonEncode(txn.toJson()),
-      );
-      SyncService.instance.triggerSync();
+      if (AppConfig.isHybridMode) {
+        await OfflineDbHelper.instance.enqueueSync(
+          tableName: 'bonus_transactions',
+          rowId: txn.id,
+          action: 'UPSERT',
+          payload: jsonEncode(txn.toJson()),
+        );
+        SyncService.instance.triggerSync();
+      }
     }
 
     ref.invalidateSelf();
@@ -307,17 +343,22 @@ class BonusTransactionsNotifier extends AsyncNotifier<List<BonusTransaction>> {
   }
 
   Future<void> updatePayment(BonusTransaction txn) async {
-    final db = await OfflineDbHelper.instance.database;
-    await db.update('bonus_transactions', txn.toJson(), where: 'id = ?', whereArgs: [txn.id]);
+    if (!AppConfig.isOfflineMode && !AppConfig.isHybridMode) {
+      final supabase = ref.read(supabaseClientProvider);
+      await supabase.from('bonus_transactions').update(txn.toJson()).eq('id', txn.id);
+    } else {
+      final db = await OfflineDbHelper.instance.database;
+      await db.update('bonus_transactions', txn.toJson(), where: 'id = ?', whereArgs: [txn.id]);
 
-    if (AppConfig.isHybridMode) {
-      await OfflineDbHelper.instance.enqueueSync(
-        tableName: 'bonus_transactions',
-        rowId: txn.id,
-        action: 'UPSERT',
-        payload: jsonEncode(txn.toJson()),
-      );
-      SyncService.instance.triggerSync();
+      if (AppConfig.isHybridMode) {
+        await OfflineDbHelper.instance.enqueueSync(
+          tableName: 'bonus_transactions',
+          rowId: txn.id,
+          action: 'UPSERT',
+          payload: jsonEncode(txn.toJson()),
+        );
+        SyncService.instance.triggerSync();
+      }
     }
 
     ref.invalidateSelf();
@@ -325,17 +366,22 @@ class BonusTransactionsNotifier extends AsyncNotifier<List<BonusTransaction>> {
   }
 
   Future<void> deletePayment(String id) async {
-    final db = await OfflineDbHelper.instance.database;
-    await db.delete('bonus_transactions', where: 'id = ?', whereArgs: [id]);
+    if (!AppConfig.isOfflineMode && !AppConfig.isHybridMode) {
+      final supabase = ref.read(supabaseClientProvider);
+      await supabase.from('bonus_transactions').delete().eq('id', id);
+    } else {
+      final db = await OfflineDbHelper.instance.database;
+      await db.delete('bonus_transactions', where: 'id = ?', whereArgs: [id]);
 
-    if (AppConfig.isHybridMode) {
-      await OfflineDbHelper.instance.enqueueSync(
-        tableName: 'bonus_transactions',
-        rowId: id,
-        action: 'DELETE',
-        payload: jsonEncode({'id': id}),
-      );
-      SyncService.instance.triggerSync();
+      if (AppConfig.isHybridMode) {
+        await OfflineDbHelper.instance.enqueueSync(
+          tableName: 'bonus_transactions',
+          rowId: id,
+          action: 'DELETE',
+          payload: jsonEncode({'id': id}),
+        );
+        SyncService.instance.triggerSync();
+      }
     }
 
     ref.invalidateSelf();

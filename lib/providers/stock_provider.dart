@@ -141,11 +141,19 @@ class StockNotifier extends AsyncNotifier<List<StockTransaction>> {
       final double stockDelta = isIncoming ? -tx.quantity : tx.quantity;
 
       try {
-        final prodRes = await supabase.from('products').select('current_stock').eq('id', tx.productId).single();
-        final currentStock = (prodRes['current_stock'] ?? 0).toDouble();
-        await supabase.from('products').update({
-          'current_stock': currentStock + stockDelta,
-        }).eq('id', tx.productId);
+        if (AppConfig.isOfflineMode) {
+          final db = await OfflineDbHelper.instance.database;
+          await db.rawUpdate(
+            'UPDATE products SET current_stock = current_stock + ? WHERE id = ?',
+            [stockDelta, tx.productId],
+          );
+        } else {
+          final prodRes = await supabase.from('products').select('current_stock').eq('id', tx.productId).single();
+          final currentStock = (prodRes['current_stock'] ?? 0).toDouble();
+          await supabase.from('products').update({
+            'current_stock': currentStock + stockDelta,
+          }).eq('id', tx.productId);
+        }
       } catch (_) {}
 
       // 3. Refresh providers
@@ -188,14 +196,22 @@ class StockNotifier extends AsyncNotifier<List<StockTransaction>> {
         'transaction_date': newDate,
       }).eq('id', tx.id);
 
-      // 3. Adjust product current_stock if diff != 0
+      // 3. Adjust product current_stock if diff != 0 atomically
       if (diff != 0) {
         try {
-          final prodRes = await supabase.from('products').select('current_stock').eq('id', tx.productId).single();
-          final currentStock = (prodRes['current_stock'] ?? 0).toDouble();
-          await supabase.from('products').update({
-            'current_stock': currentStock + diff,
-          }).eq('id', tx.productId);
+          if (AppConfig.isOfflineMode) {
+            final db = await OfflineDbHelper.instance.database;
+            await db.rawUpdate(
+              'UPDATE products SET current_stock = current_stock + ? WHERE id = ?',
+              [diff, tx.productId],
+            );
+          } else {
+            final prodRes = await supabase.from('products').select('current_stock').eq('id', tx.productId).single();
+            final currentStock = (prodRes['current_stock'] ?? 0).toDouble();
+            await supabase.from('products').update({
+              'current_stock': currentStock + diff,
+            }).eq('id', tx.productId);
+          }
         } catch (_) {}
       }
 

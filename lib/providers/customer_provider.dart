@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/flutter_models.dart';
 import 'auth_provider.dart';
 
@@ -67,6 +66,10 @@ class CustomersNotifier extends AsyncNotifier<List<Customer>> {
     
     state = const AsyncValue.loading();
     try {
+      final sales = await supabase.from('sales').select('id').eq('customer_id', id).limit(1);
+      if ((sales as List).isNotEmpty) {
+        throw Exception('Cannot delete customer with recorded sales transactions. Please set status to inactive instead.');
+      }
       await supabase.from('customers').delete().eq('id', id);
       state = await AsyncValue.guard(() => _fetchCustomers());
     } catch (e, st) {

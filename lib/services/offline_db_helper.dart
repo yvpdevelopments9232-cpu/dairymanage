@@ -125,6 +125,7 @@ class OfflineDbHelper {
         try {
           await db.rawQuery('PRAGMA journal_mode = WAL');
           await db.rawQuery('PRAGMA auto_vacuum = INCREMENTAL');
+          await db.rawQuery('PRAGMA foreign_keys = ON');
         } catch (_) {}
       },
       onOpen: (db) async {
@@ -362,6 +363,8 @@ class OfflineDbHelper {
     try {
       await db.execute('DROP TRIGGER IF EXISTS trg_sale_stock');
       await db.execute('DROP TRIGGER IF EXISTS trg_purchase_stock');
+      await db.execute('DROP TRIGGER IF EXISTS trg_sale_stock_update');
+      await db.execute('DROP TRIGGER IF EXISTS trg_purchase_stock_update');
       await db.execute('DROP TRIGGER IF EXISTS trg_sale_stock_delete');
       await db.execute('DROP TRIGGER IF EXISTS trg_purchase_stock_delete');
 
@@ -422,6 +425,32 @@ class OfflineDbHelper {
             SELECT 1 FROM stock_transactions 
             WHERE reference_id = NEW.purchase_id AND product_id = NEW.product_id AND trans_type = 'IN'
           );
+        END;
+      ''');
+
+      await db.execute('''
+        CREATE TRIGGER IF NOT EXISTS trg_sale_stock_update AFTER UPDATE ON sale_items
+        BEGIN
+          UPDATE products 
+          SET current_stock = current_stock + (OLD.quantity - NEW.quantity) 
+          WHERE id = NEW.product_id;
+
+          UPDATE stock_transactions 
+          SET quantity = NEW.quantity, product_id = NEW.product_id
+          WHERE reference_id = NEW.sale_id AND product_id = OLD.product_id AND trans_type = 'OUT';
+        END;
+      ''');
+
+      await db.execute('''
+        CREATE TRIGGER IF NOT EXISTS trg_purchase_stock_update AFTER UPDATE ON purchase_items
+        BEGIN
+          UPDATE products 
+          SET current_stock = current_stock - (OLD.quantity - NEW.quantity) 
+          WHERE id = NEW.product_id;
+
+          UPDATE stock_transactions 
+          SET quantity = NEW.quantity, product_id = NEW.product_id
+          WHERE reference_id = NEW.purchase_id AND product_id = OLD.product_id AND trans_type = 'IN';
         END;
       ''');
 

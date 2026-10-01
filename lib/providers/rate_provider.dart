@@ -207,6 +207,7 @@ class RateConfigNotifier extends AsyncNotifier<List<RateConfig>> {
       }
     }
 
+    if (finalRate < 0) finalRate = 0.0;
     return double.parse(finalRate.toStringAsFixed(2));
   }
 
